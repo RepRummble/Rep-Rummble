@@ -9,6 +9,8 @@
     "server": "cd server && npm run dev",
     "install:all": "cd web && npm install && cd ../mobile && npm install && cd ../server && npm install",
     "build:web": "cd web && npm run build",
-    "build:server": "cd server && npm run build"
+    "build:server": "cd server && npm run build",
+    "test:e2e": "cd e2e && npm test",
+    "test:perf": "cd perf && ./mvnw gatling:test -Dgatling.simulationClass=reprummble.perf.HealthCheckSimulation"
   }
 }

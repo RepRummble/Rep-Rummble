@@ -1,0 +1,20 @@
+{
+  "name": "reprummble-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "End-to-end and security-focused Playwright tests for Reprummble (web + API)",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:staging": "cross-env BASE_URL=$STAGING_WEB_URL API_BASE_URL=$STAGING_API_URL playwright test",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.7"
+  }
+}
