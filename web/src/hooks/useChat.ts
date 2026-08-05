@@ -101,8 +101,8 @@ export function useChat(options: UseChatOptions = {}) {
       chatSocket.onError((err) => {
         setError(err.message);
       });
-    } catch (err: any) {
-      setError(err.message || 'Failed to start chat');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to start chat');
       console.error('Error starting chat:', err);
     } finally {
       setIsLoading(false);
