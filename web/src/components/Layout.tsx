@@ -250,9 +250,9 @@ export default function Layout() {
       } else {
         navigate('/analytics', { replace: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setAuthStatus('error');
-      setAuthMessage(error?.message || 'Something went wrong.');
+      setAuthMessage(error instanceof Error ? error.message : 'Something went wrong.');
     }
   };
 

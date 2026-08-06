@@ -30,9 +30,9 @@ export default function Contact() {
       setStatus('success');
       setMessage(data?.message || 'Message sent. We will reply soon.');
       setForm({ name: '', email: '', message: '' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setStatus('error');
-      setMessage(error?.message || 'Something went wrong.');
+      setMessage(error instanceof Error ? error.message : 'Something went wrong.');
     }
   };
 

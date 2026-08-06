@@ -87,7 +87,7 @@ const ANOMALIES = [
 ];
 
 const DEVICES = [
-  { name: 'Apple Watch',  icon: 'watch-outline',         color: '#f1f5f9', connected: true  },
+  { name: 'Apple Watch',  icon: 'watch-outline',         color: '#f1f5f9', connected: false },
   { name: 'Oura Ring',    icon: 'radio-button-on-outline',color: '#eab308', connected: false },
   { name: 'WHOOP',        icon: 'pulse-outline',          color: '#ef4444', connected: false },
   { name: 'Garmin',       icon: 'navigate-outline',       color: '#22c55e', connected: false },
@@ -254,7 +254,7 @@ export default function WearablesScreen() {
     <View style={s.root}>
       <LinearGradient colors={['#120823', '#0d0f1a', '#080b14']} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
 
-      <SafeAreaView style={s.safe}>
+      <SafeAreaView style={s.safe} edges={['top']}>
         {/* ── Header ── */}
         <View style={s.header}>
           <View>
@@ -273,18 +273,18 @@ export default function WearablesScreen() {
         </View>
 
         {/* ── Tabs ── */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+        <View style={[s.tabRow, { flexDirection: 'row', paddingHorizontal: 12 }]}>
           {TABS.map((t, i) => (
-            <TouchableOpacity key={i} onPress={() => setTab(i)} activeOpacity={0.8} style={[s.tabPill, tab === i && s.tabPillActive]}>
+            <TouchableOpacity key={i} onPress={() => setTab(i)} activeOpacity={0.8} style={[s.tabPill, { flex: 1 }, tab === i && s.tabPillActive]}>
               {tab === i && (
                 <View style={[StyleSheet.absoluteFill, { borderRadius: 20, overflow: 'hidden' }]}>
                   <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={{ flex: 1 }} />
                 </View>
               )}
-              <Text style={[s.tabText, tab === i && s.tabTextActive]}>{t}</Text>
+              <Text style={[s.tabText, tab === i && s.tabTextActive]} numberOfLines={1}>{t}</Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
 
         {/* ── Content ── */}
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}>
@@ -811,10 +811,10 @@ const s = StyleSheet.create({
   syncBtnGrad: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9 },
   syncBtnText: { color: '#a78bfa', fontWeight: '700', fontSize: 13 },
 
-  tabRow: { marginBottom: 12 },
-  tabPill: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: '#2d356150' },
+  tabRow: { marginBottom: 12, gap: 6 },
+  tabPill: { paddingHorizontal: 4, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: '#2d356150', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   tabPillActive: { borderColor: '#7c3aed' },
-  tabText: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
+  tabText: { fontSize: 12, color: '#6b7280', fontWeight: '600', textAlign: 'center' },
   tabTextActive: { color: '#fff', fontWeight: '700' },
 
   // Overview

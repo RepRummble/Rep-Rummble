@@ -16,12 +16,14 @@ import {
   Dimensions,
   RefreshControl,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { socialService, SocialPost } from "../services/socialService";
 import { useAuth } from "../context/AuthContext";
 
@@ -143,6 +145,7 @@ export default function SocialFeedScreen() {
   const [createType, setCreateType] = useState<string>("general");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [createLocation, setCreateLocation] = useState("");
+  const [fetchingLocation, setFetchingLocation] = useState(false);
   const [createFeeling, setCreateFeeling] = useState<{ emoji: string; label: string } | null>(null);
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [showFeelingPicker, setShowFeelingPicker] = useState(false);
@@ -319,6 +322,29 @@ export default function SocialFeedScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as ImagePicker.MediaType[], allowsEditing: true, aspect: [9, 16], quality: 0.9 });
       if (!result.canceled && result.assets.length > 0) setSnapImage(result.assets[0].uri);
     } catch { Alert.alert("Gallery Error", "Unable to open gallery. Please try again."); }
+  };
+
+  const handleGetLocation = async () => {
+    setFetchingLocation(true);
+    setShowLocationInput(false);
+    setShowFeelingPicker(false);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Denied", "Enable location access in Settings to tag your post.");
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const [place] = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+      if (place) {
+        const label = [place.name, place.city, place.region].filter(Boolean).join(", ");
+        setCreateLocation(label || `${loc.coords.latitude.toFixed(3)}, ${loc.coords.longitude.toFixed(3)}`);
+      }
+    } catch {
+      Alert.alert("Error", "Could not fetch location. Try again.");
+    } finally {
+      setFetchingLocation(false);
+    }
   };
 
   const closeCreate = () => {
@@ -1130,27 +1156,6 @@ export default function SocialFeedScreen() {
                 </View>
               )}
 
-              {/* Location input */}
-              {showLocationInput && (
-                <View style={{ backgroundColor: "#161b2e", borderRadius: 14, borderWidth: 1, borderColor: "#f9731640", padding: 12, marginBottom: 10, flexDirection: "row", alignItems: "center", gap: 10 }}>
-                  <Ionicons name="location" size={18} color="#f97316" />
-                  <TextInput
-                    style={{ flex: 1, color: "#fff", fontSize: 15 }}
-                    placeholder="Add a location (gym, city…)"
-                    placeholderTextColor="#6b7280"
-                    value={createLocation}
-                    onChangeText={setCreateLocation}
-                    returnKeyType="done"
-                    onSubmitEditing={() => setShowLocationInput(false)}
-                    autoFocus
-                  />
-                  {createLocation !== "" && (
-                    <TouchableOpacity onPress={() => setShowLocationInput(false)}>
-                      <Ionicons name="checkmark-circle" size={22} color="#f97316" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
 
               {/* Feeling picker grid */}
               {showFeelingPicker && (
@@ -1203,13 +1208,16 @@ export default function SocialFeedScreen() {
               <TouchableOpacity
                 style={styles.mediaBtn}
                 activeOpacity={0.75}
-                onPress={() => { setShowLocationInput(v => !v); setShowFeelingPicker(false); }}
+                onPress={handleGetLocation}
+                disabled={fetchingLocation}
               >
-                <View style={[styles.mediaBtnGrad, { backgroundColor: showLocationInput || createLocation ? "#f9731640" : "#f9731622", borderWidth: showLocationInput || createLocation ? 1 : 0, borderColor: "#f9731660" }]}>
-                  <Ionicons name="location" size={20} color="#f97316" />
+                <View style={[styles.mediaBtnGrad, { backgroundColor: createLocation ? "#f9731640" : "#f9731622", borderWidth: createLocation ? 1 : 0, borderColor: "#f9731660" }]}>
+                  {fetchingLocation
+                    ? <ActivityIndicator size="small" color="#f97316" />
+                    : <Ionicons name="location" size={20} color="#f97316" />}
                 </View>
-                <Text style={[styles.mediaBtnLabel, (showLocationInput || createLocation) && { color: "#f97316" }]}>
-                  {createLocation ? "Located" : "Location"}
+                <Text style={[styles.mediaBtnLabel, createLocation && { color: "#f97316" }]}>
+                  {fetchingLocation ? "Getting…" : createLocation ? "Located" : "Location"}
                 </Text>
               </TouchableOpacity>
 
@@ -1362,7 +1370,7 @@ const styles = StyleSheet.create({
   discoverTimeTxt: { fontSize: 10, fontWeight: "700" },
 
   // Quick Snap FAB
-  snapFab: { position: "absolute", bottom: 100, right: 20, zIndex: 50 },
+  snapFab: { position: "absolute", bottom: 24, right: 20, zIndex: 50 },
   snapFabGrad: { width: 58, height: 58, borderRadius: 29, justifyContent: "center", alignItems: "center", shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 10 },
 
   // Quick Snap creator

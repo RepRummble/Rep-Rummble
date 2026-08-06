@@ -99,7 +99,7 @@ export default function LeaderboardScreen() {
     <View style={styles.root}>
       <LinearGradient colors={['#1a0533', '#0d0f1a', '#080b14']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Leaderboard</Text>

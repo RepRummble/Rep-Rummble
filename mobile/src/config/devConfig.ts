@@ -180,8 +180,34 @@ export function devAdapter(config: any): Promise<any> {
     return makeResponse(config, { success: true, message: 'Joined!', challenge: MOCK_CHALLENGES[0], participant: {} });
   }
 
+  // User profile
+  if (method === 'put' && path.includes('/users/profile')) return makeResponse(config, { success: true, data: DEV_DUMMY_USER });
+  if (method === 'get' && path.includes('/users/profile')) return makeResponse(config, { success: true, data: DEV_DUMMY_USER });
+
   // User search
   if (method === 'get' && path.includes('/users/search')) return makeResponse(config, { success: true, users: [] });
+
+  // Chat
+  if (method === 'post' && path.endsWith('/chat/start')) {
+    return makeResponse(config, {
+      success: true,
+      data: {
+        conversation: { _id: `conv-${Date.now()}`, status: 'active' },
+        sessionId: `sess-${Date.now()}`,
+        welcomeMessage: {
+          _id: `msg-${Date.now()}`,
+          conversationId: `conv-${Date.now()}`,
+          senderType: 'ai',
+          senderName: 'AI Assistant',
+          content: "Hi! I'm your Rep Rummble AI fitness assistant. Ask me anything about workouts, nutrition, or the app!",
+          contentType: 'text',
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+  }
+  if (method === 'post' && path.includes('/chat/message')) return makeResponse(config, { success: true });
+  if (method === 'get' && path.includes('/chat/history')) return makeResponse(config, { success: true, data: { messages: [] } });
 
   // AI / food analysis — return a plausible empty result so the scanner doesn't crash
   if (method === 'post' && path.includes('/ai/analyze-food')) {

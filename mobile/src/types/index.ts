@@ -1,3 +1,11 @@
+export type PlanId = 'free' | 'pro' | 'premium';
+
+export interface Subscription {
+  plan: PlanId;
+  renewsAt?: string;
+  canceledAt?: string;
+}
+
 // User types
 export interface User {
   _id: string;
@@ -6,6 +14,7 @@ export interface User {
   streak: number;
   xp: number;
   level: number;
+  subscription?: Subscription;
   createdAt: string;
   updatedAt: string;
 }
@@ -191,6 +200,7 @@ export type RootStackParamList = {
     imageUri: string;
   };
   Chat: { conversationId?: string } | undefined;
+  Subscription: undefined;
 };
 
 export type MainTabParamList = {

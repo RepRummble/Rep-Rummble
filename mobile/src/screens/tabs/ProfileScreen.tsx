@@ -16,6 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription, PLAN_PRICES } from '../../context/SubscriptionContext';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
 
 const SW = Dimensions.get('window').width;
 
@@ -99,9 +103,20 @@ const MENU: { icon: string; label: string; color: string; key: ModalKey }[] = [
   { icon: 'information-circle-outline', label: 'About',            color: '#94a3b8', key: 'about'         },
 ];
 
+type NavProp = NativeStackNavigationProp<RootStackParamList>;
+
+const PLAN_META = {
+  free:    { label: 'Free',    color: '#94a3b8', icon: 'person-outline',   gradient: ['#161b2e', '#0d0f1a'] as const },
+  pro:     { label: 'Pro',     color: '#a78bfa', icon: 'sparkles',         gradient: ['#3b0d6b', '#1e0545'] as const },
+  premium: { label: 'Premium', color: '#fbbf24', icon: 'ribbon',           gradient: ['#3a2000', '#1a0e00'] as const },
+};
+
 export default function ProfileScreen() {
+  const navigation = useNavigation<NavProp>();
   const { user, logout, updateUser } = useAuth();
+  const { plan, isProOrAbove, scansUsedToday, chatUsedToday, limits } = useSubscription();
   const [activeModal, setActiveModal] = useState<ModalKey>(null);
+  const planMeta = PLAN_META[plan];
 
   // Edit Profile state
   const [editName, setEditName] = useState(user?.displayName || '');
@@ -226,6 +241,38 @@ export default function ProfileScreen() {
               ))}
             </View>
           </LinearGradient>
+
+          {/* ── Subscription Card ── */}
+          <Text style={styles.groupLabel}>SUBSCRIPTION</Text>
+          <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Subscription')} style={{ marginBottom: 20 }}>
+            <LinearGradient colors={planMeta.gradient} style={styles.subCard}>
+              <View style={styles.subCardLeft}>
+                <View style={[styles.subIcon, { backgroundColor: planMeta.color + '25', borderColor: planMeta.color + '50' }]}>
+                  <Ionicons name={planMeta.icon as any} size={20} color={planMeta.color} />
+                </View>
+                <View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={[styles.subPlanName, { color: planMeta.color }]}>{planMeta.label} Plan</Text>
+                    {plan === 'free' && (
+                      <View style={styles.upgradeTag}>
+                        <Text style={styles.upgradeTagText}>Upgrade available</Text>
+                      </View>
+                    )}
+                  </View>
+                  {plan === 'free' ? (
+                    <Text style={styles.subMeta}>
+                      {limits.aiScansPerDay - scansUsedToday} scans · {limits.chatMessagesPerDay - chatUsedToday} chats left today
+                    </Text>
+                  ) : (
+                    <Text style={styles.subMeta}>Unlimited scans & chat · Renews monthly</Text>
+                  )}
+                </View>
+              </View>
+              <View style={[styles.subArrow, { backgroundColor: planMeta.color + '20' }]}>
+                <Ionicons name="chevron-forward" size={16} color={planMeta.color} />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
 
           {/* ── Account settings ── */}
           <Text style={styles.groupLabel}>ACCOUNT</Text>
@@ -642,6 +689,16 @@ const styles = StyleSheet.create({
   logoutText: { fontSize: 15, fontWeight: '700', color: '#ef4444' },
 
   version: { textAlign: 'center', color: '#2d3561', fontSize: 12, marginTop: 16 },
+
+  // Subscription card
+  subCard: { borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#2d356150' },
+  subCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  subIcon: { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  subPlanName: { fontSize: 16, fontWeight: '800' },
+  subMeta: { fontSize: 11, color: '#6b7280', marginTop: 3 },
+  upgradeTag: { backgroundColor: '#22c55e20', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#22c55e40' },
+  upgradeTagText: { fontSize: 9, fontWeight: '800', color: '#22c55e' },
+  subArrow: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
 });
 
 // ─── Sheet / modal styles (shared across all modals) ─────────────────────────

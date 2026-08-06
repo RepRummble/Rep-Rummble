@@ -38,8 +38,8 @@ async function apiRequest<T>(
     }
 
     return { data: data.data || data }
-  } catch (error: any) {
-    return { error: error.message || 'Network error' }
+  } catch (error: unknown) {
+    return { error: error instanceof Error ? error.message : 'Network error' }
   }
 }
 
@@ -92,7 +92,17 @@ export const api = {
         body: JSON.stringify(meal),
       }),
 
-    update: (id: string, meal: Partial<any>) =>
+    update: (
+      id: string,
+      meal: Partial<{
+        name: string
+        calories: number
+        protein: number
+        carbs: number
+        fat: number
+        mealType: string
+      }>
+    ) =>
       apiRequest(`/api/meals/${id}`, {
         method: 'PUT',
         body: JSON.stringify(meal),
@@ -117,14 +127,22 @@ export const api = {
       name: string
       duration: number
       caloriesBurned: number
-      exercises: any[]
+      exercises: unknown[]
     }) =>
       apiRequest('/api/workouts', {
         method: 'POST',
         body: JSON.stringify(workout),
       }),
 
-    update: (id: string, workout: Partial<any>) =>
+    update: (
+      id: string,
+      workout: Partial<{
+        name: string
+        duration: number
+        caloriesBurned: number
+        exercises: unknown[]
+      }>
+    ) =>
       apiRequest(`/api/workouts/${id}`, {
         method: 'PUT',
         body: JSON.stringify(workout),

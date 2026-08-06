@@ -1,0 +1,279 @@
+# One pipeline: every push/PR runs the full gate (lint, typecheck, builds,
+# dependency audit, Semgrep, Gitleaks, Playwright, Gatling). The final
+# deploy-production job needs every one of those jobs to succeed AND sits
+# behind the GitHub "production" Environment — if that environment has
+# Required Reviewers configured (Settings → Environments → production),
+# the job pauses in "Waiting" state until someone clicks Approve, on top of
+# everything else already having passed. See DEPLOYMENT.md for the
+# one-time setup this depends on (repo secrets + environment protection +
+# turning off Vercel/Render's own auto-deploy).
+name: CI/CD
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      heavy_perf:
+        description: "Run Gatling with heavier load instead of the fast CI smoke config"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # --- Code quality ---------------------------------------------------------
+  lint-web:
+    name: Lint + typecheck (web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm', cache-dependency-path: web/package-lock.json }
+      - working-directory: web
+        run: npm ci
+      - working-directory: web
+        run: npm run lint
+      - working-directory: web
+        run: npm run typecheck
+
+  typecheck-server:
+    name: Typecheck (server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm', cache-dependency-path: server/package-lock.json }
+      - working-directory: server
+        run: npm ci
+      - working-directory: server
+        run: npx tsc --noEmit
+
+  # --- Builds ---------------------------------------------------------------
+  build-web:
+    name: Build (web)
+    needs: [lint-web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm', cache-dependency-path: web/package-lock.json }
+      - working-directory: web
+        run: npm ci
+      - working-directory: web
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist/
+          retention-days: 7
+
+  build-server:
+    name: Build (server)
+    needs: [typecheck-server]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm', cache-dependency-path: server/package-lock.json }
+      - working-directory: server
+        run: npm ci
+      - working-directory: server
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-dist
+          path: server/dist/
+          retention-days: 7
+
+  # --- Security -----------------------------------------------------------
+  dependency-audit:
+    name: npm audit (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace: [web, server, mobile]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - working-directory: ${{ matrix.workspace }}
+        run: npm install --package-lock-only --ignore-scripts
+      # High/critical fail the job. See SECURITY_TESTING.md for the current
+      # moderate/low backlog and why it isn't blocking yet.
+      - working-directory: ${{ matrix.workspace }}
+        run: npm audit --audit-level=high
+
+  secrets-scan:
+    name: Gitleaks (leaked credentials)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep ci --config=p/owasp-top-ten --config=p/javascript --config=p/typescript
+
+  # --- E2E + security-focused Playwright tests -------------------------------
+  e2e:
+    name: Playwright E2E + security tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports: ['27017:27017']
+    env:
+      NODE_ENV: test
+      MONGODB_URI: mongodb://localhost:27017/reprummble_e2e
+      # Optional repo secrets — unskip Supabase-backed tests (register/login,
+      # cross-user IDOR checks) when set. See e2e/README.md.
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      TEST_USER_A_EMAIL: ${{ secrets.TEST_USER_A_EMAIL }}
+      TEST_USER_A_PASSWORD: ${{ secrets.TEST_USER_A_PASSWORD }}
+      TEST_USER_B_EMAIL: ${{ secrets.TEST_USER_B_EMAIL }}
+      TEST_USER_B_PASSWORD: ${{ secrets.TEST_USER_B_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - working-directory: server
+        run: npm ci
+      - working-directory: web
+        run: npm ci
+      - working-directory: e2e
+        run: npm ci
+      - working-directory: e2e
+        run: npx playwright install --with-deps chromium
+      - working-directory: e2e
+        run: npm test
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
+
+  # --- Performance / rate-limit-under-load -----------------------------
+  perf:
+    name: Gatling perf gate
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+
+      - name: Install and start server
+        working-directory: server
+        run: |
+          npm ci
+          npm run dev &
+          npx --yes wait-on http://localhost:5001/api/health --timeout 60000
+
+      - name: Baseline throughput (HealthCheckSimulation)
+        working-directory: perf
+        env:
+          BASE_URL: http://localhost:5001
+          # Fast by default so every push gets a gate without a slow pipeline;
+          # workflow_dispatch with heavy_perf:true runs a realistic load instead.
+          PERF_USERS: ${{ (github.event_name == 'workflow_dispatch' && inputs.heavy_perf) && '50' || '10' }}
+          PERF_RAMP_SECONDS: ${{ (github.event_name == 'workflow_dispatch' && inputs.heavy_perf) && '30' || '5' }}
+          PERF_DURATION_SECONDS: ${{ (github.event_name == 'workflow_dispatch' && inputs.heavy_perf) && '120' || '10' }}
+        run: ./mvnw -B gatling:test -Dgatling.simulationClass=reprummble.perf.HealthCheckSimulation
+
+      - name: Rate limiter holds under concurrency (LoginRateLimitSimulation)
+        working-directory: perf
+        env:
+          BASE_URL: http://localhost:5001
+        run: ./mvnw -B gatling:test -Dgatling.simulationClass=reprummble.perf.LoginRateLimitSimulation
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gatling-report
+          path: perf/target/gatling/
+          retention-days: 14
+
+  # --- Deploy to production — MANUAL GATE -------------------------------
+  # Only runs for pushes to master (never PRs), and only after every job
+  # above has succeeded. The `environment: production` line is what makes
+  # this a click-to-deploy step: once you add Required Reviewers to the
+  # "production" environment (Settings → Environments), this job pauses and
+  # shows a Review deployments button in the Actions run — nothing ships
+  # until someone clicks Approve. See DEPLOYMENT.md.
+  deploy-production:
+    name: Deploy to production (manual approval)
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    needs:
+      - lint-web
+      - typecheck-server
+      - build-web
+      - build-server
+      - dependency-audit
+      - secrets-scan
+      - semgrep
+      - e2e
+      - perf
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      # build-web already proved `npm run build` succeeds — this step does
+      # Vercel's own build (reads web/vercel.json) to produce the
+      # .vercel/output format `--prebuilt` deploy requires; it isn't the
+      # same artifact as the web-dist upload from the build-web job.
+      - name: Deploy web to Vercel
+        working-directory: web
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npm install -g vercel@latest
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy server to Render
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsSL -X POST "$RENDER_DEPLOY_HOOK_URL"
+
+      - name: Verify server health post-deploy
+        if: ${{ env.RENDER_SERVICE_URL != '' }}
+        env:
+          RENDER_SERVICE_URL: ${{ secrets.RENDER_SERVICE_URL }}
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS "$RENDER_SERVICE_URL/api/health"; then
+              echo "Server is up."
+              exit 0
+            fi
+            echo "Waiting for server to come up... ($i/20)"
+            sleep 15
+          done
+          echo "Server did not become healthy in time." >&2
+          exit 1

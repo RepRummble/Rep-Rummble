@@ -16,6 +16,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../config/api';
 import { RootStackParamList, FoodAnalysisResponse } from '../types';
+import { useSubscription } from '../context/SubscriptionContext';
+import { PaywallModal } from './SubscriptionScreen';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodScanner'>;
 
@@ -26,6 +28,8 @@ export default function FoodScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
   const [isCapturing, setIsCapturing] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { canScan, recordScan } = useSubscription();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [flashMode, setFlashMode] = useState<'off' | 'on'>('off');
@@ -39,7 +43,9 @@ export default function FoodScannerScreen() {
 
   const handleCapture = async () => {
     if (!cameraRef.current || isCapturing) return;
+    if (!canScan()) { setShowPaywall(true); return; }
 
+    recordScan();
     setIsCapturing(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({
@@ -178,30 +184,29 @@ export default function FoodScannerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Camera View */}
-      <CameraView
-        ref={cameraRef}
-        style={styles.camera}
-        facing={facing}
-        flash={flashMode}
-      >
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        feature="Unlimited AI Meal Scans"
+        requiredPlan="pro"
+      />
+      {/* Wrapper so CameraView has no children (SDK 54 requirement) */}
+      <View style={styles.camera}>
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing={facing}
+          flash={flashMode}
+        />
+
         {/* Top Controls */}
         <View style={styles.topControls}>
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => navigation.goBack()}
-          >
+          <TouchableOpacity style={styles.controlButton} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={28} color="#fff" />
           </TouchableOpacity>
-
           <Text style={styles.headerTitle}>Scan Meal</Text>
-
           <TouchableOpacity style={styles.controlButton} onPress={toggleFlash}>
-            <Ionicons
-              name={flashMode === 'on' ? 'flash' : 'flash-off'}
-              size={24}
-              color="#fff"
-            />
+            <Ionicons name={flashMode === 'on' ? 'flash' : 'flash-off'} size={24} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -211,43 +216,23 @@ export default function FoodScannerScreen() {
           <View style={[styles.frameCorner, styles.topRight]} />
           <View style={[styles.frameCorner, styles.bottomLeft]} />
           <View style={[styles.frameCorner, styles.bottomRight]} />
-
-          <Text style={styles.frameHint}>
-            Position your meal inside the frame
-          </Text>
+          <Text style={styles.frameHint}>Position your meal inside the frame</Text>
         </View>
 
         {/* Bottom Controls */}
         <View style={styles.bottomControls}>
-          {/* Gallery Button */}
-          <TouchableOpacity
-            style={styles.sideButton}
-            onPress={handlePickImage}
-          >
+          <TouchableOpacity style={styles.sideButton} onPress={handlePickImage}>
             <Ionicons name="images" size={28} color="#fff" />
             <Text style={styles.sideButtonText}>Gallery</Text>
           </TouchableOpacity>
-
-          {/* Capture Button */}
-          <TouchableOpacity
-            style={styles.captureButton}
-            onPress={handleCapture}
-            disabled={isCapturing}
-          >
+          <TouchableOpacity style={styles.captureButton} onPress={handleCapture} disabled={isCapturing}>
             <View style={styles.captureButtonInner}>
-              {isCapturing ? (
-                <ActivityIndicator size="small" color="#22c55e" />
-              ) : (
-                <Ionicons name="scan" size={32} color="#22c55e" />
-              )}
+              {isCapturing
+                ? <ActivityIndicator size="small" color="#22c55e" />
+                : <Ionicons name="scan" size={32} color="#22c55e" />}
             </View>
           </TouchableOpacity>
-
-          {/* Flip Camera Button */}
-          <TouchableOpacity
-            style={styles.sideButton}
-            onPress={toggleCamera}
-          >
+          <TouchableOpacity style={styles.sideButton} onPress={toggleCamera}>
             <Ionicons name="camera-reverse" size={28} color="#fff" />
             <Text style={styles.sideButtonText}>Flip</Text>
           </TouchableOpacity>
@@ -264,7 +249,7 @@ export default function FoodScannerScreen() {
             <Text style={styles.tipText}>Show all items clearly</Text>
           </View>
         </View>
-      </CameraView>
+      </View>
     </SafeAreaView>
   );
 }

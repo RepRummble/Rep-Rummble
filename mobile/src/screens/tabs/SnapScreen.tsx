@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../../types';
+import { RootStackParamList, Meal } from '../../types';
+import api from '../../config/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -20,25 +21,53 @@ const FEATURES = [
   { icon: 'bulb',        color: '#eab308', bg: '#eab30820', label: 'Smart Tips',         desc: 'Healthier swaps' },
 ];
 
-const RECENT = [
-  { name: 'Grilled Chicken Bowl', cal: 480, time: '1h ago',  emoji: '🍗', p: 42, c: 38, f: 12 },
-  { name: 'Greek Yogurt + Berries', cal: 210, time: '4h ago', emoji: '🫐', p: 18, c: 24, f: 4  },
-  { name: 'Protein Shake',         cal: 160, time: '6h ago', emoji: '🥛', p: 30, c: 8,  f: 3  },
-];
+const MEAL_EMOJIS: Record<string, string> = {
+  breakfast: '🍳', lunch: '🍱', dinner: '🍽️', snack: '🥨', default: '🍴',
+};
+
+function timeAgo(iso: string) {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
+  return `${Math.round(mins / 1440)}d ago`;
+}
 
 export default function SnapScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const totalCal  = RECENT.reduce((s, r) => s + r.cal, 0);
-  const totalProt = RECENT.reduce((s, r) => s + r.p,   0);
+  const fetchMeals = async () => {
+    try {
+      const res = await api.get('/meals');
+      setMeals((res.data.data || []).slice(0, 10));
+    } catch {}
+  };
+
+  // Refresh every time the tab is focused (after a scan)
+  useFocusEffect(useCallback(() => { fetchMeals(); }, []));
+
+  const onRefresh = async () => { setRefreshing(true); await fetchMeals(); setRefreshing(false); };
+
+  const today = new Date().toDateString();
+  const todayMeals = meals.filter(m => new Date(m.timestamp).toDateString() === today);
+  const totalCal  = todayMeals.reduce((s, m) => s + m.calories, 0);
+  const totalProt = todayMeals.reduce((s, m) => s + (m.protein || 0), 0);
+  const totalCarbs = todayMeals.reduce((s, m) => s + (m.carbs || 0), 0);
+  const totalFat  = todayMeals.reduce((s, m) => s + (m.fat || 0), 0);
   const goalCal   = 2200;
   const pct       = Math.min((totalCal / goalCal) * 100, 100);
+  const recentMeals = meals.slice(0, 5);
 
   return (
     <View style={s.root}>
       <LinearGradient colors={['#120823', '#0d0f1a', '#080b14']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.scroll}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}
+        >
 
           {/* ── Header ── */}
           <View style={s.header}>
@@ -72,8 +101,8 @@ export default function SnapScreen() {
               <View style={s.macroStats}>
                 {[
                   { label: 'Protein', val: `${totalProt}g`, color: '#7c3aed' },
-                  { label: 'Carbs',   val: `${RECENT.reduce((a, r) => a + r.c, 0)}g`, color: '#22c55e' },
-                  { label: 'Fat',     val: `${RECENT.reduce((a, r) => a + r.f, 0)}g`, color: '#f97316' },
+                  { label: 'Carbs',   val: `${totalCarbs}g`, color: '#22c55e' },
+                  { label: 'Fat',     val: `${totalFat}g`, color: '#f97316' },
                 ].map((m, i) => (
                   <View key={i} style={s.macroStat}>
                     <Text style={[s.macroStatVal, { color: m.color }]}>{m.val}</Text>
@@ -150,32 +179,38 @@ export default function SnapScreen() {
               <Ionicons name="time-outline" size={14} color="#22c55e" />
               <Text style={s.sectionTitle}>Recent Meals</Text>
             </View>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('FoodSearch')}>
               <Text style={s.sectionLink}>See all</Text>
             </TouchableOpacity>
           </View>
 
-          {RECENT.map((meal, i) => (
-            <View key={i} style={s.mealRow}>
+          {recentMeals.length === 0 ? (
+            <View style={s.emptyCard}>
+              <Ionicons name="restaurant-outline" size={36} color="#2d3561" />
+              <Text style={s.emptyText}>No meals logged yet</Text>
+              <Text style={s.emptyHint}>Tap Scan Meal above to add your first</Text>
+            </View>
+          ) : recentMeals.map((meal, i) => (
+            <View key={meal._id || i} style={s.mealRow}>
               <View style={s.mealEmoji}>
-                <Text style={{ fontSize: 26 }}>{meal.emoji}</Text>
+                <Text style={{ fontSize: 26 }}>{MEAL_EMOJIS[meal.mealType || ''] || MEAL_EMOJIS.default}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.mealName}>{meal.name}</Text>
+                <Text style={s.mealName}>{meal.foodName}</Text>
                 <View style={s.mealMacros}>
                   {[
-                    { label: `P ${meal.p}g`, color: '#7c3aed' },
-                    { label: `C ${meal.c}g`, color: '#22c55e' },
-                    { label: `F ${meal.f}g`, color: '#f97316' },
+                    { label: `P ${meal.protein || 0}g`, color: '#7c3aed' },
+                    { label: `C ${meal.carbs || 0}g`,   color: '#22c55e' },
+                    { label: `F ${meal.fat || 0}g`,     color: '#f97316' },
                   ].map((m, j) => (
                     <Text key={j} style={[s.mealMacro, { color: m.color }]}>{m.label}</Text>
                   ))}
                 </View>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                <Text style={s.mealCal}>{meal.cal}</Text>
+                <Text style={s.mealCal}>{meal.calories}</Text>
                 <Text style={s.mealCalUnit}>kcal</Text>
-                <Text style={s.mealTime}>{meal.time}</Text>
+                <Text style={s.mealTime}>{timeAgo(meal.timestamp)}</Text>
               </View>
             </View>
           ))}
@@ -247,4 +282,7 @@ const s = StyleSheet.create({
   mealCal: { fontSize: 18, fontWeight: '900', color: '#fff' },
   mealCalUnit: { fontSize: 10, color: '#6b7280' },
   mealTime: { fontSize: 10, color: '#4b5563' },
+  emptyCard: { backgroundColor: '#161b2e', borderRadius: 14, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: '#2d356140', marginBottom: 8 },
+  emptyText: { fontSize: 15, color: '#6b7280', marginTop: 12, fontWeight: '500' },
+  emptyHint: { fontSize: 12, color: '#2d3561', marginTop: 4 },
 });
