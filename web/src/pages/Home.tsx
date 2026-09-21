@@ -260,21 +260,24 @@ export default function Home() {
 
       {/* ── HOW IT WORKS ── */}
       <section className="section how-it-works" data-reveal>
-        <div className="section-head">
-          <span className="pill">Simple by design</span>
-          <h2 className="gradient-heading">
-            Up and running in under 5 minutes
-          </h2>
-          <p>
-            No complicated setup. Tell us your goals, get your plan, and start
-            moving today.
-          </p>
+        <div className="section-head section-head-inline">
+          <div className="inline-row">
+            <span className="pill">Simple by design</span>
+            <h2 className="gradient-heading inline-title">Up and running in under 5 minutes</h2>
+            <p className="inline-sub">No complicated setup. Tell us your goals, get your plan, and start moving today.</p>
+          </div>
         </div>
         <div className="steps-grid" data-stagger>
           {STEPS.map((s) => (
             <div className="step-card" key={s.num}>
-              <div className="step-num">{s.num}</div>
-              <h3>{s.title}</h3>
+              <div className="step-head">
+                <div className="step-num-badge">
+                  <span className="step-num">{s.num}</span>
+                </div>
+                <div className="step-head-text">
+                  <h3>{s.title}</h3>
+                </div>
+              </div>
               <p>{s.desc}</p>
             </div>
           ))}
@@ -419,31 +422,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FINAL CTA ── */}
-      <section className="section cta-final" data-reveal>
-        <div className="cta-final-inner">
-          <span className="pill">Join 18,000+ members</span>
-          <h2>Your next PR starts today.</h2>
-          <p>
-            Free trial. No credit card. Cancel anytime. Everything you need to
-            train, eat, and recover like a pro — in one place.
-          </p>
-          <div className="cta-actions">
-            <Link className="solid-btn cta-big" to="/?auth=signup">
-              Start Free Trial
-            </Link>
-            <Link className="ghost-btn" to="/services">
-              Explore Features
-            </Link>
-          </div>
-          <p className="cta-fine">
-            Already have an account?{" "}
-            <Link to="/?auth=signin" className="cta-link">
-              Sign in →
-            </Link>
-          </p>
-        </div>
-      </section>
+      {/* Final CTA removed per request */}
     </>
   );
 }

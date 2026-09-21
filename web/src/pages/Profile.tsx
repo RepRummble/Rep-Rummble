@@ -44,6 +44,7 @@ export default function Profile() {
   const [activity, setActivity] = useState('');
   const [diets, setDiets] = useState<string[]>([]);
   const [goalsStatus, setGoalsStatus] = useState<Save>('idle');
+  const [goalsError, setGoalsError] = useState<string | null>(null);
 
   // Notifications
   const [notifs, setNotifs] = useState<Record<string, boolean>>({
@@ -85,10 +86,14 @@ export default function Profile() {
   // Saves
   const saveProfile = async () => {
     setProfileStatus('loading');
-    const { error } = await supabase.auth.updateUser({ data: { displayName: profile.name } });
-    if (!error) await api.auth.updateProfile({ displayName: profile.name });
-    setProfileStatus(error ? 'error' : 'success');
-    setTimeout(() => setProfileStatus('idle'), 2500);
+    try {
+      const res = await api.auth.updateProfile({ displayName: profile.name });
+      setProfileStatus(res.error ? 'error' : 'success');
+    } catch (err) {
+      setProfileStatus('error');
+    } finally {
+      setTimeout(() => setProfileStatus('idle'), 2500);
+    }
   };
 
   const sendPasswordReset = async () => {
@@ -100,9 +105,24 @@ export default function Profile() {
 
   const saveGoals = async () => {
     setGoalsStatus('loading');
-    const { error } = await supabase.auth.updateUser({ data: { goal, activity, diets } });
-    setGoalsStatus(error ? 'error' : 'success');
-    setTimeout(() => setGoalsStatus('idle'), 2500);
+    try {
+      setGoalsError(null);
+      // Use backend API to update profile metadata (reliable for admin updates)
+      const res = await api.auth.updateProfile({ goal, activity, diets });
+      if (res.error) {
+        console.error('Failed to save goals (API):', res.error);
+        setGoalsError(res.error);
+        setGoalsStatus('error');
+      } else {
+        setGoalsStatus('success');
+      }
+    } catch (err: any) {
+      console.error('Unexpected error saving goals:', err);
+      setGoalsError(err?.message || String(err));
+      setGoalsStatus('error');
+    } finally {
+      setTimeout(() => setGoalsStatus('idle'), 2500);
+    }
   };
 
   const saveNotifs = async () => {
@@ -298,6 +318,7 @@ export default function Profile() {
                 {saveBtn(goalsStatus, 'Save goals')}
               </button>
               {goalsStatus === 'error' && <span className="sp-error">Save failed — try again.</span>}
+              {goalsError && <div className="sp-error" style={{ marginTop: 8 }}>{goalsError}</div>}
             </div>
           </div>
         </section>}

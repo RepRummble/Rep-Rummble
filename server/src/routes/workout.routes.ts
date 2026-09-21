@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { getWorkouts, createWorkout, getWorkout, deleteWorkout, getWorkoutStats } from '../controllers/workout.controller'
-import { protect } from '../middleware/auth.middleware'
+import { protect, optionalAuth } from '../middleware/auth.middleware'
 
 const router = Router()
 
@@ -10,7 +10,8 @@ router.route('/')
   .get(getWorkouts)
   .post(createWorkout)
 
-router.get('/stats', getWorkoutStats)
+// Allow unauthenticated visitors to fetch aggregated stats (optional auth)
+router.get('/stats', optionalAuth, getWorkoutStats)
 
 router.route('/:id')
   .get(getWorkout)

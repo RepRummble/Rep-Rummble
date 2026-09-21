@@ -162,14 +162,31 @@ export const logout = async (req: AuthRequest, res: Response) => {
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
-    const { displayName, photoUrl } = req.body
+    const body = req.body || {}
+    console.log('[auth.controller] updateProfile user=', req.user)
+    console.log('[auth.controller] updateProfile body=', body)
 
     if (!userId) {
       return res.status(401).json({ success: false, message: "Not authenticated" })
     }
 
-    if (displayName || photoUrl) {
-      await supabaseService.updateUserMetadata(userId, { displayName, photoUrl })
+    // Accept arbitrary profile metadata (displayName, photoUrl, goal, activity, diets, etc.)
+    const metadata: Record<string, any> = {}
+    const allowed = ['displayName', 'photoUrl', 'goal', 'activity', 'diets', 'devices', 'notifications']
+    Object.keys(body).forEach((k) => {
+      if (allowed.includes(k)) metadata[k] = body[k]
+    })
+
+    if (Object.keys(metadata).length > 0) {
+      if (req.user?.isBypass) {
+        // Local bypass mode: skip Supabase update and return success
+        return res.json({ success: true, message: "Profile updated successfully (bypass mode)" })
+      }
+
+      const result = await supabaseService.updateUserMetadata(userId, metadata)
+      if (!result.success) {
+        return res.status(500).json({ success: false, message: result.error || 'Failed to update profile' })
+      }
     }
 
     return res.json({ success: true, message: "Profile updated successfully" })

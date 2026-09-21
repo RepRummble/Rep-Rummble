@@ -6,6 +6,7 @@ export interface AuthUser {
   id: string
   email?: string
   displayName?: string
+  isBypass?: boolean
 }
 
 export interface AuthRequest extends Request {
@@ -21,11 +22,27 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       token = req.headers.authorization.split(' ')[1]
     }
 
+    // Temporary: allow bypass token for local development
+    const BYPASS_TOKEN = process.env.TEMP_BYPASS_TOKEN || 'dev-bypass-token'
+
     if (!token) {
       res.status(401).json({
         success: false,
         message: 'Not authorized to access this route'
       })
+      return
+    }
+
+    if (token === BYPASS_TOKEN) {
+      // Attach a fake bypass user for local testing
+      req.user = {
+        id: '00000000-0000-0000-0000-000000000000',
+        email: 'dev@local',
+        displayName: 'Dev Bypass User',
+        isBypass: true,
+      }
+      console.log('[auth.middleware] bypass token used, user set to', req.user)
+      next()
       return
     }
 

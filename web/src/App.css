@@ -709,6 +709,12 @@
   background: linear-gradient(180deg, transparent, rgba(23, 23, 23, 0.06));
 }
 
+/* Make decorative wave non-interactive so buttons and links remain clickable */
+.hero-wave {
+  pointer-events: none;
+  z-index: 0; /* place behind hero content */
+}
+
 .hero-copy h1 {
   font-family: 'Syne', 'Segoe UI', sans-serif;
   font-size: clamp(36px, 4.4vw, 62px);
@@ -751,6 +757,9 @@
   margin-top: 16px;
   flex-wrap: wrap;
 }
+
+/* Ensure hero links sit above decorative elements */
+.hero-links { z-index: 2; position: relative; }
 
 .hero-subtext {
   margin-top: 14px;
@@ -2426,7 +2435,10 @@
   padding: clamp(52px, 7vw, 88px) clamp(24px, 5vw, 64px);
   border-radius: 32px;
   overflow: hidden;
-  background: var(--ink);
+  /* darker, desaturated background for better contrast */
+  background: linear-gradient(135deg, rgba(10,12,18,0.96), rgba(20,23,28,0.92));
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
   color: #fff;
 }
 
@@ -2434,10 +2446,12 @@
   content: '';
   position: absolute;
   inset: 0;
+  /* subtle colored highlights over the dark background */
   background:
-    radial-gradient(ellipse at 15% 50%, rgba(47, 91, 255, 0.35) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 20%, rgba(29, 180, 140, 0.28) 0%, transparent 50%);
+    radial-gradient(ellipse at 15% 40%, rgba(99,102,241,0.08) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 20%, rgba(34,211,187,0.07) 0%, transparent 40%);
   pointer-events: none;
+  mix-blend-mode: screen;
 }
 
 .app-launch-band > * { position: relative; z-index: 1; }
@@ -2448,12 +2462,12 @@
   gap: 6px;
   padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
   font-size: 11px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255,255,255,0.85);
 }
 
 .app-launch-heading {
@@ -2468,9 +2482,9 @@
 
 .app-launch-sub {
   font-size: clamp(15px, 1.6vw, 18px);
-  color: rgba(255,255,255,0.6);
-  max-width: 520px;
-  line-height: 1.65;
+  color: rgba(255,255,255,0.9);
+  max-width: 680px;
+  line-height: 1.6;
   margin: 0;
 }
 
@@ -2480,10 +2494,10 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 0;
-  padding: 16px 24px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.05);
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
 }
 
 .alf-item {
@@ -2530,9 +2544,9 @@
   flex: 1;
   padding: 14px 18px;
   border-radius: 14px 0 0 14px;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.08);
   border-right: none;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
   color: #fff;
   font-size: 14px;
   outline: none;
@@ -4415,8 +4429,8 @@
 .wearable-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 8px;
+  padding: 8px 12px;
   border-radius: var(--radius-pill);
   background: var(--glass-strong);
   border: 1px solid rgba(255, 255, 255, 0.09);
@@ -4424,11 +4438,24 @@
   font-weight: 500;
   color: var(--ink-2);
   transition: background 0.2s, color 0.2s;
+  /* Make all chips equal width while remaining responsive */
+  flex: 1 1 160px; /* grow, shrink, base width */
+  min-width: 120px;
+  max-width: 220px;
+  justify-content: center; /* center icon + label */
+  text-align: center;
 }
 
 .wearable-chip:hover {
   background: rgba(255, 255, 255, 0.09);
   color: var(--ink);
+}
+
+/* Keep the label from overflowing */
+.wearable-chip span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* features grid */
@@ -4477,6 +4504,45 @@
   max-width: 560px;
 }
 
+/* Inline single-line header for how-it-works */
+
+.how-it-works .section-head-inline .inline-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+  /* allow wrapping so the subtitle text can be fully visible */
+  flex-wrap: wrap;
+}
+
+.how-it-works .inline-title {
+  font-size: 22px;
+  margin: 0;
+  flex: 0 0 auto;
+  white-space: nowrap; /* keep title on one line */
+}
+
+.how-it-works .inline-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  /* allow the description to grow and wrap across remaining space */
+  flex: 1 1 420px;
+  white-space: normal;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 720px) {
+  .how-it-works .section-head-inline .inline-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    white-space: normal;
+  }
+  .how-it-works .inline-title { font-size: 20px; }
+}
+
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -4505,10 +4571,40 @@
 
 .step-num {
   font-family: 'Syne', sans-serif;
-  font-size: 40px;
+  font-size: 18px;
   font-weight: 800;
-  color: rgba(23, 23, 23, 0.08);
+  color: var(--ink);
   line-height: 1;
+}
+
+/* new header layout for steps */
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.step-num-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(34,211,187,0.12), rgba(99,102,241,0.10));
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  flex-shrink: 0;
+}
+
+.step-head-text h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.step-card p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 .step-card h3 {

@@ -76,7 +76,7 @@ export const auth = {
   },
 
   // Update user metadata
-  updateProfile: async (metadata: { displayName?: string; photoUrl?: string }) => {
+  updateProfile: async (metadata: Record<string, any>) => {
     const { data, error } = await supabase.auth.updateUser({
       data: metadata
     })

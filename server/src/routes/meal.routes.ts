@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { getMeals, createMeal, getMeal, deleteMeal, getMealStats } from '../controllers/meal.controller'
-import { protect } from '../middleware/auth.middleware'
+import { protect, optionalAuth } from '../middleware/auth.middleware'
 
 const router = Router()
 
@@ -10,7 +10,8 @@ router.route('/')
   .get(getMeals)
   .post(createMeal)
 
-router.get('/stats', getMealStats)
+// Allow unauthenticated visitors to fetch aggregated stats (optional auth)
+router.get('/stats', optionalAuth, getMealStats)
 
 router.route('/:id')
   .get(getMeal)

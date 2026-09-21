@@ -15,6 +15,8 @@ router.get('/oauth/:provider', getOAuthUrl)
 router.get('/me', protect, getMe)
 router.post('/logout', protect, logout)
 router.put('/profile', protect, updateProfile)
+// Note: For local testing you can use the bypass token by setting
+// the Authorization header to: "Bearer <TEMP_BYPASS_TOKEN>"
 router.delete('/account', protect, deleteAccount)
 
 export default router
