@@ -19,7 +19,8 @@
       "bundleIdentifier": "com.reprumble.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Reprummble needs camera access to scan your meals and track your workout form.",
-        "NSPhotoLibraryUsageDescription": "Reprummble needs photo library access to select meal photos for nutrition analysis."
+        "NSPhotoLibraryUsageDescription": "Reprummble needs photo library access to select meal photos for nutrition analysis.",
+        "NSLocationWhenInUseUsageDescription": "Reprummble uses your location to tag posts with where you are."
       }
     },
     "android": {
@@ -47,10 +48,17 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Reprummble to access your photos for meal analysis."
+          "photosPermission": "Allow Reprummble to access your photos for meal analysis.",
+          "cameraPermission": "Allow Reprummble to access your camera to take photos for your status and posts."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Reprummble to use your location to tag posts with your current location."
+        }
+      ]
     ]
   }
 }

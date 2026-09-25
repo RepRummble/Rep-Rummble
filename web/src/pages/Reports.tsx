@@ -31,9 +31,9 @@ export default function Reports() {
 
       setStatus('success');
       setMessage('Report downloaded successfully.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setStatus('error');
-      setMessage(error?.message || 'Download failed.');
+      setMessage(error instanceof Error ? error.message : 'Download failed.');
     }
   };
 

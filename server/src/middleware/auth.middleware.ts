@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { verifyToken } from '../services/supabase.service'
+import { JWT_SECRET } from '../config/security'
 
 export interface AuthUser {
   id: string
@@ -61,7 +62,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
     // Fallback to JWT verification
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string }
+      const decoded = jwt.verify(token, JWT_SECRET) as { id: string }
 
       req.user = {
         id: decoded.id
@@ -112,7 +113,7 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
     } else {
       // Fallback to JWT
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string }
+        const decoded = jwt.verify(token, JWT_SECRET) as { id: string }
         req.user = { id: decoded.id }
       } catch {
         // Token invalid but optional, continue without user
@@ -126,7 +127,7 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
   }
 }
 
-// Admin check middleware
+// Admin check middleware - requires the authenticated user's role to be 'admin' in the DB
 export const adminOnly = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   if (!req.user) {
     res.status(401).json({
@@ -136,9 +137,28 @@ export const adminOnly = async (req: AuthRequest, res: Response, next: NextFunct
     return
   }
 
-  // TODO: Check admin status from database
-  // For now, allow all authenticated users
-  next()
+  try {
+    // Dynamic import to avoid circular dependency, matching agentOnly below
+    const { User } = await import('../models/User.model')
+
+    const dbUser = await User.findById(req.user.id).select('role')
+
+    if (!dbUser || dbUser.role !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      })
+      return
+    }
+
+    next()
+  } catch (error) {
+    console.error('Admin middleware error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error during admin verification'
+    })
+  }
 }
 
 // Agent check middleware - ensures user is a support agent

@@ -13,39 +13,14 @@ export default function SocialStackNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: "#0d0f1a",
-        },
-        headerShadowVisible: false,
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "bold",
-        },
-        headerBackTitleVisible: false,
+        headerShown: false,
+        contentStyle: { backgroundColor: "#0d0f1a" },
+        animation: "slide_from_right",
       }}
     >
-      <Stack.Screen
-        name="SocialFeed"
-        component={SocialFeedScreen}
-        options={{
-          title: "Social Feed",
-          headerRight: () => null, // Can add a create post button here later
-        }}
-      />
-      <Stack.Screen
-        name="Friends"
-        component={FriendsScreen}
-        options={{
-          title: "Friends",
-        }}
-      />
-      <Stack.Screen
-        name="Challenges"
-        component={ChallengesScreen}
-        options={{
-          title: "Challenges",
-        }}
-      />
+      <Stack.Screen name="SocialFeed"  component={SocialFeedScreen}  />
+      <Stack.Screen name="Friends"     component={FriendsScreen}     />
+      <Stack.Screen name="Challenges"  component={ChallengesScreen}  />
     </Stack.Navigator>
   );
 }

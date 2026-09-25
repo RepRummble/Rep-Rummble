@@ -1,21 +1,122 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
+  View, Text, StyleSheet, FlatList, TextInput,
+  TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import api from '../config/api';
 import chatSocket, { ChatMessage } from '../services/chatSocket';
+import { DEV_BYPASS_AUTH } from '../config/devConfig';
+import { useSubscription } from '../context/SubscriptionContext';
+import { PaywallModal } from './SubscriptionScreen';
+
+// ── Local AI response engine (dev / offline mode) ───────────────────────────
+
+const AI_BANK: Array<{ keys: string[]; replies: string[] }> = [
+  {
+    keys: ['workout', 'exercise', 'train', 'gym', 'lift', 'squat', 'bench', 'deadlift', 'push', 'pull'],
+    replies: [
+      "For effective workouts, focus on progressive overload — add weight or reps each week. The big 3 compound lifts (squat, bench, deadlift) give the most bang for your buck. Log your sets in the Workout tab to track PRs!",
+      "Consistency beats perfection. A 20-minute workout you actually do beats the perfect 90-minute plan you skip. Use the Workout tab to log today's session and keep your streak alive 🔥",
+      "Warm up for 5-10 minutes before lifting and cool down after. This reduces injury risk by up to 50%. Your body will thank you the next morning!",
+    ],
+  },
+  {
+    keys: ['protein', 'macro', 'carb', 'fat', 'calorie', 'keto', 'diet', 'eat', 'food', 'meal', 'nutrition'],
+    replies: [
+      "Aim for 1.6–2.2g of protein per kg of bodyweight daily for muscle growth. Spread it across 3–5 meals. Use the Snap tab to scan your plate for instant macro tracking — it's faster than manually logging!",
+      "Carbs aren't the enemy! They're your muscles' primary fuel source. Time them around workouts — eat complex carbs (oats, rice, sweet potato) 1–2 hours before training for peak energy.",
+      "Meal timing matters less than total daily intake. Focus on hitting your protein and calorie goals first. Use our AI scanner to make tracking effortless.",
+    ],
+  },
+  {
+    keys: ['sleep', 'recover', 'rest', 'tired', 'fatigue', 'overtraining'],
+    replies: [
+      "Sleep is when your muscles actually grow! Aim for 7–9 hours. Poor sleep drops testosterone by 15%, spikes cortisol, and tanks recovery. Prioritize sleep as much as your training.",
+      "Recovery days aren't wasted days — they're growth days. Active recovery (light walk, stretching, yoga) accelerates muscle repair better than complete rest. Take them seriously!",
+    ],
+  },
+  {
+    keys: ['streak', 'habit', 'motivat', 'consist', 'discipline', 'goal'],
+    replies: [
+      "Streaks rewire your brain's reward circuitry. Your dopamine system fires when you maintain the chain — making the habit self-reinforcing over time. Even a 10-minute session keeps your streak alive. Never break the chain! 🔥",
+      "Motivation is unreliable — systems are not. Build your workouts into your schedule like meetings you can't cancel. The first 30 days are the hardest; after that, skipping feels worse than going.",
+    ],
+  },
+  {
+    keys: ['weight loss', 'lose weight', 'fat loss', 'cut', 'shred', 'lean', 'slim'],
+    replies: [
+      "For fat loss: create a 300–500 calorie deficit, keep protein high (2g/kg) to preserve muscle, and combine strength training with cardio. Slow and steady — 0.5–1kg/week is sustainable and more likely to stick.",
+      "The scale isn't everything! Muscle weighs more than fat by volume. Measure progress with photos, clothing fit, and energy levels too. Use the macros tracker to stay in your calorie target.",
+    ],
+  },
+  {
+    keys: ['bulk', 'gain muscle', 'mass', 'hypertrophy', 'big'],
+    replies: [
+      "For muscle gain: eat in a 200–300 calorie surplus, hit 1.8–2.2g protein/kg, and focus on progressive overload in your lifts. Train each muscle 2x per week for optimal hypertrophy. Patience is key — muscle takes months, not weeks.",
+    ],
+  },
+  {
+    keys: ['water', 'hydrat', 'drink'],
+    replies: [
+      "Hydration is underrated! Aim for 35ml per kg of bodyweight daily. Even 2% dehydration cuts performance by up to 20%. Drink 500ml of water first thing in the morning before coffee — it kickstarts metabolism and rehydrates you after 8 hours of sleep.",
+    ],
+  },
+  {
+    keys: ['challenge', 'compete', 'leaderboard', 'rank', 'friend'],
+    replies: [
+      "Challenges and friendly competition can boost fitness adherence by up to 40%! Head to the Challenges tab to join active ones or create your own. Nothing beats competing with friends to stay accountable.",
+    ],
+  },
+  {
+    keys: ['stress', 'mental', 'anxiety', 'mood', 'depress', 'burnout'],
+    replies: [
+      "Exercise is one of the most powerful mental health tools available. It reduces cortisol by 26%, boosts serotonin and dopamine naturally. Even a 10-minute walk shifts your mood. If you're burned out, scale back intensity but don't stop moving completely.",
+    ],
+  },
+  {
+    keys: ['beginner', 'start', 'new', 'first time', 'never', 'how to'],
+    replies: [
+      "Welcome to your fitness journey! Start simple: 3 days/week of strength training (full-body workouts work great for beginners) + daily walks. Focus on learning movement patterns before adding heavy weight. Consistency over the first 3 months matters more than anything else.",
+      "As a beginner, the most important thing is showing up consistently. Don't worry about the perfect program — any program done consistently beats the perfect plan done sporadically. Log your first workout in the Workout tab now!",
+    ],
+  },
+  {
+    keys: ['scan', 'camera', 'snap', 'photo', 'ai'],
+    replies: [
+      "The Snap feature uses AI Vision to instantly recognize food and calculate nutrition from a photo. Just tap the Snap tab → Scan Meal → point your camera at your plate. It works best with good lighting and when all food items are visible!",
+    ],
+  },
+  {
+    keys: ['hello', 'hi', 'hey', 'sup', 'greet'],
+    replies: [
+      "Hey! I'm your Rep Rummble AI coach 💪 I can help with workout advice, nutrition tips, or anything about the app. What are you working on today?",
+      "Hi there! Ready to crush your fitness goals? Ask me anything about training, nutrition, recovery, or how to use any feature in the app!",
+    ],
+  },
+];
+
+const FALLBACKS = [
+  "Great question! For personalized advice, I'd need a bit more context. What's your main fitness goal right now — muscle gain, fat loss, endurance, or general health?",
+  "I'm your AI fitness coach! Ask me about workouts, nutrition, recovery, sleep, or any feature in the app. I'm here to help you level up 💪",
+  "That's interesting! To give you the best advice, could you share what your current fitness routine looks like and what you're trying to improve?",
+];
+
+function aiReply(text: string): string {
+  const lower = text.toLowerCase();
+  for (const group of AI_BANK) {
+    if (group.keys.some(k => lower.includes(k))) {
+      return group.replies[Math.floor(Math.random() * group.replies.length)];
+    }
+  }
+  return FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
   const navigation = useNavigation();
@@ -27,75 +128,57 @@ export default function ChatScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingUser, setTypingUser] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('active');
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { canChat, recordChat } = useSubscription();
 
   useEffect(() => {
     initializeChat();
-    return () => {
-      chatSocket.disconnect();
-    };
+    return () => { chatSocket.disconnect(); };
   }, []);
 
   const initializeChat = async () => {
     try {
-      // Start a new conversation
       const response = await api.post('/chat/start', {
         platform: Platform.OS,
         userName: user?.displayName || user?.email?.split('@')[0],
         userEmail: user?.email,
       });
 
-      const { conversation, sessionId: newSessionId, welcomeMessage } = response.data.data;
-
+      const { conversation, sessionId, welcomeMessage } = response.data.data;
       setConversationId(conversation._id);
-      setSessionId(newSessionId);
       setStatus(conversation.status);
 
       if (welcomeMessage) {
         setMessages([welcomeMessage]);
       }
 
-      // Connect socket
-      chatSocket.connect();
-      chatSocket.joinConversation(newSessionId, conversation._id);
-
-      // Set up socket listeners
-      chatSocket.onMessage((message) => {
-        setMessages((prev) => [...prev, message]);
-        // Update status if system message about agent
-        if (message.senderType === 'system') {
-          if (message.content.includes('Connecting you with')) {
-            setStatus('waiting_agent');
-          } else if (message.content.includes("You're now connected with")) {
-            setStatus('with_agent');
-          } else if (message.content.includes('resolved')) {
-            setStatus('resolved');
-          }
-        }
-      });
-
-      chatSocket.onTyping((data) => {
-        setIsTyping(true);
-        setTypingUser(data.agentName || data.userName || 'Someone');
-      });
-
-      chatSocket.onStopTyping(() => {
-        setIsTyping(false);
-        setTypingUser(null);
-      });
-
-      chatSocket.onAgentAssigned((data) => {
-        setStatus('with_agent');
-      });
-
-      chatSocket.onConversationResolved(() => {
-        setStatus('resolved');
-      });
-    } catch (error) {
-      console.error('Error initializing chat:', error);
+      // In dev/offline bypass mode the socket has no real server — use local AI
+      if (DEV_BYPASS_AUTH) {
+        setOfflineMode(true);
+      } else {
+        chatSocket.connect();
+        chatSocket.joinConversation(sessionId, conversation._id);
+        chatSocket.onMessage((msg) => setMessages(prev => [...prev, msg]));
+        chatSocket.onTyping((data) => {
+          setIsTyping(true);
+        });
+        chatSocket.onStopTyping(() => setIsTyping(false));
+        chatSocket.onConversationResolved(() => setStatus('resolved'));
+      }
+    } catch {
+      setOfflineMode(true);
+      setMessages([{
+        _id: 'offline-welcome',
+        conversationId: 'offline',
+        senderType: 'ai',
+        senderName: 'AI Coach',
+        content: "Hey! I'm your Rep Rummble AI coach 💪 I can help with workouts, nutrition, recovery and anything about the app. What can I help you with?",
+        contentType: 'text',
+        createdAt: new Date().toISOString(),
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -103,432 +186,225 @@ export default function ChatScreen() {
 
   const handleSend = async () => {
     if (!inputText.trim() || isSending) return;
-
-    const messageText = inputText.trim();
+    if (!canChat()) { setShowPaywall(true); return; }
+    const text = inputText.trim();
     setInputText('');
     setIsSending(true);
+    recordChat();
 
-    // Optimistically add user message
-    const tempMessage: ChatMessage = {
-      _id: `temp-${Date.now()}`,
-      conversationId: conversationId || '',
+    const userMsg: ChatMessage = {
+      _id: `u-${Date.now()}`,
+      conversationId: conversationId || 'offline',
       senderType: 'user',
       senderName: user?.displayName || 'You',
-      content: messageText,
+      content: text,
       contentType: 'text',
       createdAt: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, tempMessage]);
+    setMessages(prev => [...prev, userMsg]);
 
-    // Send via socket
-    chatSocket.sendMessage(
-      messageText,
-      user?.displayName || user?.email?.split('@')[0],
-      user?.email
-    );
+    if (offlineMode) {
+      setIsTyping(true);
+      const delay = 700 + Math.random() * 600;
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          _id: `ai-${Date.now()}`,
+          conversationId: conversationId || 'offline',
+          senderType: 'ai',
+          senderName: 'AI Coach',
+          content: aiReply(text),
+          contentType: 'text',
+          createdAt: new Date().toISOString(),
+        }]);
+      }, delay);
+    } else {
+      chatSocket.sendMessage(text, user?.displayName || user?.email?.split('@')[0], user?.email);
+    }
 
     setIsSending(false);
-  };
-
-  const handleQuickReply = (text: string) => {
-    setInputText(text);
-    handleSend();
   };
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isUser = item.senderType === 'user';
     const isSystem = item.senderType === 'system';
-    const isAI = item.senderType === 'ai';
 
     if (isSystem) {
       return (
-        <View style={styles.systemMessageContainer}>
-          <Text style={styles.systemMessage}>{item.content}</Text>
+        <View style={st.systemWrap}>
+          <Text style={st.systemMsg}>{item.content}</Text>
         </View>
       );
     }
 
     return (
-      <View
-        style={[
-          styles.messageContainer,
-          isUser ? styles.userMessageContainer : styles.otherMessageContainer,
-        ]}
-      >
+      <View style={[st.row, isUser ? st.rowUser : st.rowOther]}>
         {!isUser && (
-          <View style={styles.avatarContainer}>
-            <View style={[styles.avatar, isAI ? styles.aiAvatar : styles.agentAvatar]}>
-              <Ionicons
-                name={isAI ? 'sparkles' : 'person'}
-                size={16}
-                color="#fff"
-              />
-            </View>
-          </View>
+          <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.avatar}>
+            <Ionicons name="sparkles" size={14} color="#fff" />
+          </LinearGradient>
         )}
-        <View
-          style={[
-            styles.messageBubble,
-            isUser ? styles.userBubble : styles.otherBubble,
-          ]}
-        >
-          {!isUser && (
-            <Text style={styles.senderName}>
-              {item.senderName || (isAI ? 'AI Assistant' : 'Agent')}
-            </Text>
-          )}
-          <Text style={[styles.messageText, isUser && styles.userMessageText]}>
-            {item.content}
-          </Text>
+        <View style={[st.bubble, isUser ? st.bubbleUser : st.bubbleOther]}>
+          {!isUser && <Text style={st.senderName}>{item.senderName || 'AI Coach'}</Text>}
+          <Text style={[st.msgText, isUser && st.msgTextUser]}>{item.content}</Text>
         </View>
       </View>
     );
   };
 
-  const renderQuickReplies = () => {
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage?.quickReplies?.length || lastMessage.senderType === 'user') {
-      return null;
-    }
-
-    return (
-      <View style={styles.quickRepliesContainer}>
-        {lastMessage.quickReplies.map((reply, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.quickReplyButton}
-            onPress={() => handleQuickReply(reply.text)}
-          >
-            <Text style={styles.quickReplyText}>{reply.text}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
-  const getStatusColor = () => {
-    switch (status) {
-      case 'active':
-        return '#22c55e';
-      case 'waiting_agent':
-        return '#eab308';
-      case 'with_agent':
-        return '#6366f1';
-      case 'resolved':
-        return '#6b7280';
-      default:
-        return '#6b7280';
-    }
-  };
-
-  const getStatusText = () => {
-    switch (status) {
-      case 'active':
-        return 'AI Assistant';
-      case 'waiting_agent':
-        return 'Connecting to agent...';
-      case 'with_agent':
-        return 'Live Agent';
-      case 'resolved':
-        return 'Resolved';
-      default:
-        return 'Support';
-    }
-  };
-
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#22c55e" />
-        <Text style={styles.loadingText}>Starting chat...</Text>
+      <SafeAreaView style={st.container}>
+        <ActivityIndicator size="large" color="#7c3aed" style={{ marginTop: 60 }} />
+        <Text style={st.loadingText}>Starting AI chat...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={st.container} edges={['top']}>
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        feature="Unlimited AI Coach Chat"
+        requiredPlan="pro"
+      />
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+      <View style={st.header}>
+        <TouchableOpacity onPress={() => (navigation as any).goBack()} style={st.backBtn}>
           <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Support</Text>
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
-            <Text style={styles.statusText}>{getStatusText()}</Text>
+        <View style={st.headerCenter}>
+          <View style={st.headerAvatarWrap}>
+            <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.headerAvatar}>
+              <Ionicons name="sparkles" size={18} color="#fff" />
+            </LinearGradient>
+            <View style={[st.onlineDot, { backgroundColor: '#22c55e' }]} />
+          </View>
+          <View>
+            <Text style={st.headerTitle}>AI Coach</Text>
+            <Text style={st.headerSub}>Rep Rummble · Online</Text>
           </View>
         </View>
         <View style={{ width: 40 }} />
       </View>
 
       <KeyboardAvoidingView
-        style={styles.content}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        {/* Messages */}
         <FlatList
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.messagesList}
+          keyExtractor={item => item._id}
+          contentContainerStyle={st.list}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListFooterComponent={
             isTyping ? (
-              <View style={styles.typingContainer}>
-                <Text style={styles.typingText}>{typingUser} is typing...</Text>
+              <View style={st.typingRow}>
+                <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.avatar}>
+                  <Ionicons name="sparkles" size={14} color="#fff" />
+                </LinearGradient>
+                <View style={st.typingBubble}>
+                  <View style={st.typingDots}>
+                    <View style={[st.dot, { opacity: 0.4 }]} />
+                    <View style={[st.dot, { opacity: 0.65 }]} />
+                    <View style={st.dot} />
+                  </View>
+                </View>
               </View>
             ) : null
           }
         />
 
-        {/* Quick Replies */}
-        {renderQuickReplies()}
-
-        {/* Input */}
-        {status !== 'resolved' && status !== 'closed' && (
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Type a message..."
-              placeholderTextColor="#6b7280"
-              value={inputText}
-              onChangeText={setInputText}
-              multiline
-              maxLength={1000}
-              onSubmitEditing={handleSend}
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                !inputText.trim() && styles.sendButtonDisabled,
-              ]}
-              onPress={handleSend}
-              disabled={!inputText.trim() || isSending}
-            >
-              {isSending ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons name="send" size={20} color="#fff" />
-              )}
-            </TouchableOpacity>
+        {/* Suggested prompts — show only at start */}
+        {messages.length <= 1 && (
+          <View style={st.suggestions}>
+            {[
+              'How do I build muscle fast?',
+              'What should I eat after a workout?',
+              'How to improve my streak?',
+              'Best beginner workout plan?',
+            ].map((s, i) => (
+              <TouchableOpacity key={i} style={st.suggestionChip} onPress={() => { setInputText(s); }}>
+                <Text style={st.suggestionText}>{s}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
-        {(status === 'resolved' || status === 'closed') && (
-          <View style={styles.closedBanner}>
-            <Text style={styles.closedText}>
-              This conversation has been resolved. Start a new chat if you need more help.
-            </Text>
-          </View>
-        )}
+        <View style={st.inputRow}>
+          <TextInput
+            style={st.input}
+            placeholder="Ask your AI coach anything..."
+            placeholderTextColor="#4b5563"
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={1000}
+            onSubmitEditing={handleSend}
+          />
+          <TouchableOpacity
+            style={[st.sendBtn, !inputText.trim() && { opacity: 0.4 }]}
+            onPress={handleSend}
+            disabled={!inputText.trim() || isSending}
+          >
+            <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.sendGrad}>
+              {isSending
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="send" size={18} color="#fff" />}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0d0f1a',
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: '#0d0f1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#94a3b8',
-    marginTop: 12,
-    fontSize: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#161b2e',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerInfo: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#94a3b8',
-  },
-  content: {
-    flex: 1,
-  },
-  messagesList: {
-    padding: 16,
-    paddingBottom: 8,
-  },
-  messageContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    maxWidth: '80%',
-  },
-  userMessageContainer: {
-    alignSelf: 'flex-end',
-  },
-  otherMessageContainer: {
-    alignSelf: 'flex-start',
-  },
-  avatarContainer: {
-    marginRight: 8,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  aiAvatar: {
-    backgroundColor: '#7c3aed',
-  },
-  agentAvatar: {
-    backgroundColor: '#6366f1',
-  },
-  messageBubble: {
-    padding: 12,
-    borderRadius: 16,
-    maxWidth: '100%',
-  },
-  userBubble: {
-    backgroundColor: '#22c55e',
-    borderBottomRightRadius: 4,
-  },
-  otherBubble: {
-    backgroundColor: '#161b2e',
-    borderBottomLeftRadius: 4,
-  },
-  senderName: {
-    fontSize: 12,
-    color: '#94a3b8',
-    marginBottom: 4,
-  },
-  messageText: {
-    fontSize: 16,
-    color: '#fff',
-    lineHeight: 22,
-  },
-  userMessageText: {
-    color: '#fff',
-  },
-  systemMessageContainer: {
-    alignItems: 'center',
-    marginVertical: 12,
-  },
-  systemMessage: {
-    fontSize: 13,
-    color: '#6b7280',
-    backgroundColor: '#161b2e',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    textAlign: 'center',
-  },
-  typingContainer: {
-    padding: 8,
-  },
-  typingText: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontStyle: 'italic',
-  },
-  quickRepliesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  quickReplyButton: {
-    backgroundColor: '#161b2e',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#22c55e',
-  },
-  quickReplyText: {
-    fontSize: 14,
-    color: '#22c55e',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#161b2e',
-    backgroundColor: '#0d0f1a',
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#161b2e',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingRight: 48,
-    fontSize: 16,
-    color: '#fff',
-    maxHeight: 120,
-    marginRight: 8,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#22c55e',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#2d3561',
-  },
-  closedBanner: {
-    padding: 16,
-    backgroundColor: '#161b2e',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-  },
-  closedText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-  },
+const st = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#080b14' },
+  loadingText: { color: '#94a3b8', marginTop: 12, fontSize: 15, textAlign: 'center' },
+
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#161b2e' },
+  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  headerAvatarWrap: { position: 'relative' },
+  headerAvatar: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
+  onlineDot: { position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, borderWidth: 2, borderColor: '#080b14' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  headerSub: { fontSize: 11, color: '#22c55e', marginTop: 1 },
+
+  list: { padding: 16, paddingBottom: 8 },
+
+  row: { flexDirection: 'row', marginBottom: 14, maxWidth: '82%' },
+  rowUser: { alignSelf: 'flex-end' },
+  rowOther: { alignSelf: 'flex-start', gap: 8 },
+
+  avatar: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginTop: 2, flexShrink: 0 },
+
+  bubble: { padding: 12, borderRadius: 18, maxWidth: '100%' },
+  bubbleUser: { backgroundColor: '#7c3aed', borderBottomRightRadius: 4 },
+  bubbleOther: { backgroundColor: '#161b2e', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#2d356150' },
+  senderName: { fontSize: 11, color: '#a78bfa', fontWeight: '700', marginBottom: 4 },
+  msgText: { fontSize: 15, color: '#f1f5f9', lineHeight: 22 },
+  msgTextUser: { color: '#fff' },
+
+  systemWrap: { alignItems: 'center', marginVertical: 10 },
+  systemMsg: { fontSize: 12, color: '#6b7280', backgroundColor: '#161b2e', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12 },
+
+  typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 8 },
+  typingBubble: { backgroundColor: '#161b2e', borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: '#2d356150' },
+  typingDots: { flexDirection: 'row', gap: 5, alignItems: 'center' },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#7c3aed' },
+
+  suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
+  suggestionChip: { backgroundColor: '#161b2e', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: '#2d356180' },
+  suggestionText: { fontSize: 12, color: '#a78bfa', fontWeight: '600' },
+
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#161b2e' },
+  input: { flex: 1, backgroundColor: '#161b2e', borderRadius: 22, paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, color: '#f1f5f9', maxHeight: 120, borderWidth: 1, borderColor: '#2d356150' },
+  sendBtn: { marginBottom: 2 },
+  sendGrad: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
 });

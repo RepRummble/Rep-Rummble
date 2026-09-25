@@ -39,7 +39,7 @@ function Avatar({ name, size = 44 }: { name: string; size?: number }) {
 
 type TabKey = "friends" | "requests" | "search";
 
-export default function FriendsScreen() {
+export default function FriendsScreen({ navigation }: { navigation: any }) {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -136,6 +136,9 @@ export default function FriendsScreen() {
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color="#fff" />
+          </TouchableOpacity>
           <Text style={styles.title}>Friends</Text>
           {requests.length > 0 && (
             <View style={styles.requestBadge}>
@@ -303,8 +306,9 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   safeArea: { flex: 1 },
 
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 10 },
-  title: { fontSize: 28, fontWeight: "800", color: "#fff", letterSpacing: -0.5, flex: 1 },
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, gap: 10 },
+  backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "#2d356150", justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 26, fontWeight: "800", color: "#fff", letterSpacing: -0.5, flex: 1 },
   requestBadge: { backgroundColor: "#ef4444", width: 24, height: 24, borderRadius: 12, justifyContent: "center", alignItems: "center" },
   requestBadgeText: { color: "#fff", fontSize: 12, fontWeight: "800" },
 

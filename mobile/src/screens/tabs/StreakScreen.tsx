@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, Modal, Animated, Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../config/api';
@@ -124,6 +124,7 @@ interface ActiveWorkoutProps {
 }
 
 function ActiveWorkoutModal({ visible, onClose, onComplete }: ActiveWorkoutProps) {
+  const insets = useSafeAreaInsets();
   const exercises = AI_WORKOUT.exercises;
   const [exIdx, setExIdx] = useState(0);
   const [setIdx, setSetIdx] = useState(0);
@@ -231,13 +232,14 @@ function ActiveWorkoutModal({ visible, onClose, onComplete }: ActiveWorkoutProps
   const momentumColor = momentum >= 70 ? '#22c55e' : momentum >= 40 ? '#eab308' : '#7c3aed';
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => Alert.alert('End Workout?', 'Your progress will be lost.', [{ text: 'Cancel', style: 'cancel' }, { text: 'End', style: 'destructive', onPress: onClose }])}>
-      <LinearGradient colors={['#120823', '#0d0f1a', '#080b14']} style={{ flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#080b14' }}>
+        <LinearGradient colors={['#120823', '#0d0f1a', '#080b14']} style={StyleSheet.absoluteFill} />
+        <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
 
           {/* ── Top bar ── */}
           <View style={am.topBar}>
-            <TouchableOpacity onPress={() => Alert.alert('End Workout?', 'Progress will be lost.', [{ text: 'Cancel', style: 'cancel' }, { text: 'End', style: 'destructive', onPress: onClose }])} style={am.endBtn}>
+            <TouchableOpacity onPress={onClose} style={am.endBtn}>
               <Ionicons name="close" size={18} color="#94a3b8" />
               <Text style={am.endBtnText}>End</Text>
             </TouchableOpacity>
@@ -392,8 +394,8 @@ function ActiveWorkoutModal({ visible, onClose, onComplete }: ActiveWorkoutProps
               </>
             )}
           </ScrollView>
-        </SafeAreaView>
-      </LinearGradient>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -466,7 +468,7 @@ export default function StreakScreen() {
     <View style={s.root}>
       <LinearGradient colors={['#120823', '#0d0f1a', '#080b14']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
 
-      <SafeAreaView style={s.safe}>
+      <SafeAreaView style={s.safe} edges={['top']}>
         {/* Header */}
         <View style={s.header}>
           <View>
@@ -480,14 +482,18 @@ export default function StreakScreen() {
         </View>
 
         {/* Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+        <View style={[s.tabRow, { flexDirection: 'row', paddingHorizontal: 12 }]}>
           {TABS.map((t, i) => (
-            <TouchableOpacity key={i} onPress={() => setTab(i)} activeOpacity={0.8} style={[s.tabPill, tab === i && s.tabPillActive]}>
-              {tab === i && <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={[StyleSheet.absoluteFill, { borderRadius: 20 }]} />}
-              <Text style={[s.tabText, tab === i && s.tabTextActive]}>{t}</Text>
+            <TouchableOpacity key={i} onPress={() => setTab(i)} activeOpacity={0.8} style={[s.tabPill, { flex: 1 }, tab === i && s.tabPillActive]}>
+              {tab === i && (
+                <View style={[StyleSheet.absoluteFill, { borderRadius: 20, overflow: 'hidden' }]}>
+                  <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={{ flex: 1 }} />
+                </View>
+              )}
+              <Text style={[s.tabText, tab === i && s.tabTextActive]} numberOfLines={1}>{t}</Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}>
 
@@ -905,8 +911,8 @@ const s = StyleSheet.create({
   streakPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#f9731630' },
   streakText: { color: '#f97316', fontWeight: '700', fontSize: 13 },
 
-  tabRow: { marginBottom: 8 },
-  tabPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#2d356150', overflow: 'hidden' },
+  tabRow: { marginBottom: 8, gap: 6 },
+  tabPill: { paddingHorizontal: 4, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: '#2d356150', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   tabPillActive: { borderColor: '#7c3aed' },
   tabText: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
   tabTextActive: { color: '#fff', fontWeight: '700' },

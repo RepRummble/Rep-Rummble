@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   displayName?: string;
+  role: 'user' | 'admin';
   streak: number;
   xp: number;
   level: number;
@@ -44,6 +45,14 @@ const UserSchema = new Schema<IUser>(
     displayName: {
       type: String,
       trim: true,
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+      // Never settable from client-supplied request bodies — only changed
+      // via a trusted, server-side path (e.g. a seed script or DB console).
+      select: true,
     },
     streak: {
       type: Number,

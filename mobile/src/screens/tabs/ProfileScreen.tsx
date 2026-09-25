@@ -10,11 +10,18 @@ import {
   TextInput,
   Switch,
   Linking,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription, PLAN_PRICES } from '../../context/SubscriptionContext';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
+
+const SW = Dimensions.get('window').width;
 
 type ModalKey = 'editProfile' | 'notifications' | 'fitnessGoals' | 'privacy' | 'help' | 'about' | null;
 
@@ -96,9 +103,20 @@ const MENU: { icon: string; label: string; color: string; key: ModalKey }[] = [
   { icon: 'information-circle-outline', label: 'About',            color: '#94a3b8', key: 'about'         },
 ];
 
+type NavProp = NativeStackNavigationProp<RootStackParamList>;
+
+const PLAN_META = {
+  free:    { label: 'Free',    color: '#94a3b8', icon: 'person-outline',   gradient: ['#161b2e', '#0d0f1a'] as const },
+  pro:     { label: 'Pro',     color: '#a78bfa', icon: 'sparkles',         gradient: ['#3b0d6b', '#1e0545'] as const },
+  premium: { label: 'Premium', color: '#fbbf24', icon: 'ribbon',           gradient: ['#3a2000', '#1a0e00'] as const },
+};
+
 export default function ProfileScreen() {
+  const navigation = useNavigation<NavProp>();
   const { user, logout, updateUser } = useAuth();
+  const { plan, isProOrAbove, scansUsedToday, chatUsedToday, limits } = useSubscription();
   const [activeModal, setActiveModal] = useState<ModalKey>(null);
+  const planMeta = PLAN_META[plan];
 
   // Edit Profile state
   const [editName, setEditName] = useState(user?.displayName || '');
@@ -159,69 +177,144 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#1a0533', '#0d0f1a', '#080b14']} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#0d0518', '#0d0f1a', '#080b14']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-          {/* ── Hero Banner ── */}
-          <LinearGradient colors={['#3b0d6b', '#1a0533', '#0d0f1a']} style={styles.heroBanner}>
-            <View style={styles.glowOrb} />
-            <View style={styles.avatarRing}>
-              <LinearGradient colors={['#7c3aed', '#4f1d9a', '#2d0f5e']} style={styles.avatar}>
+          {/* ── Screen title row ── */}
+          <View style={styles.topBar}>
+            <Text style={styles.screenTitle}>Profile</Text>
+            <TouchableOpacity onPress={() => open('editProfile')} style={styles.editBtn} activeOpacity={0.8}>
+              <Ionicons name="pencil-outline" size={15} color="#a78bfa" />
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Hero card ── */}
+          <LinearGradient colors={['#2a0954', '#1a0533', '#0f0a1e']} style={styles.heroCard}>
+            <View style={styles.heroGlow} />
+
+            {/* Avatar + Name side by side */}
+            <View style={styles.heroTop}>
+              <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={styles.avatar}>
                 <Text style={styles.avatarText}>{initial}</Text>
               </LinearGradient>
-            </View>
-            <LinearGradient colors={['#eab308', '#b45309']} style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>{user?.level || 1}</Text>
-            </LinearGradient>
-            <Text style={styles.displayName}>{displayName}</Text>
-            <Text style={styles.email}>{user?.email}</Text>
-            <View style={styles.xpBarWrap}>
-              <View style={styles.xpBarTrack}>
-                <LinearGradient colors={['#7c3aed', '#a78bfa']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.xpBarFill, { width: `${levelProgress}%` }]} />
+              <View style={styles.heroInfo}>
+                <View style={styles.nameRow}>
+                  <Text style={styles.displayName}>{displayName}</Text>
+                  <LinearGradient colors={['#eab308', '#b45309']} style={styles.levelPill}>
+                    <Text style={styles.levelPillText}>Lvl {user?.level || 1}</Text>
+                  </LinearGradient>
+                </View>
+                <Text style={styles.email}>{user?.email}</Text>
+                <View style={styles.activeBadge}>
+                  <View style={styles.activeDot} />
+                  <Text style={styles.activeText}>Active today</Text>
+                </View>
               </View>
-              <Text style={styles.xpBarLabel}>{currentLevelXp}/{xpPerLevel} XP · {xpPerLevel - currentLevelXp} to Lvl {(user?.level || 1) + 1}</Text>
+            </View>
+
+            {/* XP bar */}
+            <View style={styles.xpSection}>
+              <View style={styles.xpLabelRow}>
+                <Text style={styles.xpLabel}>Level Progress</Text>
+                <Text style={styles.xpCount}>{currentLevelXp} / {xpPerLevel} XP</Text>
+              </View>
+              <View style={styles.xpTrack}>
+                <LinearGradient colors={['#7c3aed', '#a78bfa']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.xpFill, { width: `${Math.max(levelProgress, 4)}%` }]} />
+              </View>
+              <Text style={styles.xpHint}>{xpPerLevel - currentLevelXp} XP to Level {(user?.level || 1) + 1}</Text>
+            </View>
+
+            {/* 4-stat row inside hero */}
+            <View style={styles.heroStats}>
+              {[
+                { icon: 'star',    color: '#eab308', value: user?.xp || 0,    label: 'Total XP'  },
+                { icon: 'flame',   color: '#f97316', value: user?.streak || 0, label: 'Streak'    },
+                { icon: 'barbell', color: '#a78bfa', value: 47,                label: 'Workouts'  },
+                { icon: 'trophy',  color: '#22c55e', value: user?.level || 1,  label: 'Level'     },
+              ].map((st, i) => (
+                <View key={i} style={styles.heroStat}>
+                  <Text style={[styles.heroStatVal, { color: st.color }]}>{st.value}</Text>
+                  <Text style={styles.heroStatLabel}>{st.label}</Text>
+                </View>
+              ))}
             </View>
           </LinearGradient>
 
-          {/* ── Stat Cards ── */}
-          <View style={styles.statsRow}>
-            {[
-              { icon: 'star',   color: '#eab308', value: user?.xp || 0,     label: 'Total XP',   bg: ['#eab30820', '#eab30805'] as const },
-              { icon: 'flame',  color: '#f97316', value: user?.streak || 0,  label: 'Day Streak', bg: ['#f9731620', '#f9731605'] as const },
-              { icon: 'trophy', color: '#7c3aed', value: user?.level || 1,   label: 'Level',      bg: ['#7c3aed20', '#7c3aed05'] as const },
-            ].map(s => (
-              <LinearGradient key={s.label} colors={s.bg} style={styles.statCard}>
-                <Ionicons name={s.icon as any} size={26} color={s.color} />
-                <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
-              </LinearGradient>
-            ))}
-          </View>
-
-          {/* ── Menu ── */}
-          <View style={styles.menuSection}>
-            {MENU.map(item => (
-              <TouchableOpacity key={item.key} style={styles.menuItem} onPress={() => open(item.key)} activeOpacity={0.7}>
-                <View style={[styles.menuIconWrap, { backgroundColor: item.color + '20' }]}>
-                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+          {/* ── Subscription Card ── */}
+          <Text style={styles.groupLabel}>SUBSCRIPTION</Text>
+          <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Subscription')} style={{ marginBottom: 20 }}>
+            <LinearGradient colors={planMeta.gradient} style={styles.subCard}>
+              <View style={styles.subCardLeft}>
+                <View style={[styles.subIcon, { backgroundColor: planMeta.color + '25', borderColor: planMeta.color + '50' }]}>
+                  <Ionicons name={planMeta.icon as any} size={20} color={planMeta.color} />
                 </View>
-                <Text style={styles.menuLabel}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={18} color="#2d3561" />
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-            <LinearGradient colors={['#ef444430', '#ef444410']} style={styles.logoutGradient}>
-              <Ionicons name="log-out-outline" size={20} color="#ef4444" />
-              <Text style={styles.logoutText}>Logout</Text>
+                <View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={[styles.subPlanName, { color: planMeta.color }]}>{planMeta.label} Plan</Text>
+                    {plan === 'free' && (
+                      <View style={styles.upgradeTag}>
+                        <Text style={styles.upgradeTagText}>Upgrade available</Text>
+                      </View>
+                    )}
+                  </View>
+                  {plan === 'free' ? (
+                    <Text style={styles.subMeta}>
+                      {limits.aiScansPerDay - scansUsedToday} scans · {limits.chatMessagesPerDay - chatUsedToday} chats left today
+                    </Text>
+                  ) : (
+                    <Text style={styles.subMeta}>Unlimited scans & chat · Renews monthly</Text>
+                  )}
+                </View>
+              </View>
+              <View style={[styles.subArrow, { backgroundColor: planMeta.color + '20' }]}>
+                <Ionicons name="chevron-forward" size={16} color={planMeta.color} />
+              </View>
             </LinearGradient>
           </TouchableOpacity>
 
-          <Text style={styles.version}>Reprummble v1.0.0</Text>
-          <View style={{ height: 32 }} />
+          {/* ── Account settings ── */}
+          <Text style={styles.groupLabel}>ACCOUNT</Text>
+          <View style={styles.menuCard}>
+            {MENU.slice(0, 3).map((item, i) => (
+              <View key={item.key}>
+                {i > 0 && <View style={styles.divider} />}
+                <TouchableOpacity style={styles.menuRow} onPress={() => open(item.key)} activeOpacity={0.7}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: item.color + '22' }]}>
+                    <Ionicons name={item.icon as any} size={18} color={item.color} />
+                  </View>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#3d4a6b" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+
+          {/* ── More settings ── */}
+          <Text style={[styles.groupLabel, { marginTop: 20 }]}>MORE</Text>
+          <View style={styles.menuCard}>
+            {MENU.slice(3).map((item, i) => (
+              <View key={item.key}>
+                {i > 0 && <View style={styles.divider} />}
+                <TouchableOpacity style={styles.menuRow} onPress={() => open(item.key)} activeOpacity={0.7}>
+                  <View style={[styles.menuIconWrap, { backgroundColor: item.color + '22' }]}>
+                    <Ionicons name={item.icon as any} size={18} color={item.color} />
+                  </View>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#3d4a6b" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+
+          {/* ── Logout ── */}
+          <TouchableOpacity onPress={handleLogout} activeOpacity={0.8} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+            <Text style={styles.logoutText}>Log Out</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.version}>Rep Rummble v1.0.0</Text>
         </ScrollView>
       </SafeAreaView>
 
@@ -543,33 +636,69 @@ export default function ProfileScreen() {
 
 // ─── Profile main styles ─────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root:   { flex: 1 },
   safeArea: { flex: 1 },
-  heroBanner: { paddingTop: 32, paddingBottom: 28, alignItems: 'center', overflow: 'hidden', marginBottom: 4 },
-  glowOrb: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: '#7c3aed', opacity: 0.12, top: -60 },
-  avatarRing: { width: 108, height: 108, borderRadius: 54, borderWidth: 3, borderColor: '#7c3aed', padding: 3, marginBottom: 12, shadowColor: '#7c3aed', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 16, elevation: 20 },
-  avatar: { flex: 1, borderRadius: 50, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: 42, fontWeight: '900', color: '#fff' },
-  levelBadge: { position: 'absolute', top: 88, right: '32%', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#0d0f1a' },
-  levelBadgeText: { fontSize: 13, fontWeight: '800', color: '#fff' },
-  displayName: { fontSize: 22, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
-  email: { fontSize: 13, color: '#6b7280', marginTop: 4, marginBottom: 20 },
-  xpBarWrap: { width: '75%', alignItems: 'center' },
-  xpBarTrack: { height: 7, width: '100%', backgroundColor: '#2d3561', borderRadius: 4, overflow: 'hidden', marginBottom: 6 },
-  xpBarFill: { height: '100%', borderRadius: 4 },
-  xpBarLabel: { fontSize: 11, color: '#94a3b8' },
-  statsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginBottom: 20, marginTop: 8 },
-  statCard: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#2d356150' },
-  statValue: { fontSize: 22, fontWeight: '800', marginTop: 6 },
-  statLabel: { fontSize: 11, color: '#94a3b8', marginTop: 3, fontWeight: '500' },
-  menuSection: { paddingHorizontal: 16, marginBottom: 12 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#161b2e', borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#2d356140' },
-  menuIconWrap: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  menuLabel: { flex: 1, fontSize: 15, color: '#f1f5f9', fontWeight: '500' },
-  logoutBtn: { marginHorizontal: 16, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: '#ef444440' },
-  logoutGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 8 },
-  logoutText: { fontSize: 16, fontWeight: '700', color: '#ef4444' },
-  version: { textAlign: 'center', color: '#2d3561', fontSize: 12, marginTop: 20 },
+  scroll: { paddingHorizontal: 16, paddingBottom: 120 },
+
+  // Top bar
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, paddingBottom: 14 },
+  screenTitle: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.4 },
+  editBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#7c3aed20', borderWidth: 1, borderColor: '#7c3aed40', justifyContent: 'center', alignItems: 'center' },
+
+  // Hero
+  heroCard: { borderRadius: 24, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#3b1e6b60', overflow: 'hidden' },
+  heroGlow: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: '#7c3aed', opacity: 0.1, top: -60, right: -40 },
+  heroTop: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+  avatar: { width: 76, height: 76, borderRadius: 38, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  avatarText: { fontSize: 30, fontWeight: '900', color: '#fff' },
+  heroInfo: { flex: 1, gap: 4 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  displayName: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -0.3 },
+  levelPill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20 },
+  levelPillText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  email: { fontSize: 12, color: '#6b7280' },
+  activeBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#22c55e' },
+  activeText: { fontSize: 11, color: '#22c55e', fontWeight: '600' },
+
+  // XP
+  xpSection: { marginBottom: 18 },
+  xpLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 7 },
+  xpLabel: { fontSize: 11, fontWeight: '700', color: '#94a3b8' },
+  xpCount: { fontSize: 11, fontWeight: '700', color: '#7c3aed' },
+  xpTrack: { height: 7, backgroundColor: '#2d3561', borderRadius: 4, overflow: 'hidden', marginBottom: 6 },
+  xpFill: { height: '100%', borderRadius: 4 },
+  xpHint: { fontSize: 11, color: '#4b5563' },
+
+  // Hero stats
+  heroStats: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#ffffff10', paddingTop: 16 },
+  heroStat: { flex: 1, alignItems: 'center', gap: 3 },
+  heroStatVal: { fontSize: 20, fontWeight: '900' },
+  heroStatLabel: { fontSize: 10, color: '#6b7280', fontWeight: '600' },
+
+  // Menu
+  groupLabel: { fontSize: 11, fontWeight: '700', color: '#4b5563', letterSpacing: 1.2, marginBottom: 8 },
+  menuCard: { backgroundColor: '#161b2e', borderRadius: 18, borderWidth: 1, borderColor: '#2d356140', overflow: 'hidden', marginBottom: 0 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15, gap: 14 },
+  menuIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  menuLabel: { flex: 1, fontSize: 15, color: '#e2e8f0', fontWeight: '500' },
+  divider: { height: 1, backgroundColor: '#2d356135', marginHorizontal: 16 },
+
+  // Logout
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ef444412', borderRadius: 16, paddingVertical: 15, marginTop: 20, borderWidth: 1, borderColor: '#ef444430' },
+  logoutText: { fontSize: 15, fontWeight: '700', color: '#ef4444' },
+
+  version: { textAlign: 'center', color: '#2d3561', fontSize: 12, marginTop: 16 },
+
+  // Subscription card
+  subCard: { borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#2d356150' },
+  subCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  subIcon: { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  subPlanName: { fontSize: 16, fontWeight: '800' },
+  subMeta: { fontSize: 11, color: '#6b7280', marginTop: 3 },
+  upgradeTag: { backgroundColor: '#22c55e20', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#22c55e40' },
+  upgradeTagText: { fontSize: 9, fontWeight: '800', color: '#22c55e' },
+  subArrow: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
 });
 
 // ─── Sheet / modal styles (shared across all modals) ─────────────────────────

@@ -34,7 +34,7 @@ function timeAgo(dateStr: string) {
   return d === 0 ? "Today" : d === 1 ? "Yesterday" : `${d}d ago`;
 }
 
-export default function ChallengesScreen() {
+export default function ChallengesScreen({ navigation }: { navigation: any }) {
   const { user } = useAuth();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [myChallenges, setMyChallenges] = useState<Challenge[]>([]);
@@ -207,7 +207,10 @@ export default function ChallengesScreen() {
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color="#fff" />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
             <Text style={styles.title}>Challenges</Text>
             <Text style={styles.subtitle}>Compete. Win. Repeat.</Text>
           </View>
@@ -260,7 +263,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   safeArea: { flex: 1 },
 
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, gap: 10 },
+  backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "#2d356150", justifyContent: "center", alignItems: "center" },
   title: { fontSize: 28, fontWeight: "800", color: "#fff", letterSpacing: -0.5 },
   subtitle: { fontSize: 13, color: "#6b7280", marginTop: 2 },
   statPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: "#7c3aed30" },

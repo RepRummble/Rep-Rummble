@@ -5,11 +5,12 @@ import { ApiError } from "../types"
 import * as supabaseService from "../services/supabase.service"
 import { User } from "../models/User.model"
 import nodemailer from "nodemailer"
+import { JWT_SECRET } from "../config/security"
 
 // Generate JWT Token
 const generateToken = (id: string): string => {
   const options = { expiresIn: process.env.JWT_EXPIRE || "7d" } as jwt.SignOptions
-  return jwt.sign({ id }, process.env.JWT_SECRET || "secret", options)
+  return jwt.sign({ id }, JWT_SECRET, options)
 }
 
 // @route POST /api/auth/register

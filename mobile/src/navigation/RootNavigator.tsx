@@ -14,6 +14,8 @@ import FoodScannerScreen from '../screens/FoodScannerScreen';
 import FoodResultsScreen from '../screens/FoodResultsScreen';
 import FoodSearchScreen from '../screens/FoodSearchScreen';
 import ChatScreen from '../screens/ChatScreen';
+import SubscriptionScreen from '../screens/SubscriptionScreen';
+import { SubscriptionProvider } from '../context/SubscriptionContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -29,6 +31,7 @@ export default function RootNavigator() {
   }
 
   return (
+    <SubscriptionProvider>
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
@@ -70,6 +73,14 @@ export default function RootNavigator() {
               animation: 'slide_from_bottom',
             }}
           />
+          <Stack.Screen
+            name="Subscription"
+            component={SubscriptionScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
         </>
       ) : (
         <>
@@ -78,5 +89,6 @@ export default function RootNavigator() {
         </>
       )}
     </Stack.Navigator>
+    </SubscriptionProvider>
   );
 }
