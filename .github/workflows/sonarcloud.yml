@@ -31,8 +31,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.organization=makamdilip
-            -Dsonar.projectKey=makamdilip_Rep-Rummble
+            -Dsonar.organization=reprummble
+            -Dsonar.projectKey=RepRummble_Rep-Rummble
             -Dsonar.sources=web/src,server/src
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/*.test.*,**/e2e/**
             -Dsonar.javascript.lcov.reportPaths=web/coverage/lcov.info
