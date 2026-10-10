@@ -271,6 +271,9 @@ jobs:
           npm ci
           npm install -g vercel@latest
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          # Vercel dashboard may store "vite build" as the build command; add
+          # node_modules/.bin to PATH so the vite binary is always found.
+          export PATH="$PWD/node_modules/.bin:$PATH"
           vercel build --prod --token="$VERCEL_TOKEN"
           vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
