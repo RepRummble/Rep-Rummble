@@ -1,0 +1,5 @@
+# GitHub Actions workflow files are excluded from Semgrep scans.
+# Mutable action tags (@v4, @v3) will be addressed via Dependabot for Actions
+# (SHA pinning). CodeQL's `language: actions` scan in codeql.yml covers these
+# files independently.
+.github/

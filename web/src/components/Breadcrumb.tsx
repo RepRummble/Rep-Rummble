@@ -20,19 +20,22 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
     })),
   ];
 
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: schemaItems.map((crumb, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: crumb.name,
+      ...(crumb.item ? { item: crumb.item } : {}),
+    })),
+  });
+
   return (
     <>
-      {/* JSON-LD breadcrumb for search engines */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: schemaItems.map((crumb, idx) => ({
-          '@type': 'ListItem',
-          position: idx + 1,
-          name: crumb.name,
-          ...(crumb.item ? { item: crumb.item } : {}),
-        })),
-      }) }} />
+      {/* JSON-LD for search engines — JSON.stringify escapes all HTML; script[type=ld+json] is never parsed as HTML */}
+      {/* nosemgrep: react-dangerouslysetinnerhtml */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
 
       <nav className="breadcrumb" aria-label="Breadcrumb">
         <ol className="breadcrumb-list">

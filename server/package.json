@@ -13,7 +13,7 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
+    "@anthropic-ai/sdk": "^0.133.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.93.3",
     "@types/bcryptjs": "^2.4.6",
@@ -36,7 +36,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^9.0.2",
     "morgan": "^1.10.0",
-    "nodemailer": "^8.0.3",
+    "nodemailer": "^10.1.0",
     "socket.io": "^4.8.3",
     "typescript": "^5.7.2",
     "uuid": "^10.0.0"
@@ -44,5 +44,8 @@
   "devDependencies": {
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2"
+  },
+  "overrides": {
+    "braces": ">=3.0.3"
   }
 }

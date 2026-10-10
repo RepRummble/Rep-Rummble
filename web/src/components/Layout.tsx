@@ -10,7 +10,7 @@ import CookieBanner from './CookieBanner';
 import { useAnalytics } from '../hooks/useAnalytics';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
-const PRIVATE_ROUTES = ['/analytics', '/reports', '/referral', '/payment', '/profile', '/wearables'];
+const PRIVATE_ROUTES = ['/analytics', '/reports', '/referral', '/profile', '/wearables'];
 
 export default function Layout() {
   useAnalytics();
