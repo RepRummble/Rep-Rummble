@@ -1,17 +1,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '../hooks/usePageMeta';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function Services() {
+  usePageMeta({
+    title: 'Services',
+    description: 'Explore Reprummble\'s AI training plans, smart nutrition tracking, recovery scoring, wearable sync, and more.',
+    canonical: '/services',
+  });
   return (
     <>
+      <Breadcrumb items={[{ label: 'Services', to: '/services' }]} />
+
       {/* ── Hero Statement ── */}
       <section className="sv-hero" data-reveal>
         <span className="sv-label">Our Platform</span>
-        <h2 className="sv-title">
+        <h1 className="sv-title">
           Services built for
           <br />
           <span className="sv-title-accent">real results</span>
-        </h2>
+        </h1>
         <p className="sv-subtitle">
           Reprummble combines nutrition, training, recovery, and accountability
           into one platform.

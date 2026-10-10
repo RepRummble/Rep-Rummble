@@ -9,8 +9,6 @@ async function getAuthToken(): Promise<string | null> {
   return session?.access_token || null
 }
 
-const TEMP_BYPASS_TOKEN = import.meta.env.VITE_TEMP_BYPASS_TOKEN || 'dev-bypass-token'
-
 // API request helper
 async function apiRequest<T>(
   endpoint: string,
@@ -26,8 +24,6 @@ async function apiRequest<T>(
 
     if (token) {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
-    } else {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${TEMP_BYPASS_TOKEN}`
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '../hooks/usePageMeta';
+import Breadcrumb from '../components/Breadcrumb';
 
 const FEATURES: { label: string; starter: string | boolean; pro: string | boolean; elite: string | boolean }[] = [
   { label: 'Meal logging',               starter: true,    pro: true,          elite: true },
@@ -43,6 +45,11 @@ function FeatureValue({ val }: { val: string | boolean }) {
 }
 
 export default function Plans() {
+  usePageMeta({
+    title: 'Pricing Plans',
+    description: 'Choose a Reprummble plan — Free, Pro ($9/mo), or Elite ($19/mo). Every paid plan includes a 14-day free trial. No credit card required.',
+    canonical: '/plans',
+  });
   const [annual, setAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -51,11 +58,12 @@ export default function Plans() {
 
   return (
     <section className="section page-section plans-page" data-reveal>
+      <Breadcrumb items={[{ label: 'Plans', to: '/plans' }]} />
 
       {/* ── HEADER ── */}
       <div className="section-head plans-head">
         <span className="pill pill-green">Pricing</span>
-        <h2 className="gradient-heading">Start free. Upgrade when ready.</h2>
+        <h1 className="gradient-heading">Start free. Upgrade when ready.</h1>
         <p>Every plan includes a 14-day free trial. No credit card required to get started.</p>
 
         {/* billing toggle */}

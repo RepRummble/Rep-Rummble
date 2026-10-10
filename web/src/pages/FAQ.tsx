@@ -1,16 +1,25 @@
 import React from 'react';
+import { usePageMeta } from '../hooks/usePageMeta';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function FAQ() {
+  usePageMeta({
+    title: 'FAQ',
+    description: 'Answers to common questions about Reprummble — plans, wearable sync, data privacy, cancellation, and more.',
+    canonical: '/faq',
+  });
   return (
     <>
+      <Breadcrumb items={[{ label: 'FAQ', to: '/faq' }]} />
+
       {/* ── Hero Statement ── */}
       <section className="fq-hero" data-reveal>
         <span className="sv-label">Support</span>
-        <h2 className="sv-title">
+        <h1 className="sv-title">
           Frequently asked
           <br />
           <span className="sv-title-accent">questions</span>
-        </h2>
+        </h1>
         <p className="sv-subtitle">
           Real problems, real solutions. Here's how Reprummble helps you
           succeed.

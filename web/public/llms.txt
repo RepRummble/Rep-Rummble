@@ -1,0 +1,28 @@
+# Reprummble
+
+> AI-powered fitness platform connecting workouts, nutrition, sleep, and wearables into one adaptive training plan.
+
+Reprummble helps athletes and everyday fitness enthusiasts train smarter, recover faster, and live stronger. The platform uses AI to build personalised training and nutrition plans that adapt in real-time based on wearable data, sleep quality, and user feedback.
+
+## Key Features
+
+- **Personalised Training Plans** – AI-built programs that adapt to your schedule, gear, and fitness goals
+- **Smart Nutrition** – Instant meal logging, macro tracking, and smart food swap suggestions
+- **Recovery & Readiness** – Daily readiness scores powered by HRV, resting HR, and sleep quality data
+- **Wearable Sync** – Automatic data import from Apple Watch, Oura Ring, Garmin, and Whoop
+- **Actionable Analytics** – Weekly insights connecting habits to results
+- **30-Day Challenges** – Leaderboards and coach nudges to maintain momentum
+
+## Pages
+
+- [Home](https://reprummble.com/) – Overview, features, testimonials, and sign-up CTA
+- [Services](https://reprummble.com/services) – Detailed breakdown of all platform capabilities
+- [Plans](https://reprummble.com/plans) – Pricing tiers (Free, Pro, Elite)
+- [FAQ](https://reprummble.com/faq) – Answers to common questions
+- [Contact](https://reprummble.com/contact) – Support contact form
+- [Privacy Policy](https://reprummble.com/privacy) – How user data is collected and used
+- [Terms of Service](https://reprummble.com/terms) – Rules and conditions for using the platform
+
+## Company
+
+Reprummble is a fitness technology company. Contact: support@reprummble.com

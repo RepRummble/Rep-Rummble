@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '../hooks/usePageMeta';
+import Breadcrumb from '../components/Breadcrumb';
 
 interface PolicySection {
   id: string;
@@ -472,12 +474,18 @@ const policySections: PolicySection[] = [
 ];
 
 export default function Privacy() {
+  usePageMeta({
+    title: 'Privacy Policy',
+    description: 'How Reprummble collects, uses, and protects your personal data. GDPR and CCPA compliant.',
+    canonical: '/privacy',
+  });
   const [selectedSection, setSelectedSection] = useState<PolicySection | null>(null);
 
   const closeModal = () => setSelectedSection(null);
 
   return (
     <section className="section page-section legal-page-modern">
+      <Breadcrumb items={[{ label: 'Privacy Policy', to: '/privacy' }]} />
       <div className="legal-page-header">
         <div className="legal-page-badge">Privacy Policy</div>
         <h1>Your data, explained clearly.</h1>

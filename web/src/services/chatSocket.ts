@@ -46,12 +46,10 @@ class ChatSocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Chat socket connected');
       this.onConnectCallback?.();
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Chat socket disconnected');
       this.onDisconnectCallback?.();
     });
 

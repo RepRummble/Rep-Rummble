@@ -10,6 +10,18 @@ export default defineConfig(() => ({
       process.env.VITE_API_URL || ''
     ),
   },
+  build: {
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js'],
+          icons: ['lucide-react', 'react-icons'],
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': {

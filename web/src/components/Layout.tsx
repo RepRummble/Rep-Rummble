@@ -6,10 +6,13 @@ import { DEV_BYPASS_AUTH, DEV_USER } from '../config/devAuth';
 import api from '../config/api';
 import { supabase } from '../config/supabase';
 import ChatWidget from './chat/ChatWidget';
+import CookieBanner from './CookieBanner';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
 export default function Layout() {
+  useAnalytics();
   const location = useLocation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -540,6 +543,7 @@ export default function Layout() {
 
 
       <ChatWidget />
+      <CookieBanner />
 
       <footer className={`marketing-footer${footerVisible ? '' : ' hidden'}`}>
         <span>© 2025 Reprummble</span>

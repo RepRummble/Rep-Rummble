@@ -47,13 +47,11 @@ export default function AgentDashboard() {
     });
 
     newSocket.on('connect', () => {
-      console.log('Agent socket connected');
       newSocket.emit('agent_join', { agentId });
       setAgentStatus('online');
     });
 
     newSocket.on('disconnect', () => {
-      console.log('Agent socket disconnected');
       setAgentStatus('offline');
     });
 

@@ -33,6 +33,55 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://reprummble.com/#website",
+          "url": "https://reprummble.com",
+          "name": "Reprummble",
+          "description": "AI-powered fitness platform connecting workouts, nutrition, sleep, and wearables into one adaptive training plan.",
+          "publisher": { "@id": "https://reprummble.com/#organization" }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://reprummble.com/#organization",
+          "name": "Reprummble",
+          "url": "https://reprummble.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://reprummble.com/favicon.svg"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "email": "support@reprummble.com",
+            "url": "https://reprummble.com/contact"
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://reprummble.com/#app",
+          "name": "Reprummble",
+          "url": "https://reprummble.com",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web, iOS, Android",
+          "description": "AI-powered fitness platform connecting workouts, nutrition, sleep, and wearables into one adaptive training plan.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "description": "Free plan available. Pro and Elite plans with advanced features."
+          },
+          "publisher": { "@id": "https://reprummble.com/#organization" }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

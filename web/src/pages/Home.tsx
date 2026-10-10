@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const FEATURES = [
   {
@@ -110,6 +111,11 @@ const WEARABLES = [
 ];
 
 export default function Home() {
+  usePageMeta({
+    title: 'Reprummble',
+    description: 'Reprummble connects your workouts, nutrition, sleep, and wearables into one adaptive fitness plan. AI-powered training, smart meal logging, and daily recovery scores.',
+    canonical: '/',
+  });
   return (
     <>
       {/* ── HERO ── */}

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageMeta } from '../hooks/usePageMeta';
+import Breadcrumb from '../components/Breadcrumb';
 
 interface TermsSection {
   id: string;
@@ -571,12 +573,18 @@ const termsSections: TermsSection[] = [
 ];
 
 export default function Terms() {
+  usePageMeta({
+    title: 'Terms of Service',
+    description: 'The rules and conditions for using the Reprummble platform. Read before signing up.',
+    canonical: '/terms',
+  });
   const [selectedSection, setSelectedSection] = useState<TermsSection | null>(null);
 
   const closeModal = () => setSelectedSection(null);
 
   return (
     <section className="section page-section legal-page-modern">
+      <Breadcrumb items={[{ label: 'Terms of Service', to: '/terms' }]} />
       <div className="legal-page-header">
         <div className="legal-page-badge">Terms of Service</div>
         <h1>Clear, fair rules for using Reprummble.</h1>
