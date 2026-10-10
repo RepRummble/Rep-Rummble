@@ -19,6 +19,7 @@ export default function AuthCallback() {
 
     // Handle Supabase error params (e.g. otp_expired, access_denied)
     if (errorCode || params.get('error')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMode('expired')
       return
     }

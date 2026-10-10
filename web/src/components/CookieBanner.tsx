@@ -1,16 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const STORAGE_KEY = 'rr_cookie_consent';
 
 export default function CookieBanner() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      setVisible(true);
-    }
-  }, []);
+  const [visible, setVisible] = useState(() => {
+    try { return !localStorage.getItem(STORAGE_KEY); } catch { return false; }
+  });
 
   const accept = () => {
     localStorage.setItem(STORAGE_KEY, 'accepted');

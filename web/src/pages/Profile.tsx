@@ -89,7 +89,7 @@ export default function Profile() {
     try {
       const res = await api.auth.updateProfile({ displayName: profile.name });
       setProfileStatus(res.error ? 'error' : 'success');
-    } catch (err) {
+    } catch {
       setProfileStatus('error');
     } finally {
       setTimeout(() => setProfileStatus('idle'), 2500);
@@ -116,9 +116,9 @@ export default function Profile() {
       } else {
         setGoalsStatus('success');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Unexpected error saving goals:', err);
-      setGoalsError(err?.message || String(err));
+      setGoalsError(err instanceof Error ? err.message : String(err));
       setGoalsStatus('error');
     } finally {
       setTimeout(() => setGoalsStatus('idle'), 2500);

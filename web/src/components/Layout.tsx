@@ -10,6 +10,7 @@ import CookieBanner from './CookieBanner';
 import { useAnalytics } from '../hooks/useAnalytics';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
+const PRIVATE_ROUTES = ['/analytics', '/reports', '/referral', '/payment', '/profile', '/wearables'];
 
 export default function Layout() {
   useAnalytics();
@@ -35,8 +36,6 @@ export default function Layout() {
   const dashboardDropdownRef = useRef<HTMLDetailsElement>(null);
   const lastScroll = useRef(0);
   const hasMounted = useRef(false);
-  const privateRoutes = ['/analytics', '/reports', '/referral', '/payment', '/profile', '/wearables'];
-
   useEffect(() => {
     if (DEV_BYPASS_AUTH) {
       setIsLoggedIn(true);
@@ -79,7 +78,7 @@ export default function Layout() {
 
   useEffect(() => {
     if (DEV_BYPASS_AUTH || isLoggedIn) return;
-    const needsAuth = privateRoutes.some((route) => location.pathname.startsWith(route));
+    const needsAuth = PRIVATE_ROUTES.some((route) => location.pathname.startsWith(route));
     if (needsAuth) {
       sessionStorage.setItem('postAuthPath', location.pathname);
       navigate('/?auth=signin', { replace: true });

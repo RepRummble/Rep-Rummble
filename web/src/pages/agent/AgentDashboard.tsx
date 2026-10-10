@@ -84,6 +84,7 @@ export default function AgentDashboard() {
       newSocket.emit('agent_leave', { agentId });
       newSocket.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

@@ -61,7 +61,7 @@ export const api = {
 
     getMe: () => apiRequest('/api/auth/me'),
 
-    updateProfile: (data: Record<string, any>) =>
+    updateProfile: (data: Record<string, unknown>) =>
       apiRequest('/api/auth/profile', {
         method: 'PUT',
         body: JSON.stringify(data),
