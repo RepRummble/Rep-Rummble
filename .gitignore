@@ -53,6 +53,14 @@ e2e/test-results/
 e2e/playwright-report/
 e2e/blob-report/
 e2e/playwright/.cache/
+.playwright-mcp/
+
+# Screenshots from testing/automation
+*.png
+*.jpg
+*.jpeg
+!web/public/**/*.png
+!web/public/**/*.jpg
 
 # Gatling (perf/)
 perf/target/
