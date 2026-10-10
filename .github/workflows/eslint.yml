@@ -46,6 +46,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true   # private repo requires GHAS; not blocking
         with:
           sarif_file: eslint-results.sarif
           wait-for-processing: true
