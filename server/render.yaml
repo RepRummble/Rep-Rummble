@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: rep-rummble-api
+    name: reprummble-api
     env: node
     region: oregon
     plan: free
@@ -8,26 +8,72 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
+      # ── Runtime ──────────────────────────────────────────────
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+
+      # ── URLs ─────────────────────────────────────────────────
       - key: CLIENT_URL
-        sync: false
+        value: https://www.reprummble.com
+      - key: WEB_URL
+        value: https://www.reprummble.com
+
+      # ── MongoDB Atlas ─────────────────────────────────────────
+      - key: MONGODB_URI
+        sync: false          # Set in Render dashboard → Environment
+
+      # ── Supabase ─────────────────────────────────────────────
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
-      - key: ORACLE_USER
-        sync: false
-      - key: ORACLE_PASSWORD
-        sync: false
-      - key: ORACLE_CONNECTION_STRING
-        sync: false
-      - key: TNS_ADMIN
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: JWT_SECRET
+      - key: SUPABASE_ANON_KEY
         sync: false
 
+      # ── Auth / JWT ────────────────────────────────────────────
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRE
+        value: 7d
+
+      # ── Google OAuth (Cloud Console → OAuth 2.0 Client) ───────
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: https://mkfhytbloqncrwziknws.supabase.co/auth/v1/callback
+
+      # ── Facebook OAuth ────────────────────────────────────────
+      - key: FACEBOOK_CLIENT_ID
+        sync: false
+      - key: FACEBOOK_REDIRECT_URI
+        value: https://mkfhytbloqncrwziknws.supabase.co/auth/v1/callback
+
+      # ── Apple OAuth ───────────────────────────────────────────
+      - key: APPLE_CLIENT_ID
+        sync: false
+      - key: APPLE_REDIRECT_URI
+        value: https://mkfhytbloqncrwziknws.supabase.co/auth/v1/callback
+
+      # ── Twitter / X OAuth ─────────────────────────────────────
+      - key: TWITTER_CLIENT_ID
+        sync: false
+      - key: TWITTER_REDIRECT_URI
+        value: https://mkfhytbloqncrwziknws.supabase.co/auth/v1/callback
+
+      # ── Gemini AI (Google AI Studio) ──────────────────────────
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # ── Email (Gmail SMTP) ────────────────────────────────────
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+
+      # ── USDA Nutrition API ────────────────────────────────────
+      - key: USDA_API_KEY
+        sync: false
