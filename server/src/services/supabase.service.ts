@@ -4,17 +4,25 @@ import { createClient, SupabaseClient, User } from '@supabase/supabase-js'
 let supabase: SupabaseClient | null = null
 
 if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-  supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
+  try {
+    supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
       }
-    }
-  )
-  console.log('✅ Supabase initialized')
+    )
+    console.log('✅ Supabase initialized')
+  } catch (err) {
+    // @supabase/realtime-js requires native WebSocket (Node.js 21+) or a
+    // ws polyfill. On Node.js 20 without a polyfill, createClient throws.
+    // The server still starts; auth routes return 503 until upgraded.
+    console.warn('⚠️  WARNING: Supabase initialization failed. Auth features will be limited.')
+    console.warn(err instanceof Error ? err.message : String(err))
+  }
 } else {
   console.warn('⚠️  WARNING: Supabase credentials not set. Auth features will be limited.')
 }
