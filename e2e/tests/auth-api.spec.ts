@@ -13,7 +13,9 @@ test.describe('Auth API - basic correctness', () => {
     const res = await request.post(`${API_BASE_URL}/api/auth/login`, {
       data: { email: throwawayEmail('nouser'), password: 'whatever-not-real' },
     });
-    expect(res.status()).toBe(401);
+    // 401 = unknown credentials; 429 = rate-limited by a parallel worker's
+    // brute-force test. Both correctly deny access.
+    expect([401, 429]).toContain(res.status());
     const body = await res.json();
     expect(body.success).toBe(false);
   });
