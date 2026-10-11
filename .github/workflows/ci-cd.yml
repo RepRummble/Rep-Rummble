@@ -268,7 +268,8 @@ jobs:
         run: |
           npm install -g vercel@latest
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-          vercel deploy --prod --token="$VERCEL_TOKEN"
+          DEPLOY_URL=$(vercel deploy --prod --token="$VERCEL_TOKEN" 2>&1 | tail -1)
+          vercel alias set "$DEPLOY_URL" www.reprummble.com --scope reprummble --token="$VERCEL_TOKEN"
 
       - name: Deploy server to Render
         env:
