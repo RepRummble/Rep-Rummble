@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { usePublicStats } from '../hooks/usePublicStats';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const FEATURES = [
   {
@@ -73,34 +76,6 @@ const STEPS = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    quote: 'I hit a 10 kg PR in 12 weeks and still felt rested. The recovery scores kept me honest.',
-    name: 'Maya T.',
-    role: 'Powerlifter · 28',
-    initials: 'MT',
-  },
-  {
-    quote: 'Meal logging used to feel like homework. Now it takes 30 seconds and I finally understand my energy dips.',
-    name: 'Alex R.',
-    role: 'Remote worker · 34',
-    initials: 'AR',
-  },
-  {
-    quote: 'The 30-day challenge made me train on days I would have skipped. Accountability without the guilt.',
-    name: 'Jorge M.',
-    role: 'Amateur runner · 41',
-    initials: 'JM',
-  },
-];
-
-const STATS = [
-  { value: '75k+', label: 'Workouts completed' },
-  { value: '18k+', label: 'Active members' },
-  { value: '4.8★', label: 'Average rating' },
-  { value: '91%', label: 'of members stay consistent in month 2' },
-];
-
 const WEARABLES = [
   { name: 'Apple Watch', icon: '⌚' },
   { name: 'Oura Ring', icon: '💍' },
@@ -110,12 +85,24 @@ const WEARABLES = [
   { name: 'Polar', icon: '❤️' },
 ];
 
+function fmtCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k+`;
+  if (n > 0) return `${n}+`;
+  return '0';
+}
+
 export default function Home() {
   usePageMeta({
     title: 'Reprummble',
     description: 'Reprummble connects your workouts, nutrition, sleep, and wearables into one adaptive fitness plan. AI-powered training, smart meal logging, and daily recovery scores.',
     canonical: '/',
   });
+
+  const stats = usePublicStats();
+
+  const showWaitlist = stats && stats.waitlistCount > 0;
+  const showRating = stats && stats.averageRating !== null && stats.reviewCount > 0;
+
   return (
     <>
       {/* ── HERO ── */}
@@ -145,16 +132,24 @@ export default function Home() {
             </Link>
           </div>
           <div className="hero-trust-row">
-            <div className="hero-trust-item">
-              <strong>18k+</strong>
-              <span>active members</span>
-            </div>
-            <div className="hero-trust-divider" />
-            <div className="hero-trust-item">
-              <strong>4.8★</strong>
-              <span>member rating</span>
-            </div>
-            <div className="hero-trust-divider" />
+            {showWaitlist && (
+              <>
+                <div className="hero-trust-item">
+                  <strong>{fmtCount(stats!.waitlistCount)}</strong>
+                  <span>on the waitlist</span>
+                </div>
+                <div className="hero-trust-divider" />
+              </>
+            )}
+            {showRating && (
+              <>
+                <div className="hero-trust-item">
+                  <strong>{stats!.averageRating}★</strong>
+                  <span>member rating</span>
+                </div>
+                <div className="hero-trust-divider" />
+              </>
+            )}
             <div className="hero-trust-item">
               <strong>Free trial</strong>
               <span>cancel anytime</span>
@@ -167,7 +162,7 @@ export default function Home() {
             <div className="hdc-header">
               <div>
                 <span className="pill pill-green">Today</span>
-                <p className="hdc-name">Good morning, Alex 👋</p>
+                <p className="hdc-name">Good morning 👋</p>
               </div>
               <div className="hdc-score">
                 <span className="hdc-score-val">92</span>
@@ -290,45 +285,43 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── STATS ── */}
-      <section className="section" data-reveal>
-        <div className="home-stats-band">
-          {STATS.map((s, i) => (
-            <React.Fragment key={s.label}>
-              {i > 0 && <div className="home-stats-divider" />}
+      {/* ── LIVE STATS ── */}
+      {stats && (stats.waitlistCount > 0 || stats.workoutCount > 0 || stats.userCount > 0) && (
+        <section className="section" data-reveal>
+          <div className="home-stats-band">
+            {stats.waitlistCount > 0 && (
               <div className="home-stat-item">
-                <span className="home-stat-value">{s.value}</span>
-                <span className="home-stat-label">{s.label}</span>
+                <span className="home-stat-value">{fmtCount(stats.waitlistCount)}</span>
+                <span className="home-stat-label">On the waitlist</span>
               </div>
-            </React.Fragment>
-          ))}
-        </div>
-      </section>
+            )}
+            {stats.waitlistCount > 0 && stats.userCount > 0 && <div className="home-stats-divider" />}
+            {stats.userCount > 0 && (
+              <div className="home-stat-item">
+                <span className="home-stat-value">{fmtCount(stats.userCount)}</span>
+                <span className="home-stat-label">Members</span>
+              </div>
+            )}
+            {stats.workoutCount > 0 && <div className="home-stats-divider" />}
+            {stats.workoutCount > 0 && (
+              <div className="home-stat-item">
+                <span className="home-stat-value">{fmtCount(stats.workoutCount)}</span>
+                <span className="home-stat-label">Workouts logged</span>
+              </div>
+            )}
+            {stats.reviewCount > 0 && <div className="home-stats-divider" />}
+            {stats.reviewCount > 0 && stats.averageRating && (
+              <div className="home-stat-item">
+                <span className="home-stat-value">{stats.averageRating}★</span>
+                <span className="home-stat-label">Average rating</span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
-      {/* ── TESTIMONIALS ── */}
-      <section className="section" data-reveal>
-        <div className="section-head">
-          <span className="pill">Members love it</span>
-          <h2 className="gradient-heading">Small wins that compound</h2>
-          <p>See how real members built consistency with Reprummble.</p>
-        </div>
-        <div className="testimonial-grid" data-stagger>
-          {TESTIMONIALS.map((t) => (
-            <div className="testimonial-card" key={t.name}>
-              <div className="testi-quote-mark">"</div>
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-quote">{t.quote}</p>
-              <div className="testimonial-author">
-                <div className="testimonial-avatar">{t.initials}</div>
-                <div>
-                  <div className="testimonial-name">{t.name}</div>
-                  <div className="testimonial-role">{t.role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── REVIEWS ── */}
+      <ReviewsSection />
 
       {/* ── PLANS PREVIEW ── */}
       <section className="section plans-preview" data-reveal>
@@ -342,16 +335,10 @@ export default function Home() {
             </p>
             <div className="plans-bullets">
               <div className="plans-bullet">✓ Full training plan access</div>
-              <div className="plans-bullet">
-                ✓ Nutrition tracking + smart swaps
-              </div>
-              <div className="plans-bullet">
-                ✓ Recovery readiness score daily
-              </div>
+              <div className="plans-bullet">✓ Nutrition tracking + smart swaps</div>
+              <div className="plans-bullet">✓ Recovery readiness score daily</div>
               <div className="plans-bullet">✓ Wearable sync (all devices)</div>
-              <div className="plans-bullet">
-                ✓ 30-day challenges + community
-              </div>
+              <div className="plans-bullet">✓ 30-day challenges + community</div>
             </div>
             <div className="plans-preview-actions">
               <Link className="solid-btn" to="/?auth=signup">
@@ -372,16 +359,12 @@ export default function Home() {
               <div className="ppc-plan featured">
                 <span className="pill pill-green">Most popular</span>
                 <span className="ppc-name">Pro</span>
-                <span className="ppc-price">
-                  $9<small>/mo</small>
-                </span>
+                <span className="ppc-price">$9<small>/mo</small></span>
                 <span className="muted">Billed monthly</span>
               </div>
               <div className="ppc-plan">
                 <span className="ppc-name">Elite</span>
-                <span className="ppc-price">
-                  $19<small>/mo</small>
-                </span>
+                <span className="ppc-price">$19<small>/mo</small></span>
                 <span className="muted">+ Coach access</span>
               </div>
             </div>
@@ -427,13 +410,182 @@ export default function Home() {
           <AppLaunchForm />
         </div>
       </section>
-
-      {/* Final CTA removed per request */}
     </>
   );
 }
 
+// ── Real Reviews Section ────────────────────────────────────────────────────
+
+interface Review {
+  _id: string;
+  name: string;
+  rating: number;
+  text: string;
+  createdAt: string;
+}
+
+function StarPicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div style={{ display: 'flex', gap: 4, cursor: 'pointer', fontSize: '1.5rem' }}>
+      {[1, 2, 3, 4, 5].map(n => (
+        <span
+          key={n}
+          style={{ color: n <= (hovered || value) ? '#f59e0b' : '#d1d5db' }}
+          onMouseEnter={() => setHovered(n)}
+          onMouseLeave={() => setHovered(0)}
+          onClick={() => onChange(n)}
+          role="button"
+          aria-label={`${n} star${n > 1 ? 's' : ''}`}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ReviewsSection() {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState('');
+  const [rating, setRating] = useState(0);
+  const [text, setText] = useState('');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/reviews`)
+      .then(r => r.json())
+      .then(d => setReviews(d.reviews || []))
+      .catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || rating === 0 || text.trim().length < 10) return;
+    setSubmitStatus('loading');
+    try {
+      const res = await fetch(`${API_BASE}/api/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), rating, text: text.trim() }),
+      });
+      if (res.ok) {
+        setSubmitStatus('done');
+        setName(''); setRating(0); setText(''); setShowForm(false);
+      } else {
+        setSubmitStatus('error');
+      }
+    } catch {
+      setSubmitStatus('error');
+    }
+  };
+
+  return (
+    <section className="section" data-reveal>
+      <div className="section-head">
+        <span className="pill">Reviews</span>
+        <h2 className="gradient-heading">What members say</h2>
+        <p>Real experiences from real people.</p>
+      </div>
+
+      {reviews.length > 0 ? (
+        <div className="testimonial-grid" data-stagger>
+          {reviews.map(r => (
+            <div className="testimonial-card" key={r._id}>
+              <div className="testi-quote-mark">"</div>
+              <div className="testimonial-stars">
+                {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+              </div>
+              <p className="testimonial-quote">{r.text}</p>
+              <div className="testimonial-author">
+                <div className="testimonial-avatar">
+                  {r.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div className="testimonial-name">{r.name}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--muted)' }}>
+          <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No reviews yet — be the first.</p>
+          <p style={{ fontSize: '0.9rem' }}>Your honest experience helps others find us.</p>
+        </div>
+      )}
+
+      {submitStatus === 'done' ? (
+        <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--green)' }}>
+          Thank you! Your review is pending approval and will appear here soon.
+        </p>
+      ) : (
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+          {!showForm ? (
+            <button
+              className="ghost-btn"
+              onClick={() => setShowForm(true)}
+              style={{ margin: '0 auto' }}
+            >
+              Leave a review
+            </button>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              style={{ maxWidth: 480, margin: '0 auto', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <input
+                className="app-launch-input"
+                style={{ width: '100%' }}
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+              />
+              <StarPicker value={rating} onChange={setRating} />
+              <textarea
+                className="app-launch-input"
+                style={{ width: '100%', minHeight: 100, resize: 'vertical', fontFamily: 'inherit' }}
+                placeholder="Share your experience (min. 10 characters)"
+                value={text}
+                onChange={e => setText(e.target.value)}
+                required
+              />
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  className="solid-btn"
+                  type="submit"
+                  disabled={submitStatus === 'loading' || rating === 0}
+                >
+                  {submitStatus === 'loading' ? 'Submitting…' : 'Submit review'}
+                </button>
+                <button
+                  className="ghost-btn"
+                  type="button"
+                  onClick={() => { setShowForm(false); setSubmitStatus('idle'); }}
+                >
+                  Cancel
+                </button>
+              </div>
+              {submitStatus === 'error' && (
+                <p style={{ color: 'var(--red, #ef4444)', fontSize: '0.875rem' }}>
+                  Something went wrong. Please try again.
+                </p>
+              )}
+            </form>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── Waitlist Form ────────────────────────────────────────────────────────────
+
 function AppLaunchForm() {
+  const stats = usePublicStats();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
 
@@ -442,21 +594,21 @@ function AppLaunchForm() {
     if (!email.trim()) return;
     setStatus('loading');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/leads`, {
+      const res = await fetch(`${API_BASE}/api/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, source: 'waitlist' }),
       });
-      if (res.ok) {
-        setStatus('done');
-        setEmail('');
-      } else {
-        setStatus('error');
-      }
+      if (res.ok) { setStatus('done'); setEmail(''); }
+      else setStatus('error');
     } catch {
       setStatus('error');
     }
   };
+
+  const waitlistLabel = stats && stats.waitlistCount > 0
+    ? `Join ${fmtCount(stats.waitlistCount)} on the waitlist`
+    : 'Join the waitlist';
 
   return (
     <form className="app-launch-form" onSubmit={handleSubmit} noValidate>
@@ -478,7 +630,7 @@ function AppLaunchForm() {
         </div>
       )}
       {status === 'error' && <p className="app-launch-error">Something went wrong. Try again.</p>}
-      <span className="app-launch-count">Join 2,400+ on the waitlist</span>
+      <span className="app-launch-count">{waitlistLabel}</span>
     </form>
   );
 }
