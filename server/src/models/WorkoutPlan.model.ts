@@ -193,12 +193,11 @@ WorkoutPlanSchema.index({ userId: 1, isActive: 1 })
 WorkoutPlanSchema.index({ goal: 1, fitnessLevel: 1 })
 
 // Calculate total workouts before saving
-WorkoutPlanSchema.pre('save', function(next: any) {
+WorkoutPlanSchema.pre('save', function() {
   if (this.schedule) {
     const workoutDays = this.schedule.filter(day => !day.isRestDay).length
     this.totalWorkouts = workoutDays * this.durationWeeks
   }
-  next()
 })
 
 export const WorkoutPlan = mongoose.model<IWorkoutPlan>('WorkoutPlan', WorkoutPlanSchema)

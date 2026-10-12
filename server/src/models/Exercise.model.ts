@@ -183,12 +183,12 @@ ExerciseSchema.index({ difficulty: 1 })
 ExerciseSchema.index({ muscleGroups: 1 })
 ExerciseSchema.index({ name: 'text', description: 'text' })
 
-// Generate slug before saving
-ExerciseSchema.pre('save', function(next: any) {
-  if (this.isModified('name')) {
+// Generate the slug from the name. This runs before validation, because `slug` is required and
+// validation happens before any pre('save') hook.
+ExerciseSchema.pre('validate', function() {
+  if (this.isModified('name') && this.name) {
     this.slug = this.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
   }
-  next()
 })
 
 export const Exercise = mongoose.model<IExercise>('Exercise', ExerciseSchema)

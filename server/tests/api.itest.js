@@ -433,6 +433,40 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   });
 
 
+  console.log('Model save hooks (Mongoose 9)');
+  const mongoose = require('mongoose');
+  await t('a User can be saved and the password is hashed', async () => {
+    const { User } = require(SRC + '/models/User.model');
+    const u = await new User({ email: 'hash@x.test', password: 'plain-text-pw' }).save();
+    const stored = await User.findById(u._id).select('+password');
+    assert.notEqual(stored.password, 'plain-text-pw');
+    assert.equal(await stored.comparePassword('plain-text-pw'), true);
+    assert.equal(await stored.comparePassword('wrong'), false);
+    stored.displayName = 'Renamed'; await stored.save(); // unchanged password is not hashed again
+    assert.equal(await (await User.findById(u._id).select('+password')).comparePassword('plain-text-pw'), true);
+  });
+  await t('an Exercise gets its slug from its name', async () => {
+    const { Exercise } = require(SRC + '/models/Exercise.model');
+    const e = await new Exercise({ name: 'Push-Ups (Wide!)', category: 'strength', difficulty: 'beginner', description: 'd', instructions: ['i'] }).save();
+    assert.equal(e.slug, 'push-ups-wide');
+  });
+  await t('a WorkoutPlan counts its training days', async () => {
+    const { WorkoutPlan } = require(SRC + '/models/WorkoutPlan.model');
+    const day = (n, rest) => ({ day: n, name: 'D' + n, focus: 'f', exercises: [], estimatedDuration: 30, estimatedCalories: 200, isRestDay: rest });
+    const plan = await new WorkoutPlan({ userId: new mongoose.Types.ObjectId(), name: 'P', description: 'd', goal: 'strength', fitnessLevel: 'beginner', durationWeeks: 4, daysPerWeek: 3, minutesPerWorkout: 30, schedule: [day(1, false), day(2, true), day(3, false)] }).save();
+    assert.equal(plan.totalWorkouts, 8); // 2 training days x 4 weeks
+  });
+  await t('a WorkoutSession totals its reps and sets and awards XP', async () => {
+    const { WorkoutSession } = require(SRC + '/models/WorkoutSession.model');
+    const oid = new mongoose.Types.ObjectId();
+    const sess = await new WorkoutSession({ userId: oid, workoutPlanId: oid, exercises: [
+      { exerciseName: 'Squat', completedSets: 3, completedReps: 30, averageFormScore: 90 },
+      { exerciseName: 'Push-up', completedSets: 2, completedReps: 20, averageFormScore: 70 },
+    ] }).save();
+    assert.equal(sess.totalReps, 50); assert.equal(sess.totalSets, 5);
+    assert.equal(sess.overallFormScore, 80); assert.equal(sess.xpEarned, 40); // 2 x 10 + 20 for good form
+  });
+
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
   server.close(); await require('mongoose').disconnect(); await mms.stop();
 })().catch((e) => { console.error('Harness error:', e); process.exit(1); });
