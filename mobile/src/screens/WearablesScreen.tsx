@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Animated, Dimensions, Alert,
@@ -7,14 +7,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import {
+  getAvailability, getLast7Days, getTodayHealth, requestHealthPermissions, syncToServer,
+  type HealthAvailability, type HealthDay, type HealthToday,
+} from '../services/healthService';
 
 const { width: SW } = Dimensions.get('window');
 
 // ════════════════════════════════════════════════════════════
-// MOCK DATA  (swap with real HealthKit / Google Fit SDK calls)
+// SAMPLE DATA — shown until Apple Health is connected. Live values
+// from HealthKit replace these in useHealthData() below.
 // ════════════════════════════════════════════════════════════
 
-const D = {
+const SAMPLE = {
   // Composite score
   healthScore: 87,
   biologicalAge: 24,
@@ -36,7 +41,7 @@ const D = {
   recoveryScore: 76,
 };
 
-const WEEKLY = [
+const SAMPLE_WEEKLY = [
   { day: 'Sun', steps: 8234,  cal: 2100, sleep: 7.2, hr: 68 },
   { day: 'Mon', steps: 12450, cal: 2450, sleep: 6.8, hr: 72 },
   { day: 'Tue', steps: 6789,  cal: 1980, sleep: 8.1, hr: 65 },
@@ -95,11 +100,11 @@ const DEVICES = [
   { name: 'Samsung',      icon: 'phone-portrait-outline', color: '#7c3aed', connected: false },
 ];
 
-const SLEEP_STAGES = [
-  { label: 'Deep',  hours: D.deepSleep,  color: '#3b82f6', desc: 'Physical repair, immune boost' },
-  { label: 'REM',   hours: D.remSleep,   color: '#7c3aed', desc: 'Memory consolidation, creativity' },
-  { label: 'Light', hours: D.lightSleep, color: '#60a5fa', desc: 'Transition, recovery' },
-  { label: 'Awake', hours: D.awake,      color: '#2d3561', desc: 'Brief arousals' },
+const sleepStages = (d: typeof SAMPLE) => [
+  { label: 'Deep',  hours: d.deepSleep,  color: '#3b82f6', desc: 'Physical repair, immune boost' },
+  { label: 'REM',   hours: d.remSleep,   color: '#7c3aed', desc: 'Memory consolidation, creativity' },
+  { label: 'Core',  hours: d.lightSleep, color: '#60a5fa', desc: 'Transition, recovery' },
+  { label: 'Awake', hours: d.awake,      color: '#2d3561', desc: 'Brief arousals' },
 ];
 
 const MUSCLE_GROUPS = [
@@ -238,14 +243,93 @@ function VitalTile({ icon, color, label, value, unit, sublabel }: {
 
 const TABS = ['Overview', 'Vitals', 'Sleep', 'Recovery', 'Trends'];
 
+const fmtTime = (d: Date | null) =>
+  d ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '—';
+
+function mergeLive(live: HealthToday): typeof SAMPLE {
+  const sl = live.sleep;
+  return {
+    ...SAMPLE,
+    heartRate: live.heartRate ?? 0,
+    restingHR: live.restingHR ?? 0,
+    minHR: live.minHR ?? 0,
+    maxHR: live.maxHR ?? 0,
+    hrv: live.hrv ?? 0,
+    hrvBaseline: live.hrvBaseline ?? live.hrv ?? 0,
+    spo2: live.spo2 ?? 0,
+    breathingRate: live.breathingRate ?? 0,
+    vo2max: live.vo2max ?? 0,
+    steps: live.steps,
+    activeCalories: live.activeCalories,
+    exerciseMinutes: live.exerciseMinutes,
+    distance: live.distanceKm,
+    sleepTotal: sl?.totalHours ?? 0,
+    deepSleep: sl?.deep ?? 0,
+    remSleep: sl?.rem ?? 0,
+    lightSleep: sl?.core ?? 0,
+    awake: sl?.awake ?? 0,
+    sleepStart: fmtTime(sl?.start ?? null),
+    sleepEnd: fmtTime(sl?.end ?? null),
+  };
+}
+
+const UNAVAILABLE_COPY: Record<Exclude<HealthAvailability, { ok: true }>['reason'], string> = {
+  'expo-go': 'Apple Health needs the Reprummble development build — it cannot run inside Expo Go.',
+  'not-ios': 'Apple Health is only on iPhone. Health Connect support for Android is coming next.',
+  'unsupported-device': 'This device does not support Apple Health (e.g. some iPads).',
+  'module-missing': 'The HealthKit module is not in this build. Rebuild the development client.',
+};
+
+function useHealthData() {
+  const availability = useMemo(getAvailability, []);
+  const [live, setLive] = useState<HealthToday | null>(null);
+  const [week, setWeek] = useState<HealthDay[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [serverSynced, setServerSynced] = useState<boolean | null>(null);
+
+  const load = useCallback(async (askPermission: boolean) => {
+    if (!availability.ok) return;
+    setStatus('loading');
+    try {
+      if (askPermission) await requestHealthPermissions();
+      const [today, days] = await Promise.all([getTodayHealth(), getLast7Days()]);
+      setLive(today);
+      setWeek(days);
+      setLastSync(new Date());
+      setStatus('idle');
+      if (today) setServerSynced(await syncToServer(today));
+    } catch (e) {
+      console.warn('Apple Health read failed', e);
+      setStatus('error');
+    }
+  }, [availability.ok]);
+
+  // Asking for permission every time is safe: iOS only shows the sheet for types not yet asked about.
+  useEffect(() => { load(true); }, [load]);
+
+  return { availability, live, week, status, lastSync, serverSynced, refresh: () => load(true) };
+}
+
+
+
 export default function WearablesScreen() {
   const { user } = useAuth();
   const [tab, setTab] = useState(0);
-  const [syncing, setSyncing] = useState(false);
+  const health = useHealthData();
+  const syncing = health.status === 'loading';
+  const isLive = !!health.live;
+  const D = isLive ? mergeLive(health.live!) : SAMPLE;
+  const WEEKLY = isLive && health.week.length ? health.week : SAMPLE_WEEKLY;
+  const SLEEP_STAGES = sleepStages(D);
+  const hasWatch = isLive && health.live!.sources.some((n) => /watch/i.test(n));
 
   const handleSync = () => {
-    setSyncing(true);
-    setTimeout(() => { setSyncing(false); Alert.alert('Synced!', 'All health data is up to date.'); }, 1800);
+    if (!health.availability.ok) {
+      Alert.alert('Apple Health unavailable', UNAVAILABLE_COPY[health.availability.reason]);
+      return;
+    }
+    health.refresh();
   };
 
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Athlete';
@@ -270,6 +354,18 @@ export default function WearablesScreen() {
               <Text style={s.syncBtnText}>{syncing ? 'Syncing…' : 'Sync'}</Text>
             </LinearGradient>
           </TouchableOpacity>
+        </View>
+
+        {/* ── Data source banner ── */}
+        <View style={[s.sourceBanner, { borderColor: isLive ? '#22c55e40' : '#eab30840' }]}>
+          <Ionicons name={isLive ? 'checkmark-circle' : 'information-circle'} size={16} color={isLive ? '#22c55e' : '#eab308'} />
+          <Text style={s.sourceBannerText}>
+            {isLive
+              ? `Live from Apple Health${health.live!.sources.length ? ` · ${health.live!.sources.join(', ')}` : ''}${health.lastSync ? ` · ${fmtTime(health.lastSync)}` : ''}${health.serverSynced === false ? ' · server sync failed' : health.serverSynced === null ? ' · not saved (dev login)' : ' · saved'}. Scores and AI insights are samples.`
+              : health.availability.ok
+                ? health.status === 'error' ? 'Could not read Apple Health. Tap Sync to try again.' : 'Connecting to Apple Health…'
+                : `Sample data. ${UNAVAILABLE_COPY[health.availability.reason]}`}
+          </Text>
         </View>
 
         {/* ── Tabs ── */}
@@ -419,11 +515,18 @@ export default function WearablesScreen() {
               {/* Connected Devices */}
               <SectionLabel label="Connected Devices" icon="watch-outline" iconColor="#94a3b8" />
               <View style={s.devicesGrid}>
-                {DEVICES.map((dev, i) => (
+                {DEVICES.map((d0) => ({ ...d0, connected: d0.name === 'Apple Watch' ? hasWatch : false })).map((dev, i) => (
                   <TouchableOpacity
                     key={i}
                     style={s.deviceCard}
-                    onPress={() => Alert.alert(dev.connected ? 'Connected' : 'Connect Device', dev.connected ? `${dev.name} is connected and syncing.` : `Connect your ${dev.name} to automatically sync health data.`)}
+                    onPress={() => Alert.alert(
+                      dev.connected ? `${dev.name} connected` : `Connect ${dev.name}`,
+                      dev.connected
+                        ? `${dev.name} data is flowing in through Apple Health.`
+                        : dev.name === 'Apple Watch'
+                          ? 'Wear your watch paired to this iPhone, then tap Sync. Its data reaches Reprummble through Apple Health.'
+                          : `Open the ${dev.name} app and turn on "Apple Health" sync in its settings. Reprummble then reads that data from Apple Health.`,
+                    )}
                     activeOpacity={0.7}
                   >
                     <LinearGradient colors={dev.connected ? [dev.color + '25', dev.color + '10'] : ['#161b2e', '#0d0f1a']} style={s.deviceCardInner}>
@@ -550,7 +653,7 @@ export default function WearablesScreen() {
                       <Text style={s.stageLegendDesc}>{st.desc}</Text>
                     </View>
                     <Text style={[s.stageLegendHours, { color: st.color }]}>{st.hours}h</Text>
-                    <Text style={s.stageLegendPct}>{Math.round((st.hours / D.sleepTotal) * 100)}%</Text>
+                    <Text style={s.stageLegendPct}>{D.sleepTotal ? Math.round((st.hours / D.sleepTotal) * 100) : 0}%</Text>
                   </View>
                 ))}
               </MiniCard>
@@ -749,7 +852,7 @@ export default function WearablesScreen() {
               <SectionLabel label="Daily Steps — 7 Days" icon="footsteps-outline" iconColor="#22c55e" />
               <MiniCard>
                 <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.steps }))} color="#22c55e" barH={90} />
-                <Text style={s.cardSubtitle}>Goal: {(D.stepsGoal / 1000).toFixed(0)}k steps/day · Best: Fri ({(14567 / 1000).toFixed(1)}k)</Text>
+                <Text style={s.cardSubtitle}>Goal: {(D.stepsGoal / 1000).toFixed(0)}k steps/day · Best: {(() => { const b = WEEKLY.reduce((a, w) => (w.steps > a.steps ? w : a), WEEKLY[0]); return `${b.day} (${(b.steps / 1000).toFixed(1)}k)`; })()}</Text>
               </MiniCard>
 
               <SectionLabel label="Calorie Burn — 7 Days" icon="flame-outline" iconColor="#f97316" />
@@ -767,7 +870,7 @@ export default function WearablesScreen() {
               <SectionLabel label="Resting Heart Rate — 7 Days" icon="heart-outline" iconColor="#ef4444" />
               <MiniCard>
                 <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.hr }))} color="#ef4444" barH={90} />
-                <Text style={s.cardSubtitle}>Lower is better · Best: {Math.min(...WEEKLY.map(w => w.hr))} bpm</Text>
+                <Text style={s.cardSubtitle}>Lower is better · Best: {Math.min(...WEEKLY.map(w => w.hr).filter(Boolean)) || '—'} bpm</Text>
               </MiniCard>
 
               {/* Monthly Health Score Trend */}
@@ -800,6 +903,12 @@ export default function WearablesScreen() {
 // ════════════════════════════════════════════════════════════
 
 const s = StyleSheet.create({
+  sourceBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginHorizontal: 16, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: 12, borderWidth: 1, backgroundColor: '#0f1424',
+  },
+  sourceBannerText: { flex: 1, color: '#94a3b8', fontSize: 12, lineHeight: 16 },
   root: { flex: 1 },
   safe: { flex: 1 },
 

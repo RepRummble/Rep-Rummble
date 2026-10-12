@@ -1,11 +1,7 @@
 import { io, Socket } from 'socket.io-client';
-import { Platform } from 'react-native';
+import { API_BASE_URL } from '../config/api';
 
-const API_URL = Platform.select({
-  ios: 'http://localhost:5001',
-  android: 'http://10.0.2.2:5001',
-  default: 'http://localhost:5001',
-});
+const API_URL = API_BASE_URL.replace(/\/api$/, '');
 
 export interface ChatMessage {
   _id: string;

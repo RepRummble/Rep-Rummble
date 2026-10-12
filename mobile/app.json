@@ -58,6 +58,14 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Reprummble to use your location to tag posts with your current location."
         }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Reprummble reads your steps, workouts, heart rate, HRV, sleep, and body measurements from Apple Health to build your training plan and daily recovery score.",
+          "NSHealthUpdateUsageDescription": "Reprummble can save workouts you log in the app to Apple Health.",
+          "background": false
+        }
       ]
     ]
   }

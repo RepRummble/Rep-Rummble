@@ -1,10 +1,20 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { DEV_BYPASS_AUTH, devAdapter } from './devConfig';
 
-const API_BASE_URL = __DEV__
-  ? 'http://localhost:5001/api'
-  : 'https://your-production-api.com/api';
+// On a physical phone "localhost" is the phone itself, so in development we point
+// at the computer running Metro (same Wi-Fi). Set EXPO_PUBLIC_API_URL to override,
+// e.g. your Render URL for production builds.
+function resolveApiBaseUrl(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
+  if (fromEnv) return `${fromEnv.replace(/\/$/, '')}/api`;
+  const host = Constants.expoConfig?.hostUri?.split(':')[0];
+  if (__DEV__ && host) return `http://${host}:5001/api`;
+  return 'http://localhost:5001/api';
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
