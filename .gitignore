@@ -48,11 +48,10 @@ yarn-error.log*
 # Vercel
 .vercel/
 
-# Playwright (e2e/)
-e2e/test-results/
-e2e/playwright-report/
-e2e/blob-report/
-e2e/playwright/.cache/
+# Test suites live in their own repos (reprummble-e2e, reprummble-perf).
+# Clone them here as e2e/ and perf/ for local runs; never commit them.
+/e2e/
+/perf/
 .playwright-mcp/
 
 # Screenshots from testing/automation
@@ -62,5 +61,3 @@ e2e/playwright/.cache/
 !web/public/**/*.png
 !web/public/**/*.jpg
 
-# Gatling (perf/)
-perf/target/

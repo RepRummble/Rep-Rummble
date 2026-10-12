@@ -10,6 +10,7 @@
     "install:all": "cd web && npm install && cd ../mobile && npm install && cd ../server && npm install",
     "build:web": "cd web && npm run build",
     "build:server": "cd server && npm run build",
+    "setup:tests": "git clone https://github.com/RepRummble/reprummble-e2e.git e2e; git clone https://github.com/RepRummble/reprummble-perf.git perf",
     "test:e2e": "cd e2e && npm test",
     "test:perf": "cd perf && ./mvnw gatling:test -Dgatling.simulationClass=reprummble.perf.HealthCheckSimulation"
   }

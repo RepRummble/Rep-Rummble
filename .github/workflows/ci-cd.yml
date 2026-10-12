@@ -151,7 +151,7 @@ jobs:
       NODE_ENV: test
       MONGODB_URI: mongodb://localhost:27017/reprummble_e2e
       # Optional repo secrets — unskip Supabase-backed tests (register/login,
-      # cross-user IDOR checks) when set. See e2e/README.md.
+      # cross-user IDOR checks) when set. See RepRummble/reprummble-e2e README.
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -161,6 +161,12 @@ jobs:
       TEST_USER_B_PASSWORD: ${{ secrets.TEST_USER_B_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
+      # Tests live in a separate private repo; TEST_REPOS_TOKEN needs read access to it.
+      - uses: actions/checkout@v7
+        with:
+          repository: RepRummble/reprummble-e2e
+          token: ${{ secrets.TEST_REPOS_TOKEN }}
+          path: e2e
       - uses: actions/setup-node@v7
         with: { node-version: '24' }
       - working-directory: server
@@ -193,6 +199,12 @@ jobs:
       MONGODB_URI: mongodb://localhost:27017/reprummble_perf
     steps:
       - uses: actions/checkout@v7
+      # Simulations live in a separate private repo; TEST_REPOS_TOKEN needs read access to it.
+      - uses: actions/checkout@v7
+        with:
+          repository: RepRummble/reprummble-perf
+          token: ${{ secrets.TEST_REPOS_TOKEN }}
+          path: perf
       - uses: actions/setup-node@v7
         with: { node-version: '24' }
       - uses: actions/setup-java@v5

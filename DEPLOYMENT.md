@@ -42,9 +42,10 @@ the pipeline calls to trigger a deploy on demand instead.
 | `VERCEL_PROJECT_ID` | Same as above |
 | `RENDER_DEPLOY_HOOK_URL` | Render service → Settings → Deploy Hook (from step 1) |
 | `RENDER_SERVICE_URL` | *(optional)* your Render service's public URL — enables an automatic post-deploy health check |
+| `TEST_REPOS_TOKEN` | **Required.** Fine-grained GitHub token (resource owner: RepRummble) with **Contents: Read-only** on `reprummble-e2e` and `reprummble-perf`. CI uses it to check out the private test suites; without it the `e2e` and `perf` jobs fail and production deploys are blocked |
 
 Already-referenced but optional (unskips more Playwright tests in CI — see
-[`e2e/README.md`](e2e/README.md)): `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+the [reprummble-e2e README](https://github.com/RepRummble/reprummble-e2e)): `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
 `SUPABASE_SERVICE_KEY`, `TEST_USER_A_EMAIL`/`PASSWORD`,
 `TEST_USER_B_EMAIL`/`PASSWORD`.
 
@@ -81,6 +82,7 @@ all — there's nothing to approve.
 
 ## Running things manually outside the pipeline
 
+- `npm run setup:tests` (root, once) — clones the test repos into `e2e/` and `perf/` (git-ignored)
 - `npm run test:e2e` (root) — Playwright against local dev
 - `npm run test:perf` (root) — Gatling baseline against local dev
 - Full manual pipeline dry-run without deploying: `Actions tab → CI/CD →
