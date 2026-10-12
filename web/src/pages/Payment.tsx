@@ -1,36 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../config/supabase';
+import { PRICING } from '../config/pricing';
 
 const PLANS = [
   {
-    id: 'starter',
-    name: 'Starter',
-    price: '$0',
+    id: 'free',
+    name: 'Free',
+    price: `${PRICING.currency}0`,
     cycle: '/month',
-    features: ['Basic meal logging', 'Habit streaks', 'Weekly insights'],
+    features: ['Workout & meal logging', 'Habit streaks', 'Weekly insights'],
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    price: '$14',
+    id: 'premium',
+    name: 'Premium',
+    price: `${PRICING.currency}${PRICING.premiumMonthly}`,
     cycle: '/month',
-    features: ['AI meal analysis', 'Custom meal plans', 'Workout programming', 'Community challenges'],
+    features: ['Personalized AI training plan', 'AI meal photo analysis', 'Wearable sync', 'Daily recovery score', 'Unlimited challenges'],
     featured: true,
-  },
-  {
-    id: 'elite',
-    name: 'Elite',
-    price: '$29',
-    cycle: '/month',
-    features: ['Coach check-ins', 'Recovery insights', 'Priority support', 'Wearable sync'],
   },
 ];
 
 export default function Payment() {
   const [searchParams] = useSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(searchParams.get('plan') || 'pro');
+  const [selectedPlan, setSelectedPlan] = useState(searchParams.get('plan') || 'premium');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -71,7 +65,7 @@ export default function Payment() {
           </div>
         </div>
         <div className="page-actions" data-stagger>
-          <Link className="solid-btn" to="/plans">View All Plans</Link>
+          <Link className="solid-btn" to="/pricing">View All Plans</Link>
           {!isLoggedIn && <Link className="ghost-btn" to="/?auth=signup">Create Account</Link>}
         </div>
 

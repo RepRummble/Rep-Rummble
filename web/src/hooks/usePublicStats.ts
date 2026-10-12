@@ -15,7 +15,7 @@ export function usePublicStats() {
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/public/stats`)
-      .then(r => r.json())
+      .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(setStats)
       .catch(() => {})
   }, [])

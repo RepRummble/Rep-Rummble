@@ -16,8 +16,9 @@ Reprummble helps athletes and everyday fitness enthusiasts train smarter, recove
 ## Pages
 
 - [Home](https://reprummble.com/) – Overview, features, testimonials, and sign-up CTA
-- [Services](https://reprummble.com/services) – Detailed breakdown of all platform capabilities
-- [Plans](https://reprummble.com/plans) – Pricing tiers (Free, Pro, Elite)
+- [Features](https://reprummble.com/features) – Detailed breakdown of all platform capabilities
+- [Pricing](https://reprummble.com/pricing) – Free plan and Premium ($9.99/month)
+- [For Gyms](https://reprummble.com/for-gyms) – Partner program for gyms and coaches (free to join, revenue share)
 - [FAQ](https://reprummble.com/faq) – Answers to common questions
 - [Contact](https://reprummble.com/contact) – Support contact form
 - [Privacy Policy](https://reprummble.com/privacy) – How user data is collected and used

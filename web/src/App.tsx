@@ -3,11 +3,12 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
 import Home from './pages/Home';
-import Services from './pages/Services';
+import Features from './pages/Features';
+import Pricing from './pages/Pricing';
+import ForGyms from './pages/ForGyms';
 import Analytics from './pages/Analytics';
 import Reports from './pages/Reports';
 import Wearables from './pages/Wearables';
-import Plans from './pages/Plans';
 import Profile from './pages/Profile';
 import Referral from './pages/Referral';
 import Payment from './pages/Payment';
@@ -25,11 +26,14 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="services" element={<Services />} />
+          <Route path="features" element={<Features />} />
+          <Route path="pricing" element={<Pricing />} />
+          <Route path="for-gyms" element={<ForGyms />} />
+          <Route path="services" element={<Navigate to="/features" replace />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="reports" element={<Reports />} />
           <Route path="wearables" element={<Wearables />} />
-          <Route path="plans" element={<Plans />} />
+          <Route path="plans" element={<Navigate to="/pricing" replace />} />
           <Route path="profile" element={<Profile />} />
           <Route path="referral" element={<Referral />} />
           <Route path="payment" element={<Payment />} />

@@ -2,15 +2,19 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { FaApple, FaFacebookF } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
+import { Menu, X } from 'lucide-react';
 import { DEV_BYPASS_AUTH, DEV_USER } from '../config/devAuth';
 import api from '../config/api';
 import { supabase } from '../config/supabase';
 import ChatWidget from './chat/ChatWidget';
 import CookieBanner from './CookieBanner';
 import { useAnalytics } from '../hooks/useAnalytics';
+import SiteFooter from './site/SiteFooter';
+import '../styles/site.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 const PRIVATE_ROUTES = ['/analytics', '/reports', '/referral', '/profile', '/wearables'];
+const LIGHT_ROUTES = ['/', '/features', '/pricing', '/for-gyms'];
 
 export default function Layout() {
   useAnalytics();
@@ -24,7 +28,7 @@ export default function Layout() {
   const [isLoggedIn, setIsLoggedIn] = useState(DEV_BYPASS_AUTH);
   const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
   const [headerVisible, setHeaderVisible] = useState(true);
-  const [footerVisible, setFooterVisible] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [formData, setFormData] = useState({
@@ -33,7 +37,7 @@ export default function Layout() {
     password: '',
   });
   const profileRef = useRef<HTMLDivElement>(null);
-  const dashboardDropdownRef = useRef<HTMLDetailsElement>(null);
+  const [dashOpen, setDashOpen] = useState(false);
   const lastScroll = useRef(0);
   const hasMounted = useRef(false);
   useEffect(() => {
@@ -85,6 +89,11 @@ export default function Layout() {
     }
   }, [location.pathname, isLoggedIn, navigate]);
 
+  const isLight = LIGHT_ROUTES.includes(location.pathname);
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle('theme-light', isLight);
+  }, [isLight]);
+
   useLayoutEffect(() => {
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
@@ -104,6 +113,7 @@ export default function Layout() {
     lastScroll.current = 0;
     setHeaderVisible(true);
     setMobileMenuOpen(false);
+    setDashOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -137,25 +147,9 @@ export default function Layout() {
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const nearTop = scrollY <= 20;
-      const nearBottom = scrollY >= Math.max(0, maxScroll - 20);
-      const scrollingDown = scrollY > lastScroll.current;
-
-      if (nearTop) {
-        setHeaderVisible(true);
-      } else if (scrollingDown) {
-        setHeaderVisible(false);
-      } else {
-        setHeaderVisible(true);
-      }
-
-      if (nearBottom) {
-        setFooterVisible(true);
-      } else if (!scrollingDown) {
-        setFooterVisible(false);
-      }
-
+      setScrolled(scrollY > 8);
+      if (scrollY <= 80) setHeaderVisible(true);
+      else setHeaderVisible(scrollY < lastScroll.current);
       lastScroll.current = scrollY;
     };
 
@@ -188,30 +182,39 @@ export default function Layout() {
     return () => window.removeEventListener('mousemove', handler);
   }, []);
 
+  // Reveal-on-scroll; the MutationObserver catches sections rendered after data loads.
   useEffect(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal], [data-stagger]'));
-    if (!nodes.length) return;
-
+    const SELECTOR = '[data-reveal], [data-stagger]';
     if (!('IntersectionObserver' in window)) {
-      nodes.forEach((node) => node.classList.add('is-visible'));
+      document.querySelectorAll<HTMLElement>(SELECTOR).forEach((n) => n.classList.add('is-visible'));
       return;
     }
-
-    const observer = new IntersectionObserver(
+    const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-visible');
-            observer.unobserve(entry.target);
+            io.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.2 }
+      { threshold: 0.12 }
     );
-
-    nodes.forEach((node) => observer.observe(node));
-
-    return () => observer.disconnect();
+    const watch = (root: ParentNode) => {
+      root.querySelectorAll<HTMLElement>(SELECTOR).forEach((n) => {
+        if (!n.classList.contains('is-visible')) io.observe(n);
+      });
+    };
+    watch(document);
+    const mo = new MutationObserver((mutations) => {
+      mutations.forEach((m) => m.addedNodes.forEach((node) => {
+        if (!(node instanceof HTMLElement)) return;
+        if (node.matches(SELECTOR)) io.observe(node);
+        watch(node);
+      }));
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => { io.disconnect(); mo.disconnect(); };
   }, [location.pathname]);
 
   const handleAuthSubmit = async (event: React.FormEvent) => {
@@ -306,92 +309,91 @@ export default function Layout() {
   };
 
   return (
+    <>
     <div className="marketing-page">
       <div className={`route-transition${transitioning ? ' active' : ''}`} aria-hidden="true">
         <span />
         <span />
       </div>
-      <header className={`marketing-header${headerVisible ? '' : ' hidden'}`}>
-        <Link to="/" className="brand brand-link">
-          <span className="brand-mark">RR</span>
-          <span className="brand-name">Reprummble</span>
-        </Link>
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setMobileMenuOpen(p => !p)}
-          aria-label="Toggle menu"
-        >
-          <span className={`hamburger${mobileMenuOpen ? ' open' : ''}`} />
-        </button>
-        <nav className={`marketing-nav${mobileMenuOpen ? ' mobile-open' : ''}`}>
-          {!isLoggedIn ? (
-            <>
-              <NavLink to="/services" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Services</NavLink>
-              <NavLink to="/plans" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Plans</NavLink>
-              <NavLink to="/faq" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>FAQ</NavLink>
-              <NavLink to="/contact" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Contact Us</NavLink>
-              <button className="ghost-btn nav-signin-btn" onClick={() => { setAuthMode('signin'); setAuthOpen(true); setMobileMenuOpen(false); }}>Sign In</button>
-              <button className="solid-btn nav-signup-btn" onClick={() => { setAuthMode('signup'); setAuthOpen(true); setMobileMenuOpen(false); }}>Sign Up</button>
-            </>
-          ) : (
-            <>
-              <details className="nav-dropdown" ref={dashboardDropdownRef}>
-                <summary className="nav-link">Dashboard</summary>
-                <div className="nav-dropdown-menu">
-                  <NavLink to="/analytics" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => { dashboardDropdownRef.current?.removeAttribute('open'); }}>Analytics</NavLink>
-                  <NavLink to="/reports" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => { dashboardDropdownRef.current?.removeAttribute('open'); }}>Reports</NavLink>
-                  <NavLink to="/wearables" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => { dashboardDropdownRef.current?.removeAttribute('open'); }}>Wearables</NavLink>
+      <header className={`rr-header${scrolled ? ' is-scrolled' : ''}${headerVisible || mobileMenuOpen ? '' : ' is-hidden'}${mobileMenuOpen ? ' menu-open' : ''}`}>
+        <div className="rr-container rr-header-inner">
+          <Link to="/" className="rr-logo" aria-label="Reprummble home">
+            <span className="rr-logo-mark">RR</span>
+            <span className="rr-logo-name">Reprummble</span>
+          </Link>
+          <nav className="rr-nav" aria-label="Main">
+            {!isLoggedIn ? (
+              <>
+                <NavLink to="/features" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Features</NavLink>
+                <NavLink to="/pricing" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Pricing</NavLink>
+                <NavLink to="/for-gyms" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>For Gyms</NavLink>
+                <NavLink to="/faq" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>FAQ</NavLink>
+                <NavLink to="/contact" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Contact</NavLink>
+                <div className="rr-nav-mobile-actions">
+                  <button className="rr-btn rr-btn-outline" onClick={() => { setAuthMode('signin'); setAuthOpen(true); setMobileMenuOpen(false); }}>Sign in</button>
+                  <button className="rr-btn rr-btn-primary" onClick={() => { setAuthMode('signup'); setAuthOpen(true); setMobileMenuOpen(false); }}>Start free</button>
                 </div>
-              </details>
-              <NavLink to="/payment" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Subscription</NavLink>
-              <NavLink to="/referral" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Referral</NavLink>
-              <NavLink to="/profile" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Settings</NavLink>
-            </>
-          )}
-        </nav>
-        <div className="profile-shell" ref={profileRef}>
-          {isLoggedIn && (
-            <>
-              <button className="profile-button icon-only" onClick={handleProfileClick} aria-label="Open profile">
-                <span className="avatar">
-                  {(DEV_BYPASS_AUTH ? DEV_USER.name : currentUser?.name || '')
-                    .split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'RR'}
-                </span>
+              </>
+            ) : (
+              <>
+                <div className="rr-nav-group">
+                  <button className="rr-nav-link" onClick={() => setDashOpen((p) => !p)} aria-expanded={dashOpen}>Dashboard ▾</button>
+                  {dashOpen && (
+                    <div className="rr-nav-menu">
+                      <NavLink to="/analytics" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Analytics</NavLink>
+                      <NavLink to="/reports" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Reports</NavLink>
+                      <NavLink to="/wearables" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Wearables</NavLink>
+                    </div>
+                  )}
+                </div>
+                <NavLink to="/features" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Features</NavLink>
+                <NavLink to="/for-gyms" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>For Gyms</NavLink>
+                <NavLink to="/payment" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Subscription</NavLink>
+                <NavLink to="/referral" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Referral</NavLink>
+                <NavLink to="/profile" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Settings</NavLink>
+              </>
+            )}
+          </nav>
+          {!isLoggedIn ? (
+            <div className="rr-header-actions rr-desktop-only">
+              <button className="rr-nav-link" onClick={() => { setAuthMode('signin'); setAuthOpen(true); }}>Sign in</button>
+              <button className="rr-btn rr-btn-primary" onClick={() => { setAuthMode('signup'); setAuthOpen(true); }}>Start free</button>
+            </div>
+          ) : (
+            <div className="profile-shell" ref={profileRef}>
+              <button className="rr-avatar-btn" onClick={handleProfileClick} aria-label="Open profile">
+                {(DEV_BYPASS_AUTH ? DEV_USER.name : currentUser?.name || '').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'RR'}
               </button>
               {profileOpen && (
-                <div className="profile-popover menu-only">
-                  <div className="popover-column">
-                    <div className="menu-card">
-                      <div className="menu-header">
-                        <span className="avatar large">
-                          {(DEV_BYPASS_AUTH ? DEV_USER.name : currentUser?.name || '')
-                            .split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'RR'}
-                        </span>
-                        <div>
-                          <div className="menu-title">{DEV_BYPASS_AUTH ? DEV_USER.name : (currentUser?.name || 'Your account')}</div>
-                          <div className="menu-sub">{DEV_BYPASS_AUTH ? DEV_USER.email : (currentUser?.email || '')}</div>
-                        </div>
-                      </div>
-                      <div className="menu-list">
-                        <Link to="/profile" onClick={() => setProfileOpen(false)}>View Profile</Link>
-                        <button className="menu-signout" type="button" onClick={handleSignOut}>Sign Out</button>
-                      </div>
-                    </div>
+                <div className="rr-popover">
+                  <div>
+                    <div className="rr-popover-name">{DEV_BYPASS_AUTH ? DEV_USER.name : (currentUser?.name || 'Your account')}</div>
+                    <div className="rr-popover-email">{DEV_BYPASS_AUTH ? DEV_USER.email : (currentUser?.email || '')}</div>
                   </div>
+                  <Link to="/profile" onClick={() => setProfileOpen(false)}>View profile</Link>
+                  <button type="button" onClick={handleSignOut}>Sign out</button>
                 </div>
               )}
-            </>
+            </div>
           )}
+          <button
+            className="rr-menu-btn"
+            onClick={() => setMobileMenuOpen((p) => !p)}
+            aria-label="Toggle menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
       </header>
 
       {authOpen && !isLoggedIn && (
         <div className="auth-modal" onClick={() => setAuthOpen(false)}>
-          <div className="auth-card" onClick={(event) => event.stopPropagation()}>
+          <div className="auth-card rr-auth" onClick={(event) => event.stopPropagation()}>
             <div className="auth-card-header">
               <div>
-                <h2>Welcome back</h2>
-                <p>Sign in or create a new account in seconds.</p>
+                <h2>{authMode === 'signup' ? 'Create your free account' : authMode === 'forgot' ? 'Reset your password' : 'Welcome back'}</h2>
+                <p>{authMode === 'signup' ? 'No card needed. Upgrade to Premium anytime.' : 'Sign in to continue your training.'}</p>
               </div>
               <button className="icon-close" type="button" onClick={() => setAuthOpen(false)} aria-label="Close">
                 ×
@@ -544,15 +546,9 @@ export default function Layout() {
       <ChatWidget />
       <CookieBanner />
 
-      <footer className={`marketing-footer${footerVisible ? '' : ' hidden'}`}>
-        <span>© 2025 Reprummble</span>
-        <div>
-          <Link to="/privacy">Privacy</Link>
-          <Link to="/terms">Terms</Link>
-          <Link to="/contact">Support</Link>
-        </div>
-      </footer>
     </div>
+    <SiteFooter />
+    </>
   );
 }
 

@@ -174,7 +174,7 @@ export default function Analytics() {
 
           <div className="page-actions" style={{ marginTop: 24 }}>
             <Link className="solid-btn" to="/reports">Export Reports</Link>
-            <Link className="ghost-btn" to="/plans">Compare Plans</Link>
+            <Link className="ghost-btn" to="/pricing">Compare Plans</Link>
           </div>
         </>
       )}

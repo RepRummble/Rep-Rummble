@@ -181,19 +181,19 @@ const termsSections: TermsSection[] = [
         <h4>Subscription Plans</h4>
         <ul>
           <li>
-            <strong>Starter</strong> — Free, with access to core tracking features.
+            <strong>Free</strong> — No charge, with access to core tracking features.
           </li>
           <li>
-            <strong>Pro</strong> — Paid monthly or annually; includes advanced
-            analytics, wearable sync, and full plan access.
+            <strong>Premium</strong> — Paid monthly; includes personalized training
+            plans, AI meal analysis, wearable sync, recovery scores, and advanced analytics.
           </li>
           <li>
-            <strong>Elite</strong> — Paid monthly or annually; includes Pro features
-            plus access to live coaching support.
+            <strong>Partner gym programs</strong> — Optional programs sold by partner
+            gyms and coaches, priced individually by the partner.
           </li>
         </ul>
         <p>
-          Current prices are displayed on the <Link to="/plans">Plans page</Link>.
+          Current prices are displayed on the <Link to="/pricing">Pricing page</Link>.
           All prices are shown inclusive of applicable taxes where required by law.
         </p>
 
