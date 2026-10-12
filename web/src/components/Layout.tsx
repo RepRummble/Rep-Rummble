@@ -11,7 +11,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import SiteFooter from './site/SiteFooter';
 import '../styles/site.css';
 
-const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact', '/privacy', '/terms'];
+const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact', '/privacy', '/terms', '/oauth/consent'];
 const navClass = ({ isActive }: { isActive: boolean }) => `rr-nav-link${isActive ? ' active' : ''}`;
 
 export default function Layout() {

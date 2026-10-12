@@ -39,7 +39,12 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
 
   // Stand in for Supabase: token = key of the users map.
   const sup = require(SRC + '/services/supabase.service');
-  sup.verifyToken = async (token) => users[token] ? { success: true, user: { id: users[token].id, email: users[token].email, user_metadata: {}, email_confirmed_at: users[token].verified === false ? null : new Date().toISOString() } } : { success: false };
+  // A JWT-shaped token for a person, optionally carrying a client_id like Supabase's OAuth server adds.
+  const jwtFor = (key, claims) => 'h.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.s';
+  const firstParty = jwtFor('owner', { sub: users.owner.id });
+  const thirdParty = jwtFor('owner', { sub: users.owner.id, client_id: 'c-1234' });
+  const realVerify = async (token) => users[token] ? { success: true, user: { id: users[token].id, email: users[token].email, user_metadata: {}, email_confirmed_at: users[token].verified === false ? null : new Date().toISOString() } } : { success: false };
+  sup.verifyToken = async (token) => (token === firstParty || token === thirdParty) ? realVerify('owner') : realVerify(token);
   sup.getUserById = async (id) => { const u = Object.values(users).find((x) => x.id === id); return u ? { success: true, user: { id, created_at: new Date(u.created).toISOString() } } : { success: false }; };
 
   const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n(); rl.authLimiter = (q, r, n) => n(); rl.loginLimiter = (q, r, n) => n(); rl.resendLimiter = (q, r, n) => n();
@@ -363,6 +368,16 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal((await call('admin', 'POST', `/api/business/admin/applications/${id}/approve`)).status, 404);
     assert.equal((await call('ownerC', 'POST', '/api/business/apply', { name: 'Peak Fitness', type: 'Studio' })).status, 200);
     assert.equal((await call('ownerC', 'GET', '/api/business/me')).body.data.business.status, 'pending');
+  });
+
+
+  console.log('Third-party OAuth tokens');
+  await t('our own sign-in token works, a token issued to a third-party app is refused', async () => {
+    assert.equal((await call(firstParty, 'GET', '/api/business/me')).status, 200);
+    const r = await call(thirdParty, 'GET', '/api/business/me');
+    assert.equal(r.status, 403); assert.match(r.body.message, /third-party/i);
+    assert.equal((await call(thirdParty, 'GET', '/api/referrals/me')).status, 403);
+    assert.equal((await call(thirdParty, 'GET', '/api/reports/export?period=monthly')).status, 403);
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);

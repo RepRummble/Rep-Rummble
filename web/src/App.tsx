@@ -13,6 +13,7 @@ import Terms from './pages/Terms';
 import NotFound from './pages/NotFound';
 import AgentDashboard from './pages/agent/AgentDashboard';
 import AuthCallback from './pages/AuthCallback';
+import OAuthConsent from './pages/OAuthConsent';
 import AccountLayout from './pages/account/AccountLayout';
 import AccountDashboard from './pages/account/Dashboard';
 import AccountReports from './pages/account/Reports';
@@ -80,6 +81,7 @@ function App() {
           <Route path="terms" element={<Terms />} />
           <Route path="agent" element={<AgentDashboard />} />
           <Route path="auth/callback" element={<AuthCallback />} />
+          <Route path="oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

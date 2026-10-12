@@ -118,6 +118,19 @@ Staff access, member invites, and admin review only work for verified emails.
 3. Each application shows the business, type, city, size, message, and the account email. **Approve** opens their business dashboard, **Reject** asks for a reason, and approved businesses have a **Revoke access** button that turns access off immediately (including their team).
 4. Reviewers are emailed when an application arrives, and the applicant is emailed when you decide. This uses `GMAIL_USER` / `GMAIL_APP_PASSWORD`; without them everything works but no emails are sent.
 
+## "Sign in with Reprummble" (Supabase OAuth server)
+
+Other apps can sign people in with a Reprummble account through Supabase's OAuth 2.1 server. The website provides the approval screen at **`/oauth/consent`**.
+
+1. **Supabase → Authentication → OAuth Server:** turn it on and set the **Authorization Path** to `/oauth/consent`. Make sure the **Site URL** is `https://www.reprummble.com`; the preview link shown there should read `https://www.reprummble.com/oauth/consent`.
+2. Register each app that may connect under **OAuth Apps** (name, logo, redirect URIs). Prefer registering apps yourself; leave dynamic client registration off unless you want anyone to be able to register one.
+3. Share the endpoints Supabase shows (authorization, token, JWKS, OIDC discovery) with the app's developer. They are on your Supabase project domain, not on reprummble.com.
+
+Good to know:
+- Users can see and disconnect these apps under **Dashboard → Profile → Security → Connected apps**.
+- **Scopes (`openid`, `email`, `profile`) only decide what the app can read about the person. They do not limit what an API accepts.** For that reason the Reprummble API rejects any token issued to a third-party app (a token with a `client_id` claim). If you ever want to let a partner app call the API, add an explicit allow-list for that client first.
+- The page only returns people to the address Supabase gives it, and never to `javascript:`, `data:`, or similar.
+
 ## Troubleshooting
 
 ### Web app shows blank page after login
