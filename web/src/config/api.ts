@@ -16,7 +16,7 @@ async function getAuthToken(): Promise<string | null> {
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<{ data?: T; error?: string }> {
+): Promise<{ data?: T; error?: string; code?: string }> {
   try {
     const token = await getAuthToken()
 
@@ -37,7 +37,7 @@ export async function apiRequest<T>(
     const data = await response.json()
 
     if (!response.ok) {
-      return { error: data.message || 'Request failed' }
+      return { error: data.message || 'Request failed', code: typeof data.code === 'string' ? data.code : undefined }
     }
 
     return { data: data.data || data }
@@ -103,6 +103,27 @@ export interface ReferralSummary {
   maxPercent: number
   availablePercent: number
   history: { at: string; rewarded: boolean }[]
+}
+
+export type BillingPlanId = 'free' | 'pro' | 'premium'
+export interface BillingView {
+  configured: boolean
+  publishableKey: string | null
+  plan: BillingPlanId
+  /** What they can use, which can be higher than `plan` when a partner gym includes Pro. */
+  effectivePlan: BillingPlanId
+  includedBy: string | null
+  status: 'active' | 'trialing' | 'past_due'
+  trialEnd: string | null
+  currentPeriodEnd: string | null
+  autoRenew: boolean
+  scheduledPlan: BillingPlanId | null
+  scheduledFor: string | null
+  paymentMethod: { brand: string; last4: string; expMonth: number; expYear: number } | null
+  trialAvailable: boolean
+  trialDays: number
+  referralDiscountPercent: number
+  plans: { id: BillingPlanId; name: string; priceCents: number }[]
 }
 
 // API methods
@@ -266,6 +287,16 @@ export const api = {
     me: () => apiRequest<ReferralSummary>('/api/referrals/me'),
     claim: (code: string) =>
       apiRequest<{ discountPercent: number }>('/api/referrals/claim', { method: 'POST', body: JSON.stringify({ code }) }),
+  },
+
+  // Plan, renewal and payment method. Card details go straight to Stripe and never through our API.
+  billing: {
+    get: () => apiRequest<BillingView>('/api/billing'),
+    changePlan: (plan: BillingPlanId) => apiRequest<BillingView>('/api/billing/plan', { method: 'POST', body: JSON.stringify({ plan }) }),
+    setAutoRenew: (enabled: boolean) => apiRequest<BillingView>('/api/billing/auto-renew', { method: 'POST', body: JSON.stringify({ enabled }) }),
+    startCardSetup: () => apiRequest<{ clientSecret: string }>('/api/billing/setup-intent', { method: 'POST' }),
+    syncCard: () => apiRequest<BillingView>('/api/billing/payment-method/sync', { method: 'POST' }),
+    removeCard: () => apiRequest<BillingView>('/api/billing/payment-method', { method: 'DELETE' }),
   },
 
   // Contact

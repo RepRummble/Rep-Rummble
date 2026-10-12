@@ -42,6 +42,7 @@
     "nodemailer": "^10.1.0",
     "pdfkit": "^0.17.2",
     "socket.io": "^4.8.3",
+    "stripe": "^23.0.0",
     "typescript": "^5.7.2",
     "uuid": "^14.0.3"
   },

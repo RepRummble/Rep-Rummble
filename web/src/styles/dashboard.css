@@ -228,3 +228,37 @@
   .pf-row { flex-direction: column; align-items: flex-start; }
   .pf-modal-actions .rr-btn { flex: 1; }
 }
+
+/* Billing */
+.bl-current { display: grid; gap: 16px; }
+.bl-current-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.bl-eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rr-muted); }
+.bl-current h2 { font-size: 30px; margin-top: 2px; }
+.bl-price { font-family: var(--rr-font-head); font-size: 20px; color: var(--rr-ink-2); margin-top: 2px; }
+.bl-price small { font-size: 14px; font-weight: 500; color: var(--rr-muted); }
+.bl-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.bl-badge-warn { display: inline-flex; padding: 5px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: #fef3f2; color: #b42318; }
+.bl-rows { border-top: 1px solid var(--rr-line); padding-top: 16px; }
+.bl-rows .pf-row:first-child { padding-top: 0; }
+.bl-line { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; color: var(--rr-ink-2); }
+.bl-line svg { flex-shrink: 0; margin-top: 2px; color: var(--rr-brand); }
+.bl-scheduled { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 16px; border-radius: 14px; background: var(--rr-brand-soft); color: var(--rr-ink); font-size: 14.5px; }
+.bl-notice { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 12px; background: #ecfdf3; color: #067647; font-weight: 600; font-size: 14.5px; }
+.bl-heading { font-size: 20px; margin: 8px 0 -4px; }
+.bl-plan { cursor: default; }
+.bl-plan .rr-btn { margin-top: 8px; justify-content: center; }
+.bl-current-tag { margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--rr-brand); color: #fff; vertical-align: middle; }
+.bl-plan-note { margin-top: 8px; font-size: 13.5px; font-weight: 600; color: var(--rr-muted); }
+.bl-confirm { display: grid; gap: 12px; border-color: var(--rr-brand); }
+.bl-confirm h2 { font-size: 20px; }
+.bl-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.bl-switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; border: 0; border-radius: 999px; background: #d0d5dd; cursor: pointer; transition: background 0.15s ease; }
+.bl-switch span { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: transform 0.15s ease; }
+.bl-switch.on { background: var(--rr-brand); }
+.bl-switch.on span { transform: translateX(20px); }
+.bl-switch:disabled { opacity: 0.6; cursor: not-allowed; }
+.bl-switch:focus-visible { outline: 3px solid rgba(15,118,110,0.35); outline-offset: 2px; }
+.bl-pm { display: grid; gap: 14px; }
+.bl-card-form { display: grid; gap: 16px; padding: 18px; border: 1px solid var(--rr-line); border-radius: 16px; background: var(--rr-surface); }
+.bl-secure { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--rr-muted); }
+@media (max-width: 640px) { .bl-actions { justify-content: stretch; } .bl-actions .rr-btn { flex: 1; } }

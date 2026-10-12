@@ -26,6 +26,8 @@ import workoutPlanRoutes from './routes/workoutPlan.routes'
 import leadRoutes from './routes/lead.routes'
 import reportRoutes from './routes/report.routes'
 import referralRoutes from './routes/referral.routes'
+import billingRoutes from './routes/billing.routes'
+import { stripeWebhook } from './controllers/billing.controller'
 import analyticsRoutes from './routes/analytics.routes'
 import businessRoutes from './routes/business.routes'
 import contactRoutes from './routes/contact.routes'
@@ -82,6 +84,8 @@ const corsOptions = {
 app.use(cors(corsOptions))
 app.use(compression()) // Compress responses
 app.use(morgan('dev')) // Logging
+// Stripe signs the exact bytes it sends, so its webhook must see the raw body, before JSON parsing.
+app.post('/api/billing/webhook', express.raw({ type: 'application/json', limit: '1mb' }), stripeWebhook)
 app.use(express.json({ limit: '50mb' })) // Parse JSON bodies (increased for image uploads)
 app.use(express.urlencoded({ extended: true, limit: '50mb' })) // Parse URL-encoded bodies
 
@@ -118,6 +122,7 @@ app.use('/api/workout-plans', workoutPlanRoutes)
 app.use('/api/leads', leadRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/referrals', referralRoutes)
+app.use('/api/billing', billingRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/business', businessRoutes)
 app.use('/api/contact', contactRoutes)

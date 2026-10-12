@@ -118,6 +118,26 @@ Staff access, member invites, and admin review only work for verified emails.
 3. Each application shows the business, type, city, size, message, and the account email. **Approve** opens their business dashboard, **Reject** asks for a reason, and approved businesses have a **Revoke access** button that turns access off immediately (including their team).
 4. Reviewers are emailed when an application arrives, and the applicant is emailed when you decide. This uses `GMAIL_USER` / `GMAIL_APP_PASSWORD`; without them everything works but no emails are sent.
 
+## Turning on payments (Stripe)
+
+Plans, renewal, auto-renew and the saved payment method are built and tested. Real charging switches on once Stripe is connected; until then the Billing page shows the plan and says payments are coming soon.
+
+1. In Stripe (start in **test mode**), create two recurring monthly **Prices**: Pro at $9.99 and Premium at $14.99. Copy each `price_...` id.
+2. **Developers → API keys:** copy the publishable key (`pk_...`) and secret key (`sk_...`).
+3. **Developers → Webhooks → Add endpoint:** URL `https://<your-api-host>/api/billing/webhook`, with these events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`, `payment_method.attached`, `payment_method.detached`, `setup_intent.succeeded`. Copy the signing secret (`whsec_...`).
+4. On the server (Render) set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_PREMIUM`. Billing turns on as soon as all of them except the webhook secret are present, so set the webhook secret first.
+5. **Settings → Billing → Customer emails:** turn on payment receipts and upcoming-renewal reminders.
+6. Try it with the test card `4242 4242 4242 4242` before switching to live keys and live prices.
+
+How it behaves:
+- **Upgrades** take effect immediately; the person pays only the difference for the rest of the period.
+- **Lower plans** (Premium to Pro, or to Free) wait until the current period ends, so people keep what they paid for.
+- **Auto-renew off** means the plan ends when the period does. Choosing the current plan again undoes a pending change.
+- **Pro trial:** 14 days, once per account, no card needed. With no card by the end it simply ends instead of failing to charge.
+- Referral discounts are applied once, to the first payment after they are earned.
+- Card numbers are typed into Stripe's own fields and never reach our server; we keep only the brand and last four digits.
+- Deleting an account cancels the subscription and removes the Stripe customer first; if Stripe cannot be reached, nothing is deleted.
+
 ## "Sign in with Reprummble" (Supabase OAuth server)
 
 Other apps can sign people in with a Reprummble account through Supabase's OAuth 2.1 server. The website provides the approval screen at **`/oauth/consent`**.

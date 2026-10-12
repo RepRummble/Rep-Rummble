@@ -15,6 +15,7 @@ import { WearableData } from '../models/WearableData.model'
 import { Workout } from '../models/Workout.model'
 import { WorkoutPlan } from '../models/WorkoutPlan.model'
 import { WorkoutSession } from '../models/WorkoutSession.model'
+import { removeBilling } from './billing.service'
 
 /** `{ $eq }` keeps request-derived values as plain values, never query operators. */
 const eq = <T>(value: T) => ({ $eq: value })
@@ -33,6 +34,10 @@ export async function deleteAccountData(userId: string, email?: string): Promise
   const count = (label: string, result: { deletedCount?: number } | undefined | null) => {
     if (result?.deletedCount) removed[label] = (removed[label] ?? 0) + result.deletedCount
   }
+
+  // Stop any subscription first: if Stripe cannot be reached this throws, so nothing is deleted and
+  // nobody keeps getting charged for an account that no longer exists.
+  await removeBilling(userId)
 
   // The older Mongo user record (found by email) owns records stored under an ObjectId.
   const legacy = mail ? await User.findOne({ email: eq(mail) }).select('_id') : null

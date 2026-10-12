@@ -406,9 +406,9 @@ export default function Layout() {
               <>
                 <NavLink to="/features" className={navClass}>Features</NavLink>
                 <NavLink to="/pricing" className={navClass}>Pricing</NavLink>
+                <NavLink to="/collaborate" className={navClass}>Collaboration</NavLink>
                 <NavLink to="/faq" className={navClass}>FAQ</NavLink>
                 <NavLink to="/contact" className={navClass}>Contact</NavLink>
-                <NavLink to="/collaborate" className={navClass}>Collaboration</NavLink>
                 <div className="rr-nav-mobile-actions">
                   <button className="rr-btn rr-btn-outline" onClick={() => { setAuthMode('signin'); setAuthOpen(true); setMobileMenuOpen(false); }}>Sign in</button>
                   <button className="rr-btn rr-btn-primary" onClick={() => { setAuthMode('signup'); setAuthOpen(true); setMobileMenuOpen(false); }}>Start free</button>
@@ -424,14 +424,10 @@ export default function Layout() {
               </>
             )}
           </nav>
-          {!isLoggedIn ? (
+          {!isLoggedIn && (
             <div className="rr-header-actions rr-desktop-only">
               <button className="rr-nav-link" onClick={() => { setAuthMode('signin'); setAuthOpen(true); }}>Sign in</button>
               <button className="rr-btn rr-btn-primary" onClick={() => { setAuthMode('signup'); setAuthOpen(true); }}>Start free</button>
-            </div>
-          ) : (
-            <div className="rr-header-actions rr-desktop-only">
-              <button className="rr-nav-link" onClick={handleSignOut}>Sign out</button>
             </div>
           )}
           {isLoggedIn && (

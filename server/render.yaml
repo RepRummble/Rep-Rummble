@@ -74,6 +74,19 @@ services:
       - key: ADMIN_EMAILS
         sync: false
 
+      # ── Payments (Stripe) ─────────────────────────────────────
+      # Billing stays in "coming soon" mode until all five are set. See SETUP.md, "Turning on payments".
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO
+        sync: false
+      - key: STRIPE_PRICE_PREMIUM
+        sync: false
+
       # ── Email (Gmail SMTP) ────────────────────────────────────
       - key: GMAIL_USER
         sync: false

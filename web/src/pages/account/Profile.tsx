@@ -1,14 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import type { OAuthGrant } from '@supabase/supabase-js';
 import {
-  BadgeCheck, Bell, Check, ExternalLink, FileText, KeyRound, Link2, ShieldAlert, Target, Trash2, TriangleAlert, UserRound, X,
+  BadgeCheck, Bell, Check, CreditCard, ExternalLink, FileText, KeyRound, Link2, ShieldAlert, Target, Trash2, TriangleAlert, UserRound, X,
 } from 'lucide-react';
 import { DEV_BYPASS_AUTH } from '../../config/devAuth';
 import { supabase } from '../../config/supabase';
-import api from '../../config/api';
+import api, { type BillingView } from '../../config/api';
 import { biz } from '../business/api';
 import { useAccountUser, type AccountUser } from './useAccountUser';
+import PaymentMethodManager from './PaymentMethod';
 
 const GOALS = ['Weight loss', 'Muscle gain', 'Improve endurance', 'Maintain weight', 'General fitness', 'Injury recovery'];
 const ACTIVITY = ['Sedentary (desk job, little movement)', 'Lightly active (1-3 days/week)', 'Moderately active (3-5 days/week)', 'Very active (6-7 days/week)', 'Athlete (2x per day)'];
@@ -25,6 +26,7 @@ const SECTIONS = [
   { id: 'goals', label: 'Goals', icon: Target },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'security', label: 'Security', icon: KeyRound },
+  { id: 'payment', label: 'Payment', icon: CreditCard },
   { id: 'privacy', label: 'Privacy & data', icon: FileText },
   { id: 'delete', label: 'Delete account', icon: Trash2 },
 ] as const;
@@ -74,7 +76,9 @@ const initialsOf = (user: AccountUser) =>
 
 export default function Profile() {
   const { user } = useAccountUser();
-  const [section, setSection] = useState<SectionId>('profile');
+  const [params] = useSearchParams();
+  const requested = SECTIONS.find((x) => x.id === params.get('section'))?.id;
+  const [section, setSection] = useState<SectionId>(requested ?? 'profile');
   if (!user) return <p className="dash-muted">Loading…</p>;
 
   const since = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : null;
@@ -107,6 +111,7 @@ export default function Profile() {
           {section === 'goals' && <GoalsSection user={user} />}
           {section === 'notifications' && <NotificationsSection user={user} />}
           {section === 'security' && <><SecuritySection user={user} /><ConnectedApps /></>}
+          {section === 'payment' && <PaymentSection />}
           {section === 'privacy' && <PrivacySection />}
           {section === 'delete' && <DeleteSection user={user} />}
         </div>
@@ -245,6 +250,26 @@ function ConnectedApps() {
         </div>
       )}
       {error && <p className="pf-status is-error" role="alert">{error}</p>}
+    </Panel>
+  );
+}
+
+function PaymentSection() {
+  const [billing, setBilling] = useState<BillingView | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    api.billing.get().then(({ data, error: err }) => {
+      if (cancelled) return;
+      if (data) setBilling(data); else setError(err || 'Could not load your payment details.');
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <Panel title="Payment method" description="The card used to renew your plan. Change your plan or turn auto-renew on or off in Billing.">
+      {billing ? <PaymentMethodManager billing={billing} onChange={setBilling} /> : error ? <p className="pf-status is-error" role="alert">{error}</p> : <p className="dash-muted">Loading…</p>}
+      <p className="dash-muted"><Link to="/dashboard/billing">Go to Billing</Link> to see your plan and renewal date.</p>
     </Panel>
   );
 }

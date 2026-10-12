@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth.middleware'
 import { isDBConnected } from '../config/database'
 import { getUserById } from '../services/supabase.service'
 import { Referral, ReferralCredit, ReferralProfile } from '../models/Referral.model'
+import { getAvailableDiscountPercent } from '../services/referral.service'
 import {
   REFERRAL_CLAIM_WINDOW_DAYS,
   REFERRAL_DISCOUNT_PERCENT,
@@ -15,12 +16,6 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const makeCode = () => Array.from({ length: 8 }, () => ALPHABET[crypto.randomInt(ALPHABET.length)]).join('')
 
 const siteUrl = () => (process.env.WEB_URL || process.env.CLIENT_URL || 'https://www.reprummble.com').replace(/\/$/, '')
-
-/** Total unused discount a user can apply at their next checkout (capped). */
-export async function getAvailableDiscountPercent(userId: string): Promise<number> {
-  const credits = await ReferralCredit.find({ userId, usedAt: { $exists: false } }).select('percent')
-  return Math.min(REFERRAL_MAX_DISCOUNT_PERCENT, credits.reduce((sum, c) => sum + c.percent, 0))
-}
 
 async function getOrCreateProfile(userId: string) {
   const existing = await ReferralProfile.findOne({ userId })

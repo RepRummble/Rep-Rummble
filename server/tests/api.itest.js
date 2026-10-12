@@ -28,9 +28,19 @@ const users = {
   ghost:     { id: '17171717-1717-4717-8717-171717171717', email: 'ghost@x.test', created: Date.now() - 50 * DAY, noAdmin: true },
   dash:      { id: '15151515-1515-4515-8515-151515151515', email: 'dash@x.test', created: Date.now() - 100 * DAY },
   ownerC:    { id: '14141414-1414-4414-8414-141414141414', email: 'ownerc@gym.test', created: Date.now() - 400 * DAY },
+  bill:      { id: '18181818-1818-4818-8818-181818181818', email: 'bill@x.test', created: Date.now() - 20 * DAY },
+  billB:     { id: '19191919-1919-4919-8919-191919191919', email: 'billb@x.test', created: Date.now() - 20 * DAY },
+  billC:     { id: '1a1a1a1a-1a1a-4a1a-8a1a-1a1a1a1a1a1a', email: 'billc@x.test', created: Date.now() - 20 * DAY },
+  billD:     { id: '1b1b1b1b-1b1b-4b1b-8b1b-1b1b1b1b1b1b', email: 'billd@x.test', created: Date.now() - 20 * DAY },
+  billGym:   { id: '1c1c1c1c-1c1c-4c1c-8c1c-1c1c1c1c1c1c', email: 'billgym@x.test', created: Date.now() - 20 * DAY },
   unver:     { id: '13131313-1313-4313-8313-131313131313', email: 'unver@x.test', created: Date.now() - 1 * DAY, verified: false },
 };
 process.env.ADMIN_EMAILS = 'admin@site.test';
+process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_fake';
+process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_fake';
+process.env.STRIPE_PRICE_PRO = 'price_pro';
+process.env.STRIPE_PRICE_PREMIUM = 'price_premium';
 
 let pass = 0;
 const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', name); } catch (e) { console.log('  FAIL', name, '\n      ', e.message); process.exitCode = 1; } };
@@ -72,8 +82,13 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   const express = require('express');
   const { connectDB } = require(SRC + '/config/database');
   await connectDB();
+  const { createFakeStripe } = require('./fake-stripe');
+  const fake = createFakeStripe();
+  require(SRC + '/services/stripe-client').setStripeClient(fake.stripe);
   const app = express();
+  app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), require(SRC + '/controllers/billing.controller').stripeWebhook);
   app.use(express.json());
+  app.use('/api/billing', require(SRC + '/routes/billing.routes').default);
   app.use('/api/auth', require(SRC + '/routes/auth.routes').default);
   app.use('/api/business', require(SRC + '/routes/business.routes').default);
   app.use('/api/referrals', require(SRC + '/routes/referral.routes').default);
@@ -688,6 +703,182 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     const now = await bystanderBefore();
     assert.deepEqual(now, snapshot);
     assert.equal((await call('owner', 'GET', '/api/business/members')).status, 200);
+  });
+
+
+  console.log('Billing (simulated Stripe)');
+  const { Subscription } = require(SRC + '/models/Subscription.model');
+  const { ReferralCredit } = require(SRC + '/models/Referral.model');
+  const subOf = async (u) => Subscription.findOne({ userId: users[u].id });
+  const view = async (u) => (await call(u, 'GET', '/api/billing')).body.data;
+  const plan = (u, p) => call(u, 'POST', '/api/billing/plan', { plan: p });
+  const webhook = async (event, signature) => {
+    const payload = JSON.stringify(event);
+    const header = signature ?? require('stripe').webhooks.generateTestHeaderString({ payload, secret: 'whsec_test_fake' });
+    const r = await fetch(base + '/api/billing/webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'stripe-signature': header }, body: payload });
+    return r.status;
+  };
+
+  await t('billing needs sign-in', async () => assert.equal((await call(null, 'GET', '/api/billing')).status, 401));
+  await t('a new person is on Free, with the plans, a trial on offer and no card', async () => {
+    const v = await view('bill');
+    assert.equal(v.plan, 'free'); assert.equal(v.effectivePlan, 'free'); assert.equal(v.autoRenew, true);
+    assert.equal(v.trialAvailable, true); assert.equal(v.paymentMethod, null); assert.equal(v.scheduledPlan, null);
+    assert.deepEqual(v.plans.map((x) => x.id), ['free', 'pro', 'premium']);
+    assert.equal(v.configured, true); assert.equal(v.publishableKey, 'pk_test_fake');
+  });
+  await t('changing plan needs a verified email and a real plan name', async () => {
+    assert.equal((await plan('unver', 'pro')).status, 403);
+    assert.equal((await plan('bill', 'platinum')).status, 400);
+    assert.equal((await call('bill', 'POST', '/api/billing/plan', { plan: { $ne: 1 } })).status, 400);
+  });
+  await t('Premium cannot be started without a card', async () => {
+    const r = await plan('billB', 'premium');
+    assert.equal(r.status, 402); assert.equal(r.body.code, 'payment_method_required');
+    assert.equal((await view('billB')).plan, 'free');
+  });
+  await t('Pro starts with a 14-day free trial and needs no card', async () => {
+    const r = await plan('bill', 'pro');
+    assert.equal(r.status, 200);
+    const v = r.body.data;
+    assert.equal(v.plan, 'pro'); assert.equal(v.status, 'trialing'); assert.equal(v.trialAvailable, false); assert.equal(v.autoRenew, true);
+    const days = (new Date(v.trialEnd) - Date.now()) / DAY; assert.ok(days > 13 && days <= 14, `trial is ${days} days`);
+    const call0 = fake.helpers.state.calls.find((c) => c.name === 'subscriptions.create');
+    assert.equal(call0.args.trial_period_days, 14);
+    assert.equal(call0.args.trial_settings.end_behavior.missing_payment_method, 'cancel', 'the trial just ends if no card is added');
+  });
+  await t('adding a card: Stripe collects it, we keep only the brand and last four', async () => {
+    const si = await call('bill', 'POST', '/api/billing/setup-intent');
+    assert.equal(si.status, 200); assert.match(si.body.data.clientSecret, /^seti_secret_/);
+    const doc = await subOf('bill');
+    fake.helpers.addCard(doc.stripeCustomerId, '4242');
+    const r = await call('bill', 'POST', '/api/billing/payment-method/sync');
+    assert.deepEqual(r.body.data.paymentMethod, { brand: 'visa', last4: '4242', expMonth: 12, expYear: 2030 });
+    const raw = JSON.stringify((await subOf('bill')).toObject());
+    assert.ok(!/\b\d{13,19}\b/.test(raw), 'no card number is stored');
+  });
+  await t('a new card replaces the old one (only one is kept)', async () => {
+    const doc = await subOf('bill');
+    fake.helpers.addCard(doc.stripeCustomerId, '1111', 'mastercard');
+    const r = await call('bill', 'POST', '/api/billing/payment-method/sync');
+    assert.equal(r.body.data.paymentMethod.last4, '1111');
+    assert.equal(fake.helpers.state.cards[doc.stripeCustomerId].length, 1);
+  });
+  await t('upgrading Pro to Premium takes effect now (during a trial nothing is charged yet)', async () => {
+    const r = await plan('bill', 'premium');
+    assert.equal(r.status, 200); assert.equal(r.body.data.plan, 'premium'); assert.equal(r.body.data.scheduledPlan, null);
+  });
+  await t('lowering Premium to Pro waits for the next billing cycle', async () => {
+    // The trial ends and the first payment is taken, so there is a paid period to wait out.
+    const paid = fake.helpers.renew((await subOf('bill')).stripeSubscriptionId);
+    assert.equal(await webhook({ id: 'evt_0', type: 'customer.subscription.updated', data: { object: paid } }), 200);
+    assert.equal((await view('bill')).status, 'active');
+    const r = await plan('bill', 'pro');
+    assert.equal(r.status, 200);
+    const v = r.body.data;
+    assert.equal(v.plan, 'premium', 'still on the plan they paid for'); assert.equal(v.scheduledPlan, 'pro'); assert.ok(v.scheduledFor);
+    assert.equal(v.autoRenew, true);
+    const sched = Object.values(fake.helpers.state.schedules)[0];
+    assert.equal(sched.phases.length, 2); assert.equal(sched.phases[1].items[0].price, 'price_pro');
+  });
+  await t('when the cycle ends the lower plan starts (via Stripe\'s signed notice)', async () => {
+    const doc = await subOf('bill');
+    const updated = fake.helpers.renew(doc.stripeSubscriptionId);
+    assert.equal(await webhook({ id: 'evt_1', type: 'customer.subscription.updated', data: { object: updated } }), 200);
+    const v = await view('bill');
+    assert.equal(v.plan, 'pro'); assert.equal(v.scheduledPlan, null);
+  });
+  await t('webhooks with a wrong or missing signature are refused and change nothing', async () => {
+    const doc = await subOf('bill');
+    const fakeSub = { ...(await fake.stripe.subscriptions.retrieve(doc.stripeSubscriptionId)), status: 'canceled' };
+    assert.equal(await webhook({ id: 'evt_2', type: 'customer.subscription.deleted', data: { object: fakeSub } }, 't=1,v1=deadbeef'), 400);
+    assert.equal((await view('bill')).plan, 'pro');
+  });
+  await t('turning auto-renew off keeps the plan until the period ends', async () => {
+    const r = await call('bill', 'POST', '/api/billing/auto-renew', { enabled: false });
+    assert.equal(r.status, 200);
+    const v = r.body.data;
+    assert.equal(v.autoRenew, false); assert.equal(v.plan, 'pro'); assert.equal(v.scheduledPlan, 'free'); assert.ok(v.currentPeriodEnd);
+  });
+  await t('a card cannot be removed while auto-renew is on, but can be once it is off', async () => {
+    assert.equal((await call('bill', 'POST', '/api/billing/auto-renew', { enabled: true })).body.data.autoRenew, true);
+    const blocked = await call('bill', 'DELETE', '/api/billing/payment-method');
+    assert.equal(blocked.status, 409); assert.equal(blocked.body.code, 'payment_method_required');
+    await call('bill', 'POST', '/api/billing/auto-renew', { enabled: false });
+    const ok = await call('bill', 'DELETE', '/api/billing/payment-method');
+    assert.equal(ok.status, 200); assert.equal(ok.body.data.paymentMethod, null);
+  });
+  await t('choosing the current plan again undoes a pending cancellation', async () => {
+    const r = await plan('bill', 'pro');
+    assert.equal(r.status, 200); assert.equal(r.body.data.autoRenew, true); assert.equal(r.body.data.scheduledPlan, null);
+    assert.equal((await plan('bill', 'pro')).body.code, 'already_on_plan');
+  });
+  await t('lowering to Free ends the plan at the end of the period, not now', async () => {
+    const r = await plan('bill', 'free');
+    assert.equal(r.status, 200); assert.equal(r.body.data.plan, 'pro'); assert.equal(r.body.data.scheduledPlan, 'free'); assert.equal(r.body.data.autoRenew, false);
+    const doc = await subOf('bill');
+    const ended = fake.helpers.renew(doc.stripeSubscriptionId);
+    assert.equal(await webhook({ id: 'evt_3', type: 'customer.subscription.deleted', data: { object: ended } }), 200);
+    const v = await view('bill');
+    assert.equal(v.plan, 'free'); assert.equal(v.scheduledPlan, null); assert.equal(v.trialAvailable, false, 'the trial is only offered once');
+  });
+  await t('auto-renew does not apply to Free', async () => {
+    assert.equal((await call('billB', 'POST', '/api/billing/auto-renew', { enabled: false })).status, 409);
+    assert.equal((await call('bill', 'POST', '/api/billing/auto-renew', { enabled: 'no' })).status, 400);
+  });
+  await t('a declined card stops the upgrade and leaves the plan alone', async () => {
+    await plan('billC', 'pro');
+    const c = (await subOf('billC')).stripeCustomerId; fake.helpers.addCard(c, '4242'); await call('billC', 'POST', '/api/billing/payment-method/sync');
+    const paid = fake.helpers.renew((await subOf('billC')).stripeSubscriptionId); // trial over, now paying
+    assert.equal(await webhook({ id: 'evt_c', type: 'customer.subscription.updated', data: { object: paid } }), 200);
+    fake.helpers.state.failCharges = true;
+    const r = await plan('billC', 'premium');
+    fake.helpers.state.failCharges = false;
+    assert.equal(r.status, 402); assert.equal(r.body.code, 'payment_failed');
+    assert.equal((await view('billC')).plan, 'pro');
+  });
+  await t('a referral discount is applied once to the first payment, then used up', async () => {
+    await ReferralCredit.create({ userId: users.billB.id, percent: 5, reason: 'referred' });
+    assert.equal((await view('billB')).referralDiscountPercent, 5);
+    const si = await call('billB', 'POST', '/api/billing/setup-intent'); assert.equal(si.status, 200);
+    fake.helpers.addCard((await subOf('billB')).stripeCustomerId, '4242'); await call('billB', 'POST', '/api/billing/payment-method/sync');
+    const r = await plan('billB', 'premium');
+    assert.equal(r.status, 200); assert.equal(r.body.data.plan, 'premium');
+    assert.equal(fake.helpers.state.coupons.at(-1).percent_off, 5);
+    assert.equal((await view('billB')).referralDiscountPercent, 0);
+  });
+  await t('a partner gym that includes Pro shows as Pro without paying', async () => {
+    const { Business, BusinessMember } = require(SRC + '/models/Business.model');
+    const biz = await Business.create({ ownerId: users.admin.id + '-gym', ownerEmail: 'g@gym.test', name: 'Iron Gym', type: 'Gym', status: 'approved' });
+    await BusinessMember.create({ businessId: biz._id, name: 'G', email: users.billGym.email, userId: users.billGym.id });
+    const v = await view('billGym');
+    assert.equal(v.plan, 'free'); assert.equal(v.effectivePlan, 'pro'); assert.equal(v.includedBy, 'Iron Gym');
+  });
+  await t('billing says so plainly when it is not set up', async () => {
+    const keep = process.env.STRIPE_PRICE_PREMIUM; process.env.STRIPE_PRICE_PREMIUM = '';
+    const v = await view('billD'); const r = await plan('billD', 'pro');
+    process.env.STRIPE_PRICE_PREMIUM = keep;
+    assert.equal(v.configured, false); assert.equal(v.publishableKey, null);
+    assert.equal(r.status, 503); assert.equal(r.body.code, 'billing_unavailable');
+  });
+  await t('billing endpoints accept no card numbers: the plan route ignores extra card data', async () => {
+    const r = await call('billD', 'POST', '/api/billing/plan', { plan: 'pro', cardNumber: '4242424242424242' });
+    assert.equal(r.status, 200);
+    assert.ok(!/4242424242424242/.test(JSON.stringify((await subOf('billD')).toObject())));
+  });
+  await t('deleting an account first stops the subscription and removes the Stripe customer', async () => {
+    const doc = await subOf('billD'); const subId = doc.stripeSubscriptionId; const cust = doc.stripeCustomerId;
+    const r = await call('billD', 'DELETE', '/api/auth/account');
+    assert.equal(r.status, 200);
+    assert.equal(fake.helpers.state.subs[subId].status, 'canceled'); assert.equal(fake.helpers.state.customers[cust], undefined);
+    assert.equal(await subOf('billD'), null);
+  });
+  await t('if Stripe cannot cancel, the account is not deleted so nobody is charged for a deleted account', async () => {
+    fake.helpers.state.failCancel = true;
+    const r = await call('billC', 'DELETE', '/api/auth/account');
+    fake.helpers.state.failCancel = false;
+    assert.equal(r.status, 500);
+    assert.ok(await subOf('billC'), 'billing record is kept so it can be retried');
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
