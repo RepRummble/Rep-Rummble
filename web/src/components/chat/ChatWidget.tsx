@@ -9,13 +9,15 @@ interface Message {
   text: string
   quickReplies?: string[]
   ts: number
+  streaming?: boolean
+  error?: boolean
 }
 
 const WELCOME: Message = {
   id: 'welcome',
   role: 'assistant',
-  text: "Hey! 👋 I'm **Rumi**, your Reprummble support assistant. I can help with features, billing, workouts, nutrition, or technical issues.\n\nWhat can I help you with today?",
-  quickReplies: ['How do I log a meal?', 'Pricing & plans', 'Connect my wearable', 'Technical issue'],
+  text: "Hey! 👋 I'm **Rumi**, Reprummble's assistant. Ask me anything about training, nutrition, recovery, or our plans.\n\nWhat can I help you with today?",
+  quickReplies: ['Pricing & plans', 'Build me a workout', 'How much protein do I need?', 'Connect my Apple Watch'],
   ts: Date.now(),
 }
 
@@ -56,49 +58,80 @@ export default function ChatWidget() {
     }
   }, [isOpen])
 
+  const abortRef = useRef<AbortController | null>(null)
+  useEffect(() => () => abortRef.current?.abort(), [])
+
+  const updateMessage = (id: string, patch: (m: Message) => Partial<Message>) =>
+    setMessages(prev => prev.map(m => (m.id === id ? { ...m, ...patch(m) } : m)))
+
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim()
     if (!trimmed || loading) return
 
     const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', text: trimmed, ts: Date.now() }
-    setMessages(prev => [...prev, userMsg])
+    const replyId = `a-${Date.now()}`
+    const history = messages
+      .filter(m => m.id !== 'welcome' && !m.error && m.text)
+      .map(m => ({ role: m.role, content: m.text }))
+
+    setMessages(prev => [...prev, userMsg, { id: replyId, role: 'assistant', text: '', ts: Date.now(), streaming: true }])
     setInput('')
     setLoading(true)
 
-    try {
-      // Build history from current messages (exclude welcome)
-      const history = messages
-        .filter(m => m.id !== 'welcome')
-        .map(m => ({ role: m.role, content: m.text }))
+    const controller = new AbortController()
+    abortRef.current = controller
 
-      const res = await fetch(`${API_BASE}/api/chat/ai`, {
+    try {
+      const res = await fetch(`${API_BASE}/api/chat/ai/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
         body: JSON.stringify({ message: trimmed, history }),
+        signal: controller.signal,
       })
 
-      if (!res.ok) throw new Error('Server error')
-      const data = await res.json()
-
-      const aiMsg: Message = {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        text: data.data?.reply || "I'm having trouble responding right now. Please email **support@reprummble.com** and we'll help shortly.",
-        quickReplies: data.data?.quickReplies || [],
-        ts: Date.now(),
+      if (res.status === 429) {
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.message || 'You are sending messages too quickly. Please wait a few minutes.')
       }
+      if (!res.ok || !res.body) throw new Error('connect')
 
-      setMessages(prev => [...prev, aiMsg])
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let finished = false
+      while (!finished) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const events = buffer.split('\n\n')
+        buffer = events.pop() ?? ''
+        for (const evt of events) {
+          const line = evt.split('\n').find(l => l.startsWith('data: '))
+          if (!line) continue
+          const data = JSON.parse(line.slice(6)) as { type: string; text?: string; quickReplies?: string[] }
+          if (data.type === 'delta' && data.text) {
+            updateMessage(replyId, m => ({ text: m.text + data.text }))
+          } else if (data.type === 'done') {
+            updateMessage(replyId, () => ({ quickReplies: data.quickReplies ?? [], streaming: false }))
+            finished = true
+          } else if (data.type === 'error') {
+            throw new Error('connect')
+          }
+        }
+      }
+      updateMessage(replyId, () => ({ streaming: false }))
       if (!isOpen) setUnread(u => u + 1)
-    } catch {
-      const errorMsg: Message = {
-        id: `e-${Date.now()}`,
-        role: 'assistant',
-        text: "Sorry, I couldn't connect right now. Please try again or email **support@reprummble.com** — we respond within 24 hours.",
+    } catch (err) {
+      if (controller.signal.aborted) return
+      const msg = err instanceof Error && err.message !== 'connect'
+        ? err.message
+        : "Sorry, I couldn't connect right now. Please try again or email **support@reprummble.com** — we respond within 24 hours."
+      updateMessage(replyId, m => ({
+        text: m.text ? `${m.text}\n\n(Connection lost — please ask again.)` : msg,
         quickReplies: ['Try again', 'Email support'],
-        ts: Date.now(),
-      }
-      setMessages(prev => [...prev, errorMsg])
+        streaming: false,
+        error: !m.text,
+      }))
     } finally {
       setLoading(false)
     }
@@ -112,6 +145,11 @@ export default function ChatWidget() {
   const handleQuickReply = (text: string) => {
     if (text === 'Email support') {
       window.location.href = 'mailto:support@reprummble.com'
+      return
+    }
+    if (text === 'Try again') {
+      const lastUser = [...messages].reverse().find(m => m.role === 'user')
+      if (lastUser) sendMessage(lastUser.text)
       return
     }
     sendMessage(text)
@@ -145,7 +183,7 @@ export default function ChatWidget() {
           </div>
 
           {/* Messages */}
-          <div className="chat-messages">
+          <div className="chat-messages" aria-live="polite">
             {messages.map(msg => (
               <div key={msg.id} className={`chat-message ${msg.role === 'user' ? 'user' : 'other'}`}>
                 {msg.role === 'assistant' && (
@@ -155,22 +193,19 @@ export default function ChatWidget() {
                   {msg.role === 'assistant' && (
                     <div className="chat-sender-name">Rumi</div>
                   )}
-                  <div className="chat-message-text">{renderText(msg.text)}</div>
+                  {msg.streaming && !msg.text ? (
+                    <div className="chat-typing-dots" aria-label="Rumi is typing">
+                      <span /><span /><span />
+                    </div>
+                  ) : (
+                    <div className="chat-message-text">
+                      {renderText(msg.text)}
+                      {msg.streaming && <span className="chat-caret" aria-hidden="true" />}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
-
-            {loading && (
-              <div className="chat-message other">
-                <div className="chat-message-avatar ai">✨</div>
-                <div className="chat-bubble other">
-                  <div className="chat-sender-name">Rumi</div>
-                  <div className="chat-typing-dots">
-                    <span /><span /><span />
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div ref={bottomRef} />
           </div>

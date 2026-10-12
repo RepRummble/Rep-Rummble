@@ -60,3 +60,12 @@ export const adminLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Please slow down.' },
 })
+
+// Each chat message costs an AI call, so cap it tighter than general reads.
+export const chatLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'You are sending messages too quickly. Please wait a few minutes.' },
+})
