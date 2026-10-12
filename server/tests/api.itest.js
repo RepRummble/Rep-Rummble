@@ -24,6 +24,8 @@ const users = {
   inviteFake:{ id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', email: 'invitee@members.test', created: Date.now() - 1 * DAY, verified: false },
   inviteReal:{ id: 'ffffffff-ffff-4fff-8fff-ffffffffffff', email: 'invitee@members.test', created: Date.now() - 1 * DAY },
   adminFake: { id: '12121212-1212-4212-8212-121212121212', email: 'admin@site.test', created: Date.now() - 1 * DAY, verified: false },
+  leaver:    { id: '16161616-1616-4616-8616-161616161616', email: 'leaver@x.test', created: Date.now() - 1 * DAY },
+  ghost:     { id: '17171717-1717-4717-8717-171717171717', email: 'ghost@x.test', created: Date.now() - 50 * DAY, noAdmin: true },
   dash:      { id: '15151515-1515-4515-8515-151515151515', email: 'dash@x.test', created: Date.now() - 100 * DAY },
   ownerC:    { id: '14141414-1414-4414-8414-141414141414', email: 'ownerc@gym.test', created: Date.now() - 400 * DAY },
   unver:     { id: '13131313-1313-4313-8313-131313131313', email: 'unver@x.test', created: Date.now() - 1 * DAY, verified: false },
@@ -46,7 +48,7 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   const thirdParty = jwtFor('owner', { sub: users.owner.id, client_id: 'c-1234' });
   const realVerify = async (token) => users[token] ? { success: true, user: { id: users[token].id, email: users[token].email, user_metadata: {}, email_confirmed_at: users[token].verified === false ? null : new Date().toISOString() } } : { success: false };
   sup.verifyToken = async (token) => (token === firstParty || token === thirdParty) ? realVerify('owner') : realVerify(token);
-  sup.getUserById = async (id) => { const u = Object.values(users).find((x) => x.id === id); return u ? { success: true, user: { id, created_at: new Date(u.created).toISOString() } } : { success: false }; };
+  sup.getUserById = async (id) => { const u = Object.values(users).find((x) => x.id === id); if (u && u.noAdmin) return { success: false, error: 'service unreachable' }; return u ? { success: true, user: { id, created_at: new Date(u.created).toISOString() } } : { success: false }; };
 
   const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n(); rl.authLimiter = (q, r, n) => n(); rl.loginLimiter = (q, r, n) => n(); rl.resendLimiter = (q, r, n) => n();
   const realPerUserLimiter = rl.perUserLimiter; // kept for its own tests below
@@ -64,6 +66,8 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
       : { success: true, user: { id: 'new-2', email, user_metadata: {} }, session: { access_token: 'sb-access', refresh_token: 'sb-refresh' }, needsVerification: false };
   };
   sup.signInWithEmail = async (email, password) => password === 'right-but-unverified' ? { success: false, error: 'Email not confirmed' } : { success: false, error: 'Invalid login credentials' };
+  let deleteMode = 'ok'; const deletedAuth = [];
+  sup.deleteUser = async (id) => { if (deleteMode === 'fail') return { success: false, error: 'Database error deleting user' }; deletedAuth.push(id); return { success: true }; };
   sup.resendVerification = async (email) => { resent.push(email); };
   const express = require('express');
   const { connectDB } = require(SRC + '/config/database');
@@ -595,6 +599,95 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     await Workout.create({ userId: users.dash.id, exercise: 'योग ' + 'x'.repeat(300), duration: 5, calories: 10, timestamp: at(3) });
     const r = await fetch(`${base}/api/reports/export?period=monthly&format=pdf`, { headers: { Authorization: 'Bearer dash' } });
     assert.equal(r.status, 200); assert.equal(Buffer.from(await r.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
+  });
+
+
+  console.log('Account deletion');
+  const everything = async (id, email, legacyId) => {
+    const m = require('mongoose'); const db = m.connection.db; const mdl = require(SRC + '/models/Business.model');
+    const c = async (name, filter) => db.collection(name).countDocuments(filter);
+    return {
+      workouts: await c('workouts', { userId: id }), meals: await c('meals', { userId: id }), wearable: await c('wearabledatas', { userId: id }),
+      refProfile: await c('referralprofiles', { userId: id }), refCredits: await c('referralcredits', { userId: id }),
+      referrals: await c('referrals', { $or: [{ referrerId: id }, { referredId: id }] }),
+      business: await c('businesses', { ownerId: id }), memberById: await c('businessmembers', { userId: id }), memberByEmail: await c('businessmembers', { email }),
+      seats: await c('businessstaffs', { email }), contact: await c('contacts', { email }), lead: await c('leads', { email }),
+      friendships: await c('friendships', { $or: [{ requester: id }, { recipient: id }] }), challengeEntries: await c('challengeparticipants', { user: id }),
+      challenges: await c('challenges', { participants: id }),
+      support: await c('supportconversations', { userEmail: email }), legacyUser: await c('users', { email }),
+      legacyPlans: await c('workoutplans', { userId: legacyId }), legacySessions: await c('workoutsessions', { userId: legacyId }), posts: await c('socialposts', { author: legacyId }),
+    };
+  };
+  const total = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+  const legacyId = new (require('mongoose').Types.ObjectId)();
+  let bizId;
+  await t('set up a person with data in every place we keep it', async () => {
+    const L = users.leaver; const db = require('mongoose').connection.db; const oid = require('mongoose').Types.ObjectId;
+    await Workout.create({ userId: L.id, exercise: 'Squat', duration: 20, calories: 100, timestamp: new Date() });
+    await Meal.create({ userId: L.id, foodName: 'Oats', calories: 300, protein: 10, carbs: 40, fat: 5, timestamp: new Date() });
+    assert.equal((await call('leaver', 'POST', '/api/wearables/sync', { steps: 5000, sleepHours: 7 })).status, 200);
+    const code = (await call('ref', 'GET', '/api/referrals/me')).body.data.code;   // ref refers leaver (leaver is new)
+    assert.equal((await call('leaver', 'POST', '/api/referrals/claim', { code })).status, 201);
+    assert.equal((await call('leaver', 'GET', '/api/referrals/me')).status, 200);
+    assert.equal((await call('leaver', 'POST', '/api/business/apply', { name: 'Leaver Gym', type: 'Gym' })).status, 201);
+    const app = (await call('admin', 'GET', '/api/business/admin/applications')).body.data.find((a) => a.name === 'Leaver Gym');
+    assert.equal((await call('admin', 'POST', `/api/business/admin/applications/${app.id}/approve`)).status, 200);
+    bizId = app.id;
+    assert.equal((await call('leaver', 'POST', '/api/business/members', { name: 'Their Member', email: 'theirmember@x.test' })).status, 201);
+    assert.equal((await call('leaver', 'POST', '/api/business/plans', { name: 'Their plan', level: 'Beginner', weeks: 4, daysPerWeek: 3 })).status, 201);
+    assert.equal((await call('leaver', 'POST', '/api/business/foods', { name: 'Their food', calories: 1, protein: 1, carbs: 1, fat: 1 })).status, 201);
+    assert.equal((await call('leaver', 'POST', '/api/business/staff', { name: 'Their coach', email: 'theircoach@x.test', role: 'Coach' })).status, 201);
+    // They are also a member and a team seat in other businesses, and appear elsewhere by email
+    assert.equal((await call('owner', 'POST', '/api/business/members', { name: 'Leaver Member', email: 'leaver@x.test' })).status, 201);
+    assert.equal((await call('leaver', 'GET', '/api/business/memberships')).status, 200); // signing in links the invite to their account
+    await require(SRC + '/models/Business.model').BusinessStaff.collection.insertOne({ businessId: new oid(), email: 'leaver@x.test', name: 'L', role: 'Viewer' });
+    await db.collection('contacts').insertOne({ name: 'L', email: 'leaver@x.test', message: 'hello there' });
+    await db.collection('leads').insertOne({ email: 'leaver@x.test', name: 'L' });
+    await db.collection('friendships').insertOne({ requester: L.id, recipient: 'someone-else', status: 'accepted' });
+    await db.collection('challengeparticipants').insertOne({ user: L.id, challenge: 'c1' });
+    await db.collection('challenges').insertOne({ name: 'C', participants: [L.id, 'someone-else'] });
+    await db.collection('users').insertOne({ _id: legacyId, email: 'leaver@x.test', password: 'x', role: 'user' });
+    await db.collection('workoutplans').insertOne({ userId: legacyId, name: 'old plan' });
+    await db.collection('workoutsessions').insertOne({ userId: legacyId });
+    await db.collection('socialposts').insertOne({ author: legacyId, content: 'hi', likes: [], comments: [] });
+    await db.collection('supportconversations').insertOne({ userEmail: 'leaver@x.test', status: 'resolved' });
+    const before = await everything(L.id, L.email, legacyId);
+    for (const [k, v] of Object.entries(before)) assert.ok(v >= 1, `setup did not create "${k}"`);
+  });
+  const bystanderBefore = async () => ({ maya: await everything(users.maya.id, users.maya.email, new (require('mongoose').Types.ObjectId)()), dash: await everything(users.dash.id, users.dash.email, new (require('mongoose').Types.ObjectId)()), owner: await require('mongoose').connection.db.collection('businesses').countDocuments({ ownerId: users.owner.id }) });
+  let snapshot;
+  await t('deleting needs sign-in', async () => { snapshot = await bystanderBefore(); assert.equal((await call(null, 'DELETE', '/api/auth/account')).status, 401); });
+  await t('if the sign-in service cannot be reached, nothing is deleted', async () => {
+    await Workout.create({ userId: users.ghost.id, exercise: 'Keep me', duration: 5, timestamp: new Date() });
+    const r = await call('ghost', 'DELETE', '/api/auth/account');
+    assert.equal(r.status, 503); assert.equal(r.body.code, 'unavailable'); assert.match(r.body.message, /nothing was deleted/i);
+    assert.equal(await Workout.countDocuments({ userId: users.ghost.id }), 1);
+  });
+  await t('when Supabase refuses to close the sign-in, the person is told clearly and their data is already gone', async () => {
+    deleteMode = 'fail';
+    const r = await call('leaver', 'DELETE', '/api/auth/account');
+    assert.equal(r.status, 502); assert.equal(r.body.code, 'auth_delete_failed'); assert.match(r.body.message, /support@reprummble\.com/);
+    assert.equal(total(await everything(users.leaver.id, users.leaver.email, legacyId)), 0, 'data should already be removed');
+    assert.deepEqual(deletedAuth, []);
+  });
+  await t('trying again finishes the job (deleting is safe to repeat)', async () => {
+    deleteMode = 'ok';
+    const r = await call('leaver', 'DELETE', '/api/auth/account');
+    assert.equal(r.status, 200); assert.equal(r.body.success, true);
+    assert.deepEqual(deletedAuth, [users.leaver.id], 'the sign-in is closed');
+  });
+  await t('everything about them is gone, including the business they owned and its team', async () => {
+    const after = await everything(users.leaver.id, users.leaver.email, legacyId);
+    for (const [k, v] of Object.entries(after)) assert.equal(v, 0, `"${k}" still has ${v}`);
+    const db = require('mongoose').connection.db; const oid = require('mongoose').Types.ObjectId;
+    for (const col of ['businessmembers', 'businessplans', 'businessfoods', 'businessstaffs']) assert.equal(await db.collection(col).countDocuments({ businessId: new oid(bizId) }), 0, col);
+    const challenge = await db.collection('challenges').findOne({ name: 'C' });
+    assert.deepEqual(challenge.participants, ['someone-else'], 'other people stay in a shared challenge');
+  });
+  await t('nobody else lost anything', async () => {
+    const now = await bystanderBefore();
+    assert.deepEqual(now, snapshot);
+    assert.equal((await call('owner', 'GET', '/api/business/members')).status, 200);
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
