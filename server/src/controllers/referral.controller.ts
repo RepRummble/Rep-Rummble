@@ -78,7 +78,7 @@ export const claimReferral = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'Invalid referral code' })
     }
 
-    const profile = await ReferralProfile.findOne({ code })
+    const profile = await ReferralProfile.findOne({ code: { $eq: code } })
     if (!profile) return res.status(404).json({ success: false, message: 'Invalid referral code' })
     if (profile.userId === userId) {
       return res.status(400).json({ success: false, message: 'You cannot use your own referral code' })

@@ -1,11 +1,13 @@
 import { Router } from 'express'
 import { protect } from '../middleware/auth.middleware'
 import { adminByEmail, loadApprovedBusiness, requireAccess } from '../middleware/business.middleware'
-import { businessApplyLimiter } from '../middleware/rateLimit.middleware'
+import { businessApplyLimiter, perUserLimiter } from '../middleware/rateLimit.middleware'
 import * as c from '../controllers/business.controller'
 
 const router = Router()
 router.use(protect)
+// Everything below touches the database, so each person gets 120 requests a minute.
+router.use(perUserLimiter(120))
 
 // Any signed-in user
 router.post('/apply', businessApplyLimiter, c.apply)

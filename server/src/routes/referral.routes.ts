@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import { protect } from '../middleware/auth.middleware'
-import { referralClaimLimiter } from '../middleware/rateLimit.middleware'
+import { perUserLimiter, referralClaimLimiter } from '../middleware/rateLimit.middleware'
 import { claimReferral, getMyReferral } from '../controllers/referral.controller'
 
 const router = Router()
 
 router.use(protect)
+router.use(perUserLimiter(60))
 router.get('/me', getMyReferral)
 router.post('/claim', referralClaimLimiter, claimReferral)
 

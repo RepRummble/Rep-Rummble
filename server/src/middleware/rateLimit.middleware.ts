@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 
 /**
  * Throttles the auth endpoints most attractive to credential stuffing /
@@ -96,3 +96,17 @@ export const resendLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Please try again later.' },
 })
+
+/**
+ * A limit per signed-in person (falling back to IP), for routes that read or write the database.
+ * Use it after `protect`. People behind a shared office or phone-carrier IP get their own bucket.
+ */
+export const perUserLimiter = (limit: number, windowMs = 60 * 1000) =>
+  rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => (req as { user?: { id?: string } }).user?.id ?? ipKeyGenerator(req.ip ?? ''),
+    message: { success: false, message: 'Too many requests. Please slow down and try again shortly.' },
+  })

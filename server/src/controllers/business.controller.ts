@@ -3,6 +3,7 @@ import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth.middleware'
 import { BusinessRequest, adminEmails, findBusinessFor, isAdminUser } from '../middleware/business.middleware'
 import { sendMail } from '../services/mail.service'
+import { isEmail } from '../utils/validation'
 import { isDBConnected } from '../config/database'
 import {
   BUSINESS_TYPES, Business, BusinessFood, BusinessMealPlan, BusinessMember, BusinessPlan, BusinessStaff, STAFF_ROLES,
@@ -16,7 +17,6 @@ const LIMITS = { members: 5000, plans: 200, mealPlans: 200, foods: 2000, staff: 
 // Only real strings count: objects/arrays/numbers become '' and fail validation instead of becoming "[object Object]".
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 const email = (v: unknown) => text(v, 254).toLowerCase()
-const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
 const num = (v: unknown, min: number, max: number): number | null => {
   const n = Number(v)
   return Number.isFinite(n) && n >= min && n <= max ? n : null
@@ -457,7 +457,7 @@ export const createStaff = async (req: BusinessRequest, res: Response) => {
     if (!role) return fail(res, 400, 'Choose a role')
     if (staffEmail === req.business!.ownerEmail) return fail(res, 400, 'That is the account owner')
     // One person works for one business, so access always resolves unambiguously.
-    if (await BusinessStaff.exists({ email: staffEmail })) return fail(res, 409, 'That person is already on a team')
+    if (await BusinessStaff.exists({ email: { $eq: staffEmail } })) return fail(res, 409, 'That person is already on a team')
     if ((await BusinessStaff.countDocuments({ businessId })) >= LIMITS.staff) return fail(res, 400, 'Team limit reached')
     const staff = await BusinessStaff.create({ businessId, name, email: staffEmail, role })
     return res.status(201).json({ success: true, data: { id: staff.id, name, email: staffEmail, role } })

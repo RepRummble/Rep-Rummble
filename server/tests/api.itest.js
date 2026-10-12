@@ -48,6 +48,8 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   sup.getUserById = async (id) => { const u = Object.values(users).find((x) => x.id === id); return u ? { success: true, user: { id, created_at: new Date(u.created).toISOString() } } : { success: false }; };
 
   const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n(); rl.authLimiter = (q, r, n) => n(); rl.loginLimiter = (q, r, n) => n(); rl.resendLimiter = (q, r, n) => n();
+  const realPerUserLimiter = rl.perUserLimiter; // kept for its own tests below
+  rl.perUserLimiter = () => (q, r, n) => n();
   const sent = [];
   require(SRC + '/services/mail.service').sendMail = async (to, subject, body) => { sent.push({ to, subject, body }); return true; };
   const resent = [];
@@ -379,6 +381,57 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal((await call(thirdParty, 'GET', '/api/referrals/me')).status, 403);
     assert.equal((await call(thirdParty, 'GET', '/api/reports/export?period=monthly')).status, 403);
   });
+
+
+  console.log('Hardening (from the security scan)');
+  const { isEmail } = require(SRC + '/utils/validation');
+  await t('email check accepts normal addresses and rejects malformed ones', async () => {
+    for (const ok of ['a@b.co', 'first.last+tag@sub.example.com', 'x@y-z.org']) assert.equal(isEmail(ok), true, ok);
+    for (const bad of ['', 'a', 'a@b', 'a@b.', 'a@.com', 'a@b..c', 'a b@c.com', 'a@@b.com', '@b.com', 'a@b.c@d.com']) assert.equal(isEmail(bad), false, bad);
+    assert.equal(isEmail('a'.repeat(250) + '@b.co'), false, 'over 254 characters');
+  });
+  await t('email check stays fast on input crafted to make the old regex slow', async () => {
+    const old = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const ms = (fn) => { const t0 = process.hrtime.bigint(); fn(); return Number(process.hrtime.bigint() - t0) / 1e6; };
+    const attack = '!@!.'.repeat(5000) + '!'; // 20,000 characters, the pattern GitHub flagged
+    const oldMs = ms(() => old.test(attack));
+    const newMs = ms(() => isEmail(attack));
+    console.log(`        20,000-character attack: old regex ${oldMs.toFixed(0)} ms, new check ${newMs.toFixed(3)} ms`);
+    assert.ok(newMs < 5, `new check took ${newMs} ms`);
+    assert.equal(isEmail(attack), false);
+  });
+  await t('sign-up rejects an invalid email before it reaches Supabase or the database', async () => {
+    signUpMode = 'verify';
+    assert.equal((await call(null, 'POST', '/api/auth/register', { email: 'not-an-email', password: 'a-long-password' })).status, 400);
+    assert.equal((await call(null, 'POST', '/api/auth/register', { email: '!@!.'.repeat(300), password: 'a-long-password' })).status, 400);
+  });
+  await t('sign-up cannot be used to read or overwrite other users by sending query operators', async () => {
+    const { User } = require(SRC + '/models/User.model');
+    // Inserted directly: saving a User through the model currently fails on Mongoose 9 (old next() hook).
+    await User.collection.insertOne({ email: 'victim@x.test', password: 'x', displayName: 'Victim', role: 'user' });
+    const r = await call(null, 'POST', '/api/auth/register', { email: { $ne: 'nobody' }, password: 'a-long-password', displayName: 'Hacked' });
+    assert.equal(r.status, 400);
+    const v = await User.findOne({ email: 'victim@x.test' });
+    assert.equal(v.displayName, 'Victim', 'existing record must be untouched');
+    const r2 = await call(null, 'POST', '/api/auth/register', { email: 'fresh@x.test', password: 'a-long-password', displayName: { $set: { role: 'admin' } } });
+    assert.equal(r2.status, 202);
+    assert.equal((await User.findOne({ email: 'fresh@x.test' })).displayName, '', 'non-text display name is dropped');
+  });
+  await t('referral code lookups treat operators as plain text', async () => {
+    assert.equal((await call('newbie', 'POST', '/api/referrals/claim', { code: { $ne: '' } })).status, 400);
+  });
+  await t('per-user limiter: each person has their own allowance, and the limit holds', async () => {
+    const limited = express();
+    limited.use((req, res, next) => { req.user = { id: req.headers['x-user'] }; next(); });
+    limited.use(realPerUserLimiter(3, 60_000));
+    limited.get('/x', (req, res) => res.json({ ok: true }));
+    const srv = limited.listen(0);
+    const hit = (user) => fetch(`http://127.0.0.1:${srv.address().port}/x`, { headers: { 'x-user': user } }).then((r) => r.status);
+    assert.deepEqual([await hit('a'), await hit('a'), await hit('a'), await hit('a')], [200, 200, 200, 429]);
+    assert.equal(await hit('b'), 200, 'another person is not affected');
+    srv.close();
+  });
+
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
   server.close(); await require('mongoose').disconnect(); await mms.stop();

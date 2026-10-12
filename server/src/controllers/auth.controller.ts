@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 import jwt from "jsonwebtoken"
 import { AuthRequest } from "../middleware/auth.middleware"
 import { ApiError } from "../types"
+import { isEmail } from "../utils/validation"
 import * as supabaseService from "../services/supabase.service"
 import { User } from "../models/User.model"
 import nodemailer from "nodemailer"
@@ -21,8 +22,12 @@ export const register = async (req: Request, res: Response) => {
     if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return res.status(400).json({ success: false, message: "Please provide email and password" })
     }
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!isEmail(normalizedEmail)) {
+      return res.status(400).json({ success: false, message: "Please enter a valid email address" })
+    }
 
-    const result = await supabaseService.signUpWithEmail(email, password, { displayName })
+    const result = await supabaseService.signUpWithEmail(normalizedEmail, password, { displayName })
 
     if (!result.success || !result.user) {
       return res.status(400).json({ success: false, message: result.error || "Registration failed" })
@@ -34,8 +39,8 @@ export const register = async (req: Request, res: Response) => {
     if (result.needsVerification) {
       if (!result.alreadyRegistered) {
         await User.findOneAndUpdate(
-          { email: result.user.email },
-          { email: result.user.email, displayName: displayName || "" },
+          { email: { $eq: normalizedEmail } },
+          { email: normalizedEmail, displayName: typeof displayName === 'string' ? displayName : "" },
           { upsert: true, new: true }
         )
       }
@@ -47,8 +52,8 @@ export const register = async (req: Request, res: Response) => {
 
     // Verification is switched off in Supabase: the account is usable straight away.
     await User.findOneAndUpdate(
-      { email: result.user.email },
-      { email: result.user.email, displayName: displayName || "" },
+      { email: { $eq: normalizedEmail } },
+      { email: normalizedEmail, displayName: typeof displayName === 'string' ? displayName : "" },
       { upsert: true, new: true }
     )
 
@@ -74,7 +79,7 @@ export const register = async (req: Request, res: Response) => {
 // @route POST /api/auth/resend-verification
 export const resendVerification = async (req: Request, res: Response) => {
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (isEmail(email)) {
     await supabaseService.resendVerification(email)
   }
   // Always the same answer, so this cannot be used to find out who has an account.
