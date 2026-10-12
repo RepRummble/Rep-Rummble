@@ -49,7 +49,9 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
 
   const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n(); rl.authLimiter = (q, r, n) => n(); rl.loginLimiter = (q, r, n) => n(); rl.resendLimiter = (q, r, n) => n();
   const realPerUserLimiter = rl.perUserLimiter; // kept for its own tests below
+  const realPerIpLimiter = rl.perIpLimiter;
   rl.perUserLimiter = () => (q, r, n) => n();
+  rl.perIpLimiter = () => (q, r, n) => n();
   const sent = [];
   require(SRC + '/services/mail.service').sendMail = async (to, subject, body) => { sent.push({ to, subject, body }); return true; };
   const resent = [];
@@ -419,6 +421,17 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   });
   await t('referral code lookups treat operators as plain text', async () => {
     assert.equal((await call('newbie', 'POST', '/api/referrals/claim', { code: { $ne: '' } })).status, 400);
+  });
+  await t('per-IP limiter sits in front of sign-in checks, so floods of junk tokens are stopped first', async () => {
+    const guarded = express();
+    let authChecks = 0;
+    guarded.use(realPerIpLimiter(3, 60_000));
+    guarded.use((req, res) => { authChecks++; res.status(401).json({ success: false }); }); // stands in for `protect`
+    const srv = guarded.listen(0);
+    const hit = () => fetch(`http://127.0.0.1:${srv.address().port}/x`, { headers: { Authorization: 'Bearer junk' } }).then((r) => r.status);
+    assert.deepEqual([await hit(), await hit(), await hit(), await hit(), await hit()], [401, 401, 401, 429, 429]);
+    assert.equal(authChecks, 3, 'the sign-in check must not run once the limit is hit');
+    srv.close();
   });
   await t('per-user limiter: each person has their own allowance, and the limit holds', async () => {
     const limited = express();

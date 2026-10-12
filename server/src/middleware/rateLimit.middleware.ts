@@ -110,3 +110,17 @@ export const perUserLimiter = (limit: number, windowMs = 60 * 1000) =>
     keyGenerator: (req) => (req as { user?: { id?: string } }).user?.id ?? ipKeyGenerator(req.ip ?? ''),
     message: { success: false, message: 'Too many requests. Please slow down and try again shortly.' },
   })
+
+/**
+ * A limit per IP address, meant to sit in front of `protect`. Checking a sign-in token calls out
+ * to Supabase, so flooding an endpoint with junk tokens should be stopped before that happens.
+ * (perUserLimiter then gives each signed-in person their own allowance after the check.)
+ */
+export const perIpLimiter = (limit: number, windowMs = 60 * 1000) =>
+  rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests. Please slow down and try again shortly.' },
+  })

@@ -1,12 +1,13 @@
 import { Router } from 'express'
 import { protect } from '../middleware/auth.middleware'
 import { adminByEmail, loadApprovedBusiness, requireAccess } from '../middleware/business.middleware'
-import { businessApplyLimiter, perUserLimiter } from '../middleware/rateLimit.middleware'
+import { businessApplyLimiter, perIpLimiter, perUserLimiter } from '../middleware/rateLimit.middleware'
 import * as c from '../controllers/business.controller'
 
 const router = Router()
+// Per-IP first (so junk tokens are stopped before the sign-in check), then per person once known.
+router.use(perIpLimiter(300))
 router.use(protect)
-// Everything below touches the database, so each person gets 120 requests a minute.
 router.use(perUserLimiter(120))
 
 // Any signed-in user
