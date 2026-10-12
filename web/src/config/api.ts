@@ -63,6 +63,37 @@ export async function apiBlob(endpoint: string): Promise<{ blob?: Blob; error?: 
   }
 }
 
+export interface DailyPoint {
+  period: string; workouts: number; minutes: number; burned: number
+  calories: number; protein: number; carbs: number; fat: number
+}
+export interface RecentWorkout { exercise: string; minutes: number; burned: number; at: string }
+export interface RecentMeal { name: string; calories: number; protein: number; carbs: number; fat: number; mealType?: string; at: string }
+export interface WearableDay {
+  date: string; steps: number; sleepHours: number; calories: number
+  heartRate: number | null; restingHR: number | null; hrv: number | null; weight: number | null; bodyFat: number | null
+  syncedAt: string
+}
+export interface Overview {
+  totals: { workouts: number; minutes: number; burned: number; meals: number; calories: number }
+  week: { workouts: number; minutes: number; burned: number; activeDays: number; avgCalories: number; consistency: number }
+  streak: { current: number; longest: number }
+  today: { calories: number; protein: number; carbs: number; fat: number }
+  macroSplit: { protein: number; carbs: number; fat: number } | null
+  daily: DailyPoint[]
+  recentWorkouts: RecentWorkout[]
+  recentMeals: RecentMeal[]
+  wearables: { latest: WearableDay | null; days: WearableDay[] }
+}
+export type ReportPeriod = 'monthly' | 'yearly' | 'historical'
+export interface History {
+  period: ReportPeriod; generatedAt: string; from: string | null; to: string
+  rows: DailyPoint[]
+  totals: Omit<DailyPoint, 'period'>
+  recentWorkouts: RecentWorkout[]
+  recentMeals: RecentMeal[]
+}
+
 export interface ReferralSummary {
   code: string
   link: string
@@ -218,9 +249,16 @@ export const api = {
       apiRequest(`/api/leaderboard${limit ? `?limit=${limit}` : ''}`),
   },
 
-  // Reports (the signed-in user's own data, as CSV)
+  // The signed-in person's own activity: dashboard numbers, history, and downloadable reports
+  analytics: {
+    overview: () => apiRequest<Overview>('/api/analytics/overview'),
+  },
   reports: {
-    download: (period: 'monthly' | 'yearly' | 'historical') => apiBlob(`/api/reports/export?period=${period}`),
+    history: (period: ReportPeriod) => apiRequest<History>(`/api/reports/history?period=${period}`),
+    download: (period: ReportPeriod, format: 'csv' | 'pdf' = 'csv') => apiBlob(`/api/reports/export?period=${period}&format=${format}`),
+  },
+  wearables: {
+    data: (days: number) => apiRequest<WearableDay[]>(`/api/wearables/data?days=${days}`),
   },
 
   // Referral rewards

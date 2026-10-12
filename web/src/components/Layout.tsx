@@ -446,7 +446,8 @@ export default function Layout() {
                     <div className="rr-popover-email">{DEV_BYPASS_AUTH ? DEV_USER.email : (currentUser?.email || '')}</div>
                   </div>
                   {isBusiness && <Link to="/dashboard" onClick={() => setProfileOpen(false)}>My own dashboard</Link>}
-                  {isBusiness && <Link to="/dashboard/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>}
+                  <Link to="/dashboard/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>
+                  <Link to="/dashboard/billing" onClick={() => setProfileOpen(false)}>Billing</Link>
                   {account.isAdmin && (
                     <Link to="/admin/applications" onClick={() => setProfileOpen(false)}>
                       Review applications{account.pending > 0 ? ` (${account.pending})` : ''}

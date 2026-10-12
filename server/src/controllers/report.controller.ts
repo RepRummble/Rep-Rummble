@@ -1,87 +1,55 @@
 import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth.middleware'
 import { isDBConnected } from '../config/database'
-import { Workout } from '../models/Workout.model'
-import { Meal } from '../models/Meal.model'
+import { PERIODS, Period, getHistory, wearableDays } from '../services/activity.service'
+import { buildReportPdf } from '../services/report-pdf.service'
 
-type Period = 'monthly' | 'yearly' | 'historical'
+const parsePeriod = (value: unknown): Period | null => PERIODS.find((p) => p === value) ?? null
+const unavailable = (res: Response) => res.status(503).json({ success: false, message: 'Service temporarily unavailable' })
 
-const FORMATS: Record<Period, string> = { monthly: '%Y-%m-%d', yearly: '%Y-%m', historical: '%Y' }
-
-/** Every period label in the window, so quiet days/months still show up as zero rows. */
-function labelsFor(period: Period, now: Date): string[] {
-  const out: string[] = []
-  if (period === 'monthly') {
-    for (let i = 29; i >= 0; i--) out.push(new Date(now.getTime() - i * 86_400_000).toISOString().slice(0, 10))
-  } else if (period === 'yearly') {
-    for (let i = 11; i >= 0; i--) out.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)).toISOString().slice(0, 7))
+// @desc    A person's own history for a period, as JSON (powers the Reports page)
+// @route   GET /api/reports/history?period=monthly|yearly|historical
+// @access  Private
+export const getReportHistory = async (req: AuthRequest, res: Response) => {
+  const period = parsePeriod(req.query.period ?? 'monthly')
+  if (!period) return res.status(400).json({ success: false, message: 'Invalid period' })
+  if (!isDBConnected()) return unavailable(res)
+  try {
+    return res.json({ success: true, data: await getHistory(req.user!.id, period) })
+  } catch (error) {
+    console.error('getReportHistory error:', error)
+    return res.status(500).json({ success: false, message: 'Could not load your history' })
   }
-  return out
 }
 
-function windowStart(period: Period, now: Date): Date | null {
-  if (period === 'monthly') return new Date(now.getTime() - 29 * 86_400_000)
-  if (period === 'yearly') return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1))
-  return null
-}
+const csvCell = (v: string | number) => String(v)
 
-export async function buildReportRows(userId: string, period: Period, now = new Date()) {
-  const start = windowStart(period, now)
-  if (start && period === 'monthly') start.setUTCHours(0, 0, 0, 0)
-  const range = start ? { timestamp: { $gte: start } } : {}
-  const format = FORMATS[period]
-
-  const [workouts, meals] = await Promise.all([
-    Workout.aggregate([
-      { $match: { userId, completed: { $ne: false }, ...range } },
-      { $group: {
-        _id: { $dateToString: { format, date: '$timestamp' } },
-        workouts: { $sum: 1 },
-        minutes: { $sum: '$duration' },
-        burned: { $sum: { $ifNull: ['$calories', 0] } },
-      } },
-    ]),
-    Meal.aggregate([
-      { $match: { userId, ...range } },
-      { $group: {
-        _id: { $dateToString: { format, date: '$timestamp' } },
-        calories: { $sum: '$calories' },
-        protein: { $sum: '$protein' },
-        carbs: { $sum: '$carbs' },
-        fat: { $sum: '$fat' },
-      } },
-    ]),
-  ])
-
-  const byKey = new Map<string, Record<string, number>>()
-  for (const w of workouts) byKey.set(w._id, { workouts: w.workouts, minutes: w.minutes, burned: w.burned })
-  for (const m of meals) byKey.set(m._id, { ...byKey.get(m._id), calories: m.calories, protein: m.protein, carbs: m.carbs, fat: m.fat })
-
-  const keys = labelsFor(period, now)
-  const labels = keys.length ? keys : [...byKey.keys()].sort()
-  const n = (v: number | undefined) => Math.round((v ?? 0) * 10) / 10
-  return labels.map((label) => {
-    const r = byKey.get(label) ?? {}
-    return [label, n(r.workouts), n(r.minutes), n(r.burned), n(r.calories), n(r.protein), n(r.carbs), n(r.fat)]
-  })
-}
-
-// @desc    Download the signed-in user's own report as CSV
-// @route   GET /api/reports/export?period=monthly|yearly|historical
+// @desc    Download the signed-in user's own report as CSV or PDF
+// @route   GET /api/reports/export?period=monthly|yearly|historical&format=csv|pdf
 // @access  Private
 export const downloadReport = async (req: AuthRequest, res: Response) => {
-  const period = String(req.query.period || 'monthly') as Period
-  if (!(period in FORMATS)) return res.status(400).json({ success: false, message: 'Invalid period' })
-  if (!isDBConnected()) return res.status(503).json({ success: false, message: 'Service temporarily unavailable' })
+  const period = parsePeriod(req.query.period ?? 'monthly')
+  const format = req.query.format === 'pdf' ? 'pdf' : req.query.format === undefined || req.query.format === 'csv' ? 'csv' : null
+  if (!period) return res.status(400).json({ success: false, message: 'Invalid period' })
+  if (!format) return res.status(400).json({ success: false, message: 'Invalid format' })
+  if (!isDBConnected()) return unavailable(res)
 
   try {
-    const rows = await buildReportRows(req.user!.id, period)
-    const header = ['Period (UTC)', 'Workouts', 'Workout minutes', 'Calories burned', 'Calories eaten', 'Protein (g)', 'Carbs (g)', 'Fat (g)']
-    const csv = [header, ...rows].map((row) => row.join(',')).join('\n')
+    const history = await getHistory(req.user!.id, period)
 
+    if (format === 'pdf') {
+      const wearables = await wearableDays(req.user!.id, period === 'monthly' ? 30 : 90)
+      const pdf = await buildReportPdf(history, { name: req.user!.displayName, email: req.user!.email }, wearables)
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `attachment; filename="reprummble-${period}-report.pdf"`)
+      return res.status(200).send(pdf)
+    }
+
+    const header = ['Period (UTC)', 'Workouts', 'Workout minutes', 'Calories burned', 'Calories eaten', 'Protein (g)', 'Carbs (g)', 'Fat (g)']
+    const rows = history.rows.map((r) => [r.period, r.workouts, r.minutes, r.burned, r.calories, r.protein, r.carbs, r.fat])
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', `attachment; filename="reprummble-${period}-report.csv"`)
-    return res.status(200).send(csv)
+    return res.status(200).send([header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n'))
   } catch (error) {
     console.error('downloadReport error:', error)
     return res.status(500).json({ success: false, message: 'Could not build your report' })

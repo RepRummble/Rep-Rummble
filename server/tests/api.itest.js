@@ -24,6 +24,7 @@ const users = {
   inviteFake:{ id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', email: 'invitee@members.test', created: Date.now() - 1 * DAY, verified: false },
   inviteReal:{ id: 'ffffffff-ffff-4fff-8fff-ffffffffffff', email: 'invitee@members.test', created: Date.now() - 1 * DAY },
   adminFake: { id: '12121212-1212-4212-8212-121212121212', email: 'admin@site.test', created: Date.now() - 1 * DAY, verified: false },
+  dash:      { id: '15151515-1515-4515-8515-151515151515', email: 'dash@x.test', created: Date.now() - 100 * DAY },
   ownerC:    { id: '14141414-1414-4414-8414-141414141414', email: 'ownerc@gym.test', created: Date.now() - 400 * DAY },
   unver:     { id: '13131313-1313-4313-8313-131313131313', email: 'unver@x.test', created: Date.now() - 1 * DAY, verified: false },
 };
@@ -73,6 +74,11 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   app.use('/api/business', require(SRC + '/routes/business.routes').default);
   app.use('/api/referrals', require(SRC + '/routes/referral.routes').default);
   app.use('/api/reports', require(SRC + '/routes/report.routes').default);
+  app.use('/api/analytics', require(SRC + '/routes/analytics.routes').default);
+  app.use('/api/wearables', require(SRC + '/routes/wearable.routes').default);
+  // Unique indexes (e.g. one member per email per business) are built in the background on a fresh
+  // database. Wait for them, or a fast test can slip a duplicate in before the index exists.
+  await Promise.all(Object.values(require('mongoose').models).map((m) => m.init()));
   const server = app.listen(0);
   const base = `http://127.0.0.1:${server.address().port}`;
   const call = async (as, method, path, body) => {
@@ -478,6 +484,117 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     ] }).save();
     assert.equal(sess.totalReps, 50); assert.equal(sess.totalSets, 5);
     assert.equal(sess.overallFormScore, 80); assert.equal(sess.xpEarned, 40); // 2 x 10 + 20 for good form
+  });
+
+
+  console.log('Dashboard analytics, history and PDF');
+  const zlib = require('node:zlib');
+  /** Text of a PDF made by pdfkit: inflate each stream and decode its hex-encoded strings. */
+  const pdfText = (buf) => {
+    const raw = buf.toString('latin1'); let out = '';
+    for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+      let data; try { data = zlib.inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'); } catch { continue; }
+      for (const h of data.matchAll(/<([0-9a-fA-F]+)>/g)) out += Buffer.from(h[1], 'hex').toString('latin1');
+      out += ' ';
+    }
+    return out;
+  };
+  const at = (daysAgo, hour = 12) => { const d = new Date(Date.now() - daysAgo * DAY); d.setUTCHours(hour, 0, 0, 0); return d; };
+  await Workout.create({ userId: users.dash.id, exercise: 'Squat', duration: 30, calories: 250, timestamp: at(0, 8) });
+  await Workout.create({ userId: users.dash.id, exercise: 'Bench press', duration: 40, calories: 300, timestamp: at(1) });
+  await Workout.create({ userId: users.dash.id, exercise: 'Run', duration: 20, calories: 200, timestamp: at(2) });
+  await Workout.create({ userId: users.dash.id, exercise: 'Row', duration: 25, calories: 180, timestamp: at(10) });
+  await Meal.create({ userId: users.dash.id, foodName: 'Oats', calories: 400, protein: 20, carbs: 60, fat: 10, mealType: 'breakfast', timestamp: at(0, 7) });
+  await Meal.create({ userId: users.dash.id, foodName: 'Chicken and rice', calories: 700, protein: 50, carbs: 80, fat: 15, mealType: 'lunch', timestamp: at(1) });
+  await Workout.create({ userId: users.ref.id, exercise: 'SOMEONE ELSES SECRET', duration: 99, calories: 999, timestamp: at(0) });
+
+  await t('analytics needs sign-in; the overview adds up this person\'s data only', async () => {
+    assert.equal((await call(null, 'GET', '/api/analytics/overview')).status, 401);
+    const d = (await call('dash', 'GET', '/api/analytics/overview')).body.data;
+    assert.equal(d.totals.workouts, 4); assert.equal(d.totals.minutes, 115); assert.equal(d.totals.burned, 930);
+    assert.equal(d.totals.meals, 2); assert.equal(d.totals.calories, 1100);
+    assert.equal(d.week.workouts, 3); assert.equal(d.week.minutes, 90); assert.equal(d.week.activeDays, 3);
+    assert.equal(d.today.calories, 400); assert.equal(d.today.protein, 20);
+    assert.equal(d.daily.length, 30); assert.equal(d.daily[29].workouts, 1);
+    assert.equal(d.recentWorkouts.length, 4); assert.equal(d.recentWorkouts[0].exercise, 'Squat');
+    assert.equal(d.recentMeals[0].name, 'Oats');
+    assert.ok(!JSON.stringify(d).includes('SOMEONE ELSES'), 'leaked another person');
+  });
+  await t('streaks: three days in a row now, the older workout does not extend it', async () => {
+    const d = (await call('dash', 'GET', '/api/analytics/overview')).body.data;
+    assert.equal(d.streak.current, 3); assert.equal(d.streak.longest, 3);
+    const { streaks } = require(SRC + '/services/activity.service');
+    const day = (n) => new Date(Date.now() - n * DAY).toISOString().slice(0, 10);
+    assert.deepEqual(streaks(new Set([day(1), day(2)])), { current: 2, longest: 2 }, 'today not logged yet does not break it');
+    assert.deepEqual(streaks(new Set([day(2), day(3)])).current, 0, 'a gap of a full day ends it');
+    assert.deepEqual(streaks(new Set()), { current: 0, longest: 0 });
+  });
+  await t('macro split reflects calories from protein, carbs and fat over the last 7 days', async () => {
+    const m = (await call('dash', 'GET', '/api/analytics/overview')).body.data.macroSplit;
+    assert.ok(Math.abs(m.protein + m.carbs + m.fat - 100) <= 1, JSON.stringify(m));
+    assert.equal((await call('newbie', 'GET', '/api/analytics/overview')).body.data.macroSplit, null, 'no meals, no split');
+  });
+  await t('wearable sync keeps one row per day and only changes what was sent', async () => {
+    const a = await call('dash', 'POST', '/api/wearables/sync', { steps: 8000, sleepHours: 7.5, restingHR: 55, hrv: 62 });
+    assert.equal(a.status, 200);
+    assert.equal((await call('dash', 'POST', '/api/wearables/sync', { steps: 9500 })).status, 200);
+    const { WearableData } = require(SRC + '/models/WearableData.model');
+    assert.equal(await WearableData.countDocuments({ userId: users.dash.id }), 1, 'one row for the day');
+    const row = await WearableData.findOne({ userId: users.dash.id });
+    assert.equal(row.steps, 9500); assert.equal(row.sleepHours, 7.5); assert.equal(row.restingHR, 55); assert.equal(row.hrv, 62);
+  });
+  await t('wearable sync ignores junk values instead of storing them', async () => {
+    assert.equal((await call('dash', 'POST', '/api/wearables/sync', { steps: 'lots', sleepHours: -3, restingHR: { $gt: 0 }, hrv: 99999 })).status, 200);
+    const { WearableData } = require(SRC + '/models/WearableData.model');
+    const row = await WearableData.findOne({ userId: users.dash.id });
+    assert.equal(row.steps, 9500); assert.equal(row.sleepHours, 7.5); assert.equal(row.restingHR, 55); assert.equal(row.hrv, 62);
+  });
+  await t('the dashboard shows the latest wearable reading and the 14-day list', async () => {
+    const w = (await call('dash', 'GET', '/api/analytics/overview')).body.data.wearables;
+    assert.equal(w.latest.steps, 9500); assert.equal(w.latest.restingHR, 55); assert.equal(w.days.length, 1);
+    const metrics = (await call('dash', 'GET', '/api/wearables/metrics')).body.data;
+    assert.equal(metrics.hrv, 62); assert.equal(metrics.sleepHours, 7.5);
+    assert.equal((await call('dash', 'GET', '/api/wearables/data?days=banana')).status, 200, 'a bad days value falls back instead of crashing');
+  });
+  await t('report history: rows for the period, totals, and recent items', async () => {
+    const h = (await call('dash', 'GET', '/api/reports/history?period=monthly')).body.data;
+    assert.equal(h.rows.length, 30); assert.equal(h.totals.workouts, 4); assert.equal(h.totals.calories, 1100);
+    assert.equal(h.recentWorkouts.length, 4); assert.equal(h.recentMeals.length, 2);
+    const y = (await call('dash', 'GET', '/api/reports/history?period=yearly')).body.data;
+    assert.equal(y.rows.length, 12); assert.equal(y.totals.workouts, 4);
+    assert.equal((await call('dash', 'GET', '/api/reports/history?period=weekly')).status, 400);
+    assert.equal((await call(null, 'GET', '/api/reports/history?period=monthly')).status, 401);
+  });
+  await t('the PDF download is a real PDF with this person\'s history in it', async () => {
+    const r = await fetch(`${base}/api/reports/export?period=monthly&format=pdf`, { headers: { Authorization: 'Bearer dash' } });
+    assert.equal(r.status, 200); assert.equal(r.headers.get('content-type'), 'application/pdf');
+    assert.match(r.headers.get('content-disposition'), /reprummble-monthly-report\.pdf/);
+    const buf = Buffer.from(await r.arrayBuffer());
+    assert.equal(buf.subarray(0, 5).toString(), '%PDF-'); assert.ok(buf.length > 1500);
+    const text = pdfText(buf);
+    for (const word of ['progress report', 'Summary', 'Day by day', 'Recent workouts', 'Recent meals', 'Squat', 'Bench press', 'Oats', 'Wearable data', 'dash@x.test']) {
+      assert.ok(text.includes(word), `PDF text is missing "${word}"`);
+    }
+    assert.ok(!text.includes('SOMEONE ELSES'), 'leaked another person');
+  });
+  await t('PDF works with no data, for each period, and rejects bad input', async () => {
+    for (const period of ['monthly', 'yearly', 'historical']) {
+      const r = await fetch(`${base}/api/reports/export?period=${period}&format=pdf`, { headers: { Authorization: 'Bearer newbie2' } });
+      assert.equal(r.status, 200, period); assert.equal(Buffer.from(await r.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
+    }
+    assert.equal((await call('dash', 'GET', '/api/reports/export?period=monthly&format=docx')).status, 400);
+    assert.equal((await call(null, 'GET', '/api/reports/export?period=monthly&format=pdf')).status, 401);
+  });
+  await t('CSV is still the default and has the same totals', async () => {
+    const csv = (await call('dash', 'GET', '/api/reports/export?period=monthly')).body;
+    assert.ok(csv.startsWith('Period (UTC),Workouts'));
+    const today = new Date().toISOString().slice(0, 10);
+    assert.ok(csv.split('\n').some((l) => l.startsWith(today + ',1,30,250,400,20,60,10')), 'today row');
+  });
+  await t('long or non-Latin names do not break the PDF', async () => {
+    await Workout.create({ userId: users.dash.id, exercise: 'योग ' + 'x'.repeat(300), duration: 5, calories: 10, timestamp: at(3) });
+    const r = await fetch(`${base}/api/reports/export?period=monthly&format=pdf`, { headers: { Authorization: 'Bearer dash' } });
+    assert.equal(r.status, 200); assert.equal(Buffer.from(await r.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);

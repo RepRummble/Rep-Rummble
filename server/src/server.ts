@@ -26,6 +26,7 @@ import workoutPlanRoutes from './routes/workoutPlan.routes'
 import leadRoutes from './routes/lead.routes'
 import reportRoutes from './routes/report.routes'
 import referralRoutes from './routes/referral.routes'
+import analyticsRoutes from './routes/analytics.routes'
 import businessRoutes from './routes/business.routes'
 import contactRoutes from './routes/contact.routes'
 import chatRoutes from './routes/chat.routes'
@@ -117,6 +118,7 @@ app.use('/api/workout-plans', workoutPlanRoutes)
 app.use('/api/leads', leadRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/referrals', referralRoutes)
+app.use('/api/analytics', analyticsRoutes)
 app.use('/api/business', businessRoutes)
 app.use('/api/contact', contactRoutes)
 app.use('/api/chat', chatRoutes)

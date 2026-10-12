@@ -26,6 +26,7 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^22.10.2",
     "@types/nodemailer": "^7.0.11",
+    "@types/pdfkit": "^0.17.6",
     "@types/uuid": "^10.0.0",
     "axios": "^1.7.7",
     "bcryptjs": "^3.0.3",
@@ -39,6 +40,7 @@
     "mongoose": "^9.0.2",
     "morgan": "^1.10.0",
     "nodemailer": "^10.1.0",
+    "pdfkit": "^0.17.2",
     "socket.io": "^4.8.3",
     "typescript": "^5.7.2",
     "uuid": "^14.0.3"

@@ -9,14 +9,12 @@ export interface NavItem {
   area?: Area;
 }
 
-/** Top-bar menu for signed-in members. */
+/** Top-bar menu for signed-in members. (Account settings and Billing are in the avatar menu.) */
 export const MEMBER_NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', end: true },
   { to: '/dashboard/reports', label: 'Reports' },
   { to: '/dashboard/wearables', label: 'Wearables' },
   { to: '/dashboard/referral', label: 'Referral' },
-  { to: '/dashboard/billing', label: 'Billing' },
-  { to: '/dashboard/profile', label: 'Profile' },
 ];
 
 /** Top-bar menu for people who run an approved business. Links are filtered by their role. */
