@@ -81,6 +81,8 @@ export const biz = {
     list: (status: 'pending' | 'approved' | 'rejected') => send<Application[]>('GET', `/admin/applications?status=${status}`),
     approve: (id: string) => send('POST', `/admin/applications/${id}/approve`),
     reject: (id: string, reason: string) => send('POST', `/admin/applications/${id}/reject`, { reason }),
+    revoke: (id: string, reason: string) => send('POST', `/admin/applications/${id}/revoke`, { reason }),
+    status: () => send<{ isAdmin: boolean; pending?: number }>('GET', '/admin/status'),
   },
 };
 

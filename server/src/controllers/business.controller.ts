@@ -1,7 +1,8 @@
 import mongoose, { Model } from 'mongoose'
 import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { BusinessRequest, findBusinessFor } from '../middleware/business.middleware'
+import { BusinessRequest, adminEmails, findBusinessFor, isAdminUser } from '../middleware/business.middleware'
+import { sendMail } from '../services/mail.service'
 import { isDBConnected } from '../config/database'
 import {
   BUSINESS_TYPES, Business, BusinessFood, BusinessMealPlan, BusinessMember, BusinessPlan, BusinessStaff, STAFF_ROLES,
@@ -29,6 +30,27 @@ const serverError = (res: Response, label: string, err: unknown) => {
 }
 const unavailable = (res: Response) => fail(res, 503, 'Service temporarily unavailable')
 
+// ── email notices (best effort; they never block the request) ─────────────────────────
+const siteUrl = () => (process.env.WEB_URL || process.env.CLIENT_URL || 'https://www.reprummble.com').replace(/\/$/, '')
+
+function notifyReviewers(name: string, type: string, city: string) {
+  void sendMail(
+    adminEmails(),
+    `New business application: ${name}`,
+    `${name} (${type}${city ? `, ${city}` : ''}) has applied to collaborate with Reprummble.\n\nReview it here: ${siteUrl()}/admin/applications\n`,
+  )
+}
+
+function notifyApplicant(to: string, name: string, decision: 'approved' | 'rejected' | 'revoked', reason?: string) {
+  const subject = decision === 'approved' ? `You're approved: ${name} on Reprummble` : `Update on your Reprummble application`
+  const body = decision === 'approved'
+    ? `Good news: ${name} has been approved.\n\nOpen your business dashboard: ${siteUrl()}/business\n`
+    : decision === 'revoked'
+      ? `Access to the Reprummble business dashboard for ${name} has been turned off.${reason ? `\n\nReason: ${reason}` : ''}\n\nIf you think this is a mistake, reply to this email or contact us: ${siteUrl()}/contact\n`
+      : `We could not approve ${name} this time.${reason ? `\n\nReason: ${reason}` : ''}\n\nYou can update your details and apply again: ${siteUrl()}/collaborate#apply\n`
+  void sendMail(to, subject, body)
+}
+
 // ── application & account ──────────────────────────────────────────────────────
 // @route POST /api/business/apply
 export const apply = async (req: AuthRequest, res: Response) => {
@@ -36,6 +58,7 @@ export const apply = async (req: AuthRequest, res: Response) => {
   try {
     const ownerEmail = req.user!.email?.toLowerCase()
     if (!ownerEmail) return fail(res, 400, 'Your account needs an email address to apply')
+    if (!req.user!.emailVerified) return fail(res, 403, 'Please verify your email address before applying')
 
     const name = text(req.body?.name, 120)
     const type = text(req.body?.type, 60)
@@ -55,10 +78,12 @@ export const apply = async (req: AuthRequest, res: Response) => {
       // Rejected applicants may apply again with updated details.
       Object.assign(existing, fields, { status: 'pending', rejectionReason: undefined, reviewedAt: undefined, reviewedBy: undefined })
       await existing.save()
+      notifyReviewers(existing.name, existing.type, existing.city)
       return res.status(200).json({ success: true, data: { status: existing.status } })
     }
 
     const created = await Business.create({ ownerId: req.user!.id, ...fields })
+    notifyReviewers(created.name, created.type, created.city)
     return res.status(201).json({ success: true, data: { status: created.status } })
   } catch (error) {
     if (isDup(error)) return fail(res, 409, 'You already have an application')
@@ -112,7 +137,8 @@ export const getMemberships = async (req: AuthRequest, res: Response) => {
   if (!isDBConnected()) return unavailable(res)
   try {
     const userEmail = req.user!.email?.toLowerCase()
-    if (!userEmail) return res.json({ success: true, data: [] })
+    // Invites are matched by email, so an unverified address must never claim someone else's invite.
+    if (!userEmail || !req.user!.emailVerified) return res.json({ success: true, data: [] })
 
     // First sign-in after being invited: connect the invite to this account.
     await BusinessMember.updateMany({ email: userEmail, userId: { $exists: false } }, { $set: { userId: req.user!.id } })
@@ -463,15 +489,32 @@ export const adminList = async (req: AuthRequest, res: Response) => {
   } catch (error) { return serverError(res, 'business.admin.list', error) }
 }
 
-export const adminReview = (decision: 'approved' | 'rejected') => async (req: AuthRequest, res: Response) => {
+// Moves an application between states, but only from the states allowed for that action,
+// so a decision can't be applied twice or to the wrong kind of record.
+const review = (from: 'pending' | 'approved', to: 'approved' | 'rejected', notice: 'approved' | 'rejected' | 'revoked') =>
+  async (req: AuthRequest, res: Response) => {
+    if (!isDBConnected()) return unavailable(res)
+    try {
+      const id = objectId(req.params.id)
+      if (!id) return fail(res, 400, 'Invalid id')
+      const update: Record<string, unknown> = { status: to, reviewedAt: new Date(), reviewedBy: req.user!.email }
+      if (to === 'rejected') update.rejectionReason = text(req.body?.reason, 500)
+      const updated = await Business.findOneAndUpdate({ _id: id, status: from }, { $set: update }, { new: true })
+      if (!updated) return fail(res, 404, `No ${from} application with that id`)
+      notifyApplicant(updated.ownerEmail, updated.name, notice, updated.rejectionReason)
+      return res.json({ success: true })
+    } catch (error) { return serverError(res, 'business.admin.review', error) }
+  }
+
+export const adminApprove = review('pending', 'approved', 'approved')
+export const adminReject = review('pending', 'rejected', 'rejected')
+export const adminRevoke = review('approved', 'rejected', 'revoked')
+
+// Lets the website show a "Review applications" link, with a count, to reviewers only.
+export const adminStatus = async (req: AuthRequest, res: Response) => {
+  if (!isAdminUser(req.user)) return res.json({ success: true, data: { isAdmin: false } })
   if (!isDBConnected()) return unavailable(res)
   try {
-    const id = objectId(req.params.id)
-    if (!id) return fail(res, 400, 'Invalid id')
-    const update: Record<string, unknown> = { status: decision, reviewedAt: new Date(), reviewedBy: req.user!.email }
-    if (decision === 'rejected') update.rejectionReason = text(req.body?.reason, 500)
-    const updated = await Business.findOneAndUpdate({ _id: id, status: 'pending' }, { $set: update }, { new: true })
-    return updated ? res.json({ success: true }) : fail(res, 404, 'No pending application with that id')
-  } catch (error) { return serverError(res, 'business.admin.review', error) }
+    return res.json({ success: true, data: { isAdmin: true, pending: await Business.countDocuments({ status: 'pending' }) } })
+  } catch (error) { return serverError(res, 'business.admin.status', error) }
 }
-

@@ -6,7 +6,8 @@ import { DEV_BYPASS_AUTH, DEV_DUMMY_USER } from '../config/devConfig';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  register: (credentials: RegisterCredentials) => Promise<void>;
+  /** Resolves with emailVerificationRequired: true when the person must click an emailed link before signing in. */
+  register: (credentials: RegisterCredentials) => Promise<{ emailVerificationRequired: boolean }>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
 }
@@ -79,6 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (credentials: RegisterCredentials) => {
     try {
       const response = await api.post('/auth/register', credentials);
+      // The server sends no token until the emailed link has been clicked.
+      if (response.data.data.emailVerificationRequired) {
+        return { emailVerificationRequired: true };
+      }
       const { token, user } = response.data.data;
 
       await AsyncStorage.multiSet([
@@ -92,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         isAuthenticated: true,
       });
+      return { emailVerificationRequired: false };
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Registration failed');
     }

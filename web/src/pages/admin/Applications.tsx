@@ -21,6 +21,13 @@ export default function Applications() {
     setMessage(res.error || 'Approved.');
     reload();
   };
+  const revoke = async (id: string, name: string) => {
+    const reason = window.prompt(`Turn off ${name}'s access? Reason (shown to the owner):`, '');
+    if (reason === null) return;
+    const res = await biz.admin.revoke(id, reason);
+    setMessage(res.error || 'Access revoked.');
+    reload();
+  };
   const reject = async (id: string) => {
     const reason = window.prompt('Reason for rejecting (shown to the applicant):', '');
     if (reason === null) return;
@@ -50,6 +57,9 @@ export default function Applications() {
               </div>
               <p className="dash-muted">Account: {a.ownerEmail}{a.contactEmail && a.contactEmail !== a.ownerEmail ? ` · Contact: ${a.contactEmail}` : ''}</p>
               {a.message && <p style={{ whiteSpace: 'pre-wrap' }}>{a.message}</p>}
+              {status === 'approved' && (
+                <div className="dash-actions"><button className="rr-btn rr-btn-outline" onClick={() => revoke(a.id, a.name)}>Revoke access</button></div>
+              )}
               {status === 'pending' && (
                 <div className="dash-actions">
                   <button className="rr-btn rr-btn-primary" onClick={() => approve(a.id)}>Approve</button>

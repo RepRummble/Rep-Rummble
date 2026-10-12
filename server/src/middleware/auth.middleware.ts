@@ -7,6 +7,8 @@ export interface AuthUser {
   id: string
   email?: string
   displayName?: string
+  /** True once the person has proven they own this email (link clicked, or a social provider vouched for it). */
+  emailVerified?: boolean
   isBypass?: boolean
 }
 
@@ -41,6 +43,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         id: '00000000-0000-0000-0000-000000000000',
         email: 'dev@local',
         displayName: 'Dev Bypass User',
+        emailVerified: true,
         isBypass: true,
       }
       console.log('[auth.middleware] bypass token used, user set to', req.user)
@@ -55,7 +58,8 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       req.user = {
         id: supabaseResult.user.id,
         email: supabaseResult.user.email,
-        displayName: supabaseResult.user.user_metadata?.displayName
+        displayName: supabaseResult.user.user_metadata?.displayName,
+        emailVerified: !!supabaseResult.user.email_confirmed_at,
       }
       next()
       return
@@ -109,7 +113,8 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
       req.user = {
         id: supabaseResult.user.id,
         email: supabaseResult.user.email,
-        displayName: supabaseResult.user.user_metadata?.displayName
+        displayName: supabaseResult.user.user_metadata?.displayName,
+        emailVerified: !!supabaseResult.user.email_confirmed_at,
       }
     } else {
       // Fallback to JWT

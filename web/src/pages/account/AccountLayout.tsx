@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  CreditCard, Gift, LayoutDashboard, FileBarChart, LogOut, Menu, UserRound, Watch, X,
+  Building2, CreditCard, Gift, LayoutDashboard, FileBarChart, LogOut, Menu, ShieldCheck, UserRound, Watch, X,
 } from 'lucide-react';
 import { DEV_BYPASS_AUTH } from '../../config/devAuth';
 import { supabase } from '../../config/supabase';
 import { usePageMeta } from '../../hooks/usePageMeta';
+import { biz, useLoad } from '../business/api';
 import { useAccountUserLoader } from './useAccountUser';
 import '../../styles/dashboard.css';
 
@@ -24,6 +25,9 @@ export default function AccountLayout() {
   const [user, setUser] = useAccountUserLoader();
   const [auth, setAuth] = useState<'checking' | 'in' | 'out'>(DEV_BYPASS_AUTH ? 'in' : 'checking');
   const [menuOpen, setMenuOpen] = useState(false);
+  // Reviewers (ADMIN_EMAILS) and business owners/staff get an extra link; everyone else sees nothing.
+  const admin = useLoad(() => (auth === 'in' ? biz.admin.status() : Promise.resolve({ data: undefined })), [auth]);
+  const business = useLoad(() => (auth === 'in' ? biz.me() : Promise.resolve({ data: undefined })), [auth]);
 
   useLayoutEffect(() => {
     document.documentElement.classList.add('theme-light');
@@ -70,6 +74,15 @@ export default function AccountLayout() {
           ))}
         </nav>
         <div className="dash-side-foot">
+          {business.data?.business?.status === 'approved' && (
+            <Link to="/business" className="dash-nav" onClick={() => setMenuOpen(false)}><Building2 size={18} /> Business dashboard</Link>
+          )}
+          {admin.data?.isAdmin && (
+            <Link to="/admin/applications" className="dash-nav" onClick={() => setMenuOpen(false)}>
+              <ShieldCheck size={18} /> Review applications
+              {!!admin.data.pending && <span className="dash-badge" aria-label={`${admin.data.pending} pending`}>{admin.data.pending}</span>}
+            </Link>
+          )}
           <Link to="/" className="dash-nav">← Back to website</Link>
           <button className="dash-nav" onClick={signOut}><LogOut size={18} /> Sign out</button>
         </div>

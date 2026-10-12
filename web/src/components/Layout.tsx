@@ -11,7 +11,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import SiteFooter from './site/SiteFooter';
 import '../styles/site.css';
 
-const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact'];
+const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact', '/privacy', '/terms'];
 const navClass = ({ isActive }: { isActive: boolean }) => `rr-nav-link${isActive ? ' active' : ''}`;
 
 export default function Layout() {
@@ -29,6 +29,9 @@ export default function Layout() {
   const [scrolled, setScrolled] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Set after sign-up (or a sign-in attempt) when the email still has to be verified.
+  const [verifyEmail, setVerifyEmail] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [transitioning, setTransitioning] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -233,7 +236,22 @@ export default function Layout() {
           : await api.auth.register(formData.email, formData.password, formData.name);
 
       if (result.error) {
+        // Signing in before clicking the verification link: offer to send it again.
+        if (authMode === 'signin' && /verify your email/i.test(result.error)) {
+          setVerifyEmail(formData.email.trim());
+          setResendState('idle');
+        }
         throw new Error(result.error);
+      }
+
+      // New account: Supabase has emailed a link, and nobody is signed in until it is clicked.
+      if (authMode === 'signup' && (result.data as { emailVerificationRequired?: boolean } | undefined)?.emailVerificationRequired) {
+        setVerifyEmail(formData.email.trim());
+        setResendState('idle');
+        setAuthStatus('idle');
+        setAuthMessage('');
+        setFormData((prev) => ({ ...prev, password: '' }));
+        return;
       }
 
       // The API confirms the credentials; this opens the browser session, so the
@@ -261,7 +279,15 @@ export default function Layout() {
     }
   };
 
+  const handleResend = async () => {
+    if (!verifyEmail) return;
+    setResendState('sending');
+    await api.auth.resendVerification(verifyEmail);
+    setResendState('sent');
+  };
+
   const handleAuthModeChange = (mode: 'signin' | 'signup' | 'forgot') => {
+    setVerifyEmail(null);
     setAuthMode(mode);
     setAuthMessage('');
     setAuthStatus('idle');
@@ -425,17 +451,28 @@ export default function Layout() {
             </aside>
 
             <div className="rr-auth-main">
-              <button className="rr-auth-x" type="button" onClick={() => setAuthOpen(false)} aria-label="Close"><X size={18} /></button>
+              <button className="rr-auth-x" type="button" onClick={() => { setAuthOpen(false); setVerifyEmail(null); }} aria-label="Close"><X size={18} /></button>
               <div className="rr-auth-head">
                 <h2 id="auth-title">
-                  {authMode === 'signup' ? 'Create your free account' : authMode === 'forgot' ? 'Reset your password' : 'Welcome back'}
+                  {verifyEmail && authMode !== 'forgot' ? 'Check your inbox' : authMode === 'signup' ? 'Create your free account' : authMode === 'forgot' ? 'Reset your password' : 'Welcome back'}
                 </h2>
                 <p>
-                  {authMode === 'signup' ? 'Start in two minutes. Upgrade anytime.' : authMode === 'forgot' ? "Enter your email and we'll send a reset link." : 'Sign in to continue your training.'}
+                  {verifyEmail && authMode !== 'forgot' ? 'One more step to finish.' : authMode === 'signup' ? 'Start in two minutes. Upgrade anytime.' : authMode === 'forgot' ? "Enter your email and we'll send a reset link." : 'Sign in to continue your training.'}
                 </p>
               </div>
 
-              {authMode === 'forgot' ? (
+              {verifyEmail && authMode !== 'forgot' ? (
+                <div className="rr-auth-verify">
+                  <p>
+                    We sent a verification link to <strong>{verifyEmail}</strong>. Click it to confirm your email, then sign in.
+                    It can take a minute, and it may land in your spam folder.
+                  </p>
+                  <button type="button" className="rr-btn rr-btn-outline rr-btn-block" onClick={handleResend} disabled={resendState !== 'idle'}>
+                    {resendState === 'sending' ? 'Sending…' : resendState === 'sent' ? 'Sent. Check your inbox' : 'Resend verification email'}
+                  </button>
+                  <button type="button" className="rr-auth-link" onClick={() => { setVerifyEmail(null); setAuthMode('signin'); setAuthMessage(''); setAuthStatus('idle'); }}>← Back to sign in</button>
+                </div>
+              ) : authMode === 'forgot' ? (
                 <form className="rr-auth-form" onSubmit={handleForgotSubmit} noValidate>
                   <label className="rr-auth-field">
                     <span>Email</span>

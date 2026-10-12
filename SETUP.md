@@ -99,6 +99,25 @@ npx expo start --web    # web preview
 
 ---
 
+## Email verification (Supabase dashboard)
+
+New email sign-ups must click a link before they can sign in. The code is ready; turn it on in Supabase:
+
+1. **Authentication → Providers → Email → "Confirm email": ON.** (With it off, sign-ups work immediately, as before.)
+2. **Authentication → URL Configuration:** set *Site URL* to `https://www.reprummble.com` and add `https://www.reprummble.com/auth/callback`, `https://reprummble.com/auth/callback`, and `http://localhost:5173/auth/callback` to *Redirect URLs*. Remove any `*` wildcards.
+3. **Project Settings → Authentication → SMTP Settings:** add a custom SMTP provider. Supabase's built-in mailer is limited to a few emails per hour and only sends to your team, so real users will not get their link without this.
+4. Optional: edit the *Confirm signup* email template under **Authentication → Email Templates**.
+
+Accounts created before this was switched on were marked as verified without a check and stay that way.
+Staff access, member invites, and admin review only work for verified emails.
+
+## Reviewing business applications
+
+1. Set `ADMIN_EMAILS` (comma-separated, no spaces needed) on the server, e.g. `ADMIN_EMAILS=you@example.com`. Those accounts must have a **verified** email.
+2. Sign in with one of those accounts. Your dashboard sidebar shows **Review applications** with the number waiting (`/admin/applications`).
+3. Each application shows the business, type, city, size, message, and the account email. **Approve** opens their business dashboard, **Reject** asks for a reason, and approved businesses have a **Revoke access** button that turns access off immediately (including their team).
+4. Reviewers are emailed when an application arrives, and the applicant is emailed when you decide. This uses `GMAIL_USER` / `GMAIL_APP_PASSWORD`; without them everything works but no emails are sent.
+
 ## Troubleshooting
 
 ### Web app shows blank page after login

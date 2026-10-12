@@ -87,3 +87,12 @@ export const businessApplyLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many applications. Please try again later.' },
 })
+
+/** Verification emails cost money and can be used to annoy someone, so keep resends scarce. */
+export const resendLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+})

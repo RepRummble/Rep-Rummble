@@ -25,10 +25,11 @@ export const can = (role: BusinessRole, area: Area, mode: 'read' | 'write') => {
 }
 
 /** Finds the business the signed-in user owns, or works for as staff. */
-export async function findBusinessFor(user: { id: string; email?: string }) {
+export async function findBusinessFor(user: { id: string; email?: string; emailVerified?: boolean }) {
   const owned = await Business.findOne({ ownerId: user.id })
   if (owned) return { business: owned, role: 'Owner' as BusinessRole }
-  if (user.email) {
+  // Team access is granted by email, so only for people who have proven they own that address.
+  if (user.email && user.emailVerified) {
     const staff = await BusinessStaff.findOne({ email: user.email.toLowerCase() })
     if (staff) {
       const business = await Business.findById(staff.businessId)
@@ -64,11 +65,17 @@ export const requireAccess = (area: Area, mode: 'read' | 'write') =>
     return next()
   }
 
-/** Reviewers are listed by email in ADMIN_EMAILS (comma-separated). */
+/** Reviewers are listed by email in ADMIN_EMAILS (comma-separated). Their email must be verified,
+ *  or anyone could sign up with a reviewer's address and approve applications. */
+export const adminEmails = () => (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+
+export const isAdminUser = (user?: { email?: string; emailVerified?: boolean }) => {
+  const email = user?.email?.toLowerCase()
+  return !!email && !!user?.emailVerified && adminEmails().includes(email)
+}
+
 export const adminByEmail = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const admins = (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  const email = req.user?.email?.toLowerCase()
-  if (!email || !admins.includes(email)) {
+  if (!isAdminUser(req.user)) {
     return res.status(403).json({ success: false, message: 'Admin access required' })
   }
   return next()

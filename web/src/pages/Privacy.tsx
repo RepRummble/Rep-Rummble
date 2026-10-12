@@ -1,21 +1,11 @@
-import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePageMeta } from '../hooks/usePageMeta';
-import Breadcrumb from '../components/Breadcrumb';
+import LegalDoc, { type LegalSection } from '../components/site/LegalDoc';
 
-interface PolicySection {
-  id: string;
-  title: string;
-  icon: string;
-  summary: string;
-  details: React.ReactNode;
-}
-
-const policySections: PolicySection[] = [
+const policySections: LegalSection[] = [
   {
     id: 'intro',
     title: 'Who We Are',
-    icon: '👋',
     summary: 'Reprummble and our commitment to your privacy',
     details: (
       <>
@@ -42,7 +32,6 @@ const policySections: PolicySection[] = [
   {
     id: 'collect',
     title: 'Data We Collect',
-    icon: '📋',
     summary: 'Account info, health data, usage signals, and cookies',
     details: (
       <>
@@ -51,7 +40,8 @@ const policySections: PolicySection[] = [
           <li>Name and email address when you register</li>
           <li>Profile photo (optional)</li>
           <li>Password (stored as a one-way hash — we cannot read it)</li>
-          <li>OAuth tokens if you sign in via Google, Apple, Facebook, or Twitter</li>
+          <li>Basic profile details from Google, Apple, or Facebook if you use them to sign in</li>
+          <li>Whether you have verified your email address (we email you a confirmation link when you sign up)</li>
         </ul>
         <h4>Health & Fitness Data</h4>
         <ul>
@@ -60,6 +50,18 @@ const policySections: PolicySection[] = [
           <li>Body metrics — weight, height, and measurements you enter</li>
           <li>Sleep, HRV, resting heart rate, and recovery scores from wearables</li>
           <li>Goals and personal targets you set</li>
+        </ul>
+        <h4>Business & Referral Data</h4>
+        <ul>
+          <li>
+            If you apply to collaborate as a business: your business name, type, city, size,
+            contact email, and any message you write in the application
+          </li>
+          <li>
+            If you run a business account: the names and email addresses of members and team
+            members you add, and the workout and meal plans, foods, and settings you create
+          </li>
+          <li>Your personal invite code, and which accounts joined using it</li>
         </ul>
         <h4>Device & Wearable Data</h4>
         <ul>
@@ -84,7 +86,6 @@ const policySections: PolicySection[] = [
   {
     id: 'use',
     title: 'How We Use Your Data',
-    icon: '⚙️',
     summary: 'Running the service, personalisation, and product improvement',
     details: (
       <>
@@ -104,7 +105,7 @@ const policySections: PolicySection[] = [
           </li>
           <li>
             <strong>Process payments</strong> — Securely handling subscription billing
-            through our payment processor (Stripe).
+            through a third-party payment processor, once online billing is available.
           </li>
           <li>
             <strong>Send service communications</strong> — Transactional emails such as
@@ -114,6 +115,11 @@ const policySections: PolicySection[] = [
           <li>
             <strong>Improve the product</strong> — Aggregated, anonymised analytics to
             understand which features work and which need fixing.
+          </li>
+          <li>
+            <strong>Run business accounts and referrals</strong> — Reviewing applications to
+            collaborate, giving approved businesses access to their dashboard, and applying
+            the discount you earn when a friend joins through your invite link.
           </li>
           <li>
             <strong>Provide customer support</strong> — Responding to your questions via
@@ -136,7 +142,6 @@ const policySections: PolicySection[] = [
   {
     id: 'sharing',
     title: 'Who We Share Data With',
-    icon: '🔒',
     summary: 'We never sell your data. Limited sharing with trusted processors only.',
     details: (
       <>
@@ -153,8 +158,9 @@ const policySections: PolicySection[] = [
             (e.g. AWS, Supabase). Your data is encrypted in transit and at rest.
           </li>
           <li>
-            <strong>Payment processor</strong> — Stripe handles payment card data. We
-            never store full card numbers.
+            <strong>Payment processor</strong> — When online billing opens, a third-party
+            payment processor will handle payment card data. We will not store full card
+            numbers.
           </li>
           <li>
             <strong>Email delivery</strong> — Transactional email providers for sending
@@ -163,6 +169,10 @@ const policySections: PolicySection[] = [
           <li>
             <strong>Analytics</strong> — Aggregate, anonymised usage data with analytics
             tools. No personally identifiable data is shared.
+          </li>
+          <li>
+            <strong>Gyms, coaches, and other businesses you join</strong> — Only the limited
+            activity summary described under "Gyms, Coaches & Other Businesses" below.
           </li>
           <li>
             <strong>At your request</strong> — If you choose to share a health report
@@ -181,9 +191,90 @@ const policySections: PolicySection[] = [
     ),
   },
   {
+    id: 'business',
+    title: 'Gyms, Coaches & Other Businesses',
+    summary: 'What a business can see if you join Reprummble through them',
+    details: (
+      <>
+        <p>
+          Some people use Reprummble through a gym, coach, nutritionist, clinic, employer,
+          or club (a "Business"). A Business can invite you by email and assign you workout
+          or meal plans.
+        </p>
+        <p className="highlight-box">
+          <strong>Nothing is shared until you sign up and verify that email address.</strong>{' '}
+          Being invited does not give a Business access to anything about you.
+        </p>
+        <h4>What a Business can see</h4>
+        <ul>
+          <li>The name and email address they invited you with</li>
+          <li>The workout and meal plans they have assigned to you</li>
+          <li>
+            A summary of your workout activity: how many workouts you completed recently,
+            the date of your last workout, and how that compares with your assigned plan
+          </li>
+        </ul>
+        <h4>What a Business cannot see</h4>
+        <ul>
+          <li>Your meal logs, food photos, and nutrition entries</li>
+          <li>Wearable data such as sleep, heart rate, and recovery scores</li>
+          <li>Your body measurements, goals, messages, or payment details</li>
+        </ul>
+        <h4>Who at the Business can see it</h4>
+        <p>
+          The Business owner decides which team members (coaches, nutritionists, viewers)
+          can see member information. Each role has limited permissions, and a Business can
+          only see its own members.
+        </p>
+        <h4>Stopping sharing</h4>
+        <p>
+          Ask the Business to remove you from their member list, or contact us at{' '}
+          <strong>privacy@reprummble.com</strong> and we will help. Removing your Reprummble
+          account also ends the link.
+        </p>
+        <p>
+          Businesses decide how to use the information they receive and must follow our
+          Terms and applicable law. We review every Business application and can withdraw a
+          Business's access at any time.
+        </p>
+        <h4>If you are a Business</h4>
+        <p>
+          We use your application details to review your request and to contact you about
+          it, and we keep them while your business account is active and for a reasonable
+          period afterwards. You are responsible for having the right to add the people you
+          invite and for how you use the data you receive.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'referrals',
+    title: 'Referrals',
+    summary: 'What happens to your data when you invite a friend or join through an invite',
+    details: (
+      <>
+        <p>
+          Every account has a personal invite code. When someone creates a new account
+          through your link, we record that connection so we can give you each a discount
+          toward your next subscription.
+        </p>
+        <ul>
+          <li>
+            <strong>You see:</strong> how many friends joined through your link and the
+            discount you have earned. We do not show you their names or details.
+          </li>
+          <li>
+            <strong>Your friend sees:</strong> nothing about you beyond the discount they
+            receive.
+          </li>
+          <li>We do not use referral data for advertising.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
     id: 'security',
     title: 'How We Protect Your Data',
-    icon: '🛡️',
     summary: 'Encryption, access controls, and continuous monitoring',
     details: (
       <>
@@ -229,7 +320,6 @@ const policySections: PolicySection[] = [
   {
     id: 'rights',
     title: 'Your Rights',
-    icon: '✨',
     summary: 'Access, correct, delete, port, restrict, or object at any time',
     details: (
       <>
@@ -283,7 +373,6 @@ const policySections: PolicySection[] = [
   {
     id: 'retention',
     title: 'How Long We Keep Data',
-    icon: '🗄️',
     summary: 'Active accounts kept; deleted within 30 days of closure',
     details: (
       <>
@@ -321,7 +410,6 @@ const policySections: PolicySection[] = [
   {
     id: 'international',
     title: 'International Transfers',
-    icon: '🌍',
     summary: 'Data may be processed outside your country with appropriate safeguards',
     details: (
       <>
@@ -354,7 +442,6 @@ const policySections: PolicySection[] = [
   {
     id: 'thirdparty',
     title: 'Third-Party Integrations',
-    icon: '🔗',
     summary: 'Wearables and health apps have their own privacy policies',
     details: (
       <>
@@ -386,7 +473,6 @@ const policySections: PolicySection[] = [
   {
     id: 'children',
     title: 'Age Requirements',
-    icon: '🔞',
     summary: 'Service is for users 16 and older',
     details: (
       <>
@@ -409,7 +495,6 @@ const policySections: PolicySection[] = [
   {
     id: 'changes',
     title: 'Policy Updates',
-    icon: '📝',
     summary: 'We notify you before significant changes take effect',
     details: (
       <>
@@ -442,7 +527,6 @@ const policySections: PolicySection[] = [
   {
     id: 'contact',
     title: 'Contact & Complaints',
-    icon: '💬',
     summary: 'Reach our privacy team or file a regulator complaint',
     details: (
       <>
@@ -476,70 +560,16 @@ const policySections: PolicySection[] = [
 export default function Privacy() {
   usePageMeta({
     title: 'Privacy Policy',
-    description: 'How Reprummble collects, uses, and protects your personal data. GDPR and CCPA compliant.',
+    description: 'How Reprummble collects, uses, and protects your personal data, and what gyms and coaches can see.',
     canonical: '/privacy',
   });
-  const [selectedSection, setSelectedSection] = useState<PolicySection | null>(null);
-
-  const closeModal = () => setSelectedSection(null);
-
   return (
-    <section className="section page-section legal-page-modern">
-      <Breadcrumb items={[{ label: 'Privacy Policy', to: '/privacy' }]} />
-      <div className="legal-page-header">
-        <div className="legal-page-badge">Privacy Policy</div>
-        <h1>Your data, explained clearly.</h1>
-        <p>
-          Last updated: March 2025 &nbsp;·&nbsp; Effective: March 2025
-        </p>
-        <p className="legal-subtitle">
-          We do not sell your data. Ever. Click any section below to read the full details.
-        </p>
-        <div className="legal-quick-links">
-          <a href="#collect" onClick={(e) => { e.preventDefault(); setSelectedSection(policySections.find(s => s.id === 'collect')!); }}>What we collect</a>
-          <a href="#rights" onClick={(e) => { e.preventDefault(); setSelectedSection(policySections.find(s => s.id === 'rights')!); }}>Your rights</a>
-          <a href="#contact" onClick={(e) => { e.preventDefault(); setSelectedSection(policySections.find(s => s.id === 'contact')!); }}>Contact us</a>
-        </div>
-      </div>
-
-      <div className="legal-grid">
-        {policySections.map((section) => (
-          <button
-            key={section.id}
-            className="legal-card"
-            onClick={() => setSelectedSection(section)}
-          >
-            <span className="legal-card-icon">{section.icon}</span>
-            <h3>{section.title}</h3>
-            <p>{section.summary}</p>
-            <span className="legal-card-cta">Read more →</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="legal-footer-note">
-        <p>
-          Questions? <Link to="/contact">Contact us</Link> or start a live chat using
-          the button in the corner.
-        </p>
-      </div>
-
-      {selectedSection && (
-        <div className="legal-modal-overlay" onClick={closeModal}>
-          <div className="legal-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="legal-modal-header">
-              <span className="legal-modal-icon">{selectedSection.icon}</span>
-              <h2>{selectedSection.title}</h2>
-              <button className="legal-modal-close" onClick={closeModal} aria-label="Close">
-                ×
-              </button>
-            </div>
-            <div className="legal-modal-content">
-              {selectedSection.details}
-            </div>
-          </div>
-        </div>
-      )}
-    </section>
+    <LegalDoc
+      badge="Privacy Policy"
+      title="Your data, explained clearly."
+      updated="October 2026"
+      lead="We do not sell your data. Ever. Here is what we collect, why, who can see it, and the choices you have."
+      sections={policySections}
+    />
   );
 }

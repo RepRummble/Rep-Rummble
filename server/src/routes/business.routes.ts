@@ -13,9 +13,11 @@ router.get('/me', c.getMe)
 router.get('/memberships', c.getMemberships)
 
 // Reviewers
+router.get('/admin/status', c.adminStatus)
 router.get('/admin/applications', adminByEmail, c.adminList)
-router.post('/admin/applications/:id/approve', adminByEmail, c.adminReview('approved'))
-router.post('/admin/applications/:id/reject', adminByEmail, c.adminReview('rejected'))
+router.post('/admin/applications/:id/approve', adminByEmail, c.adminApprove)
+router.post('/admin/applications/:id/reject', adminByEmail, c.adminReject)
+router.post('/admin/applications/:id/revoke', adminByEmail, c.adminRevoke)
 
 // Approved businesses, by role
 router.use(loadApprovedBusiness)
