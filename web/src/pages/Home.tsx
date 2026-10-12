@@ -3,7 +3,7 @@ import {
   Activity, Apple, ArrowRight, Check, Dumbbell, HeartPulse, LineChart, Moon, Trophy, Users, Watch,
 } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
-import { PRICING } from '../config/pricing';
+import { PLANS, PREMIUM_UPGRADE, PRICING, fmtPrice } from '../config/pricing';
 import { PhoneMockup } from '../components/site/Mockups';
 import { LiveStats, ReviewsSection } from '../components/site/Reviews';
 import WaitlistForm from '../components/site/WaitlistForm';
@@ -28,7 +28,7 @@ const STEPS = [
 export default function Home() {
   usePageMeta({
     title: 'Reprummble — Fitness for every budget',
-    description: 'One app for training, nutrition, and recovery. Start free, go Premium for $9.99/month. Gyms partner with Reprummble to train members through the app.',
+    description: `One app for training, nutrition, and recovery. Start free, go Pro for ${fmtPrice(PRICING.proMonthly)}/month. Members of partner gyms get Pro included.`,
     canonical: '/',
   });
 
@@ -56,7 +56,7 @@ export default function Home() {
             </div>
             <ul className="rr-hero-checks">
               <li><Check size={16} /> Free plan, no card needed</li>
-              <li><Check size={16} /> Premium {PRICING.currency}{PRICING.premiumMonthly}/mo</li>
+              <li><Check size={16} /> Pro from {fmtPrice(PRICING.proMonthly)}/mo</li>
               <li><Check size={16} /> Cancel anytime</li>
             </ul>
           </div>
@@ -95,8 +95,9 @@ export default function Home() {
               <span className="rr-aud-tag">For individuals & families</span>
               <h3>Get fit without the expensive price tag</h3>
               <ul>
-                <li><Check size={18} /> Free plan for logging workouts and meals</li>
-                <li><Check size={18} /> Premium coaching tools for {PRICING.currency}{PRICING.premiumMonthly}/month</li>
+                <li><Check size={18} /> Free plan to get started</li>
+                <li><Check size={18} /> Full access with Pro for {fmtPrice(PRICING.proMonthly)}/month</li>
+                <li><Check size={18} /> Premium adds 1-on-1 coaching for {fmtPrice(PREMIUM_UPGRADE)} more</li>
                 <li><Check size={18} /> Works for complete beginners and experienced lifters</li>
                 <li><Check size={18} /> Train at home, outside, or at any gym</li>
               </ul>
@@ -107,6 +108,7 @@ export default function Home() {
               <h3>Reach more members. Earn from every program.</h3>
               <ul>
                 <li><Check size={18} /> Free to join — no setup or monthly fees</li>
+                <li><Check size={18} /> Your members get Pro included</li>
                 <li><Check size={18} /> Sell your training programs through the app</li>
                 <li><Check size={18} /> Keep {PRICING.gymPayoutPercent}% of every program sale</li>
                 <li><Check size={18} /> Track your members' progress in one dashboard</li>
@@ -164,30 +166,30 @@ export default function Home() {
         <div className="rr-container">
           <div className="rr-head" data-reveal>
             <span className="rr-eyebrow">Honest pricing</span>
-            <h2>Two plans. No surprises.</h2>
-            <p>One free plan, one premium plan. That's it.</p>
+            <h2>Three plans. No surprises.</h2>
+            <p>Start free, unlock everything with Pro, or add real coaching with Premium.</p>
           </div>
           <div className="rr-price-grid" data-stagger>
-            <div className="rr-price">
-              <h3>Free</h3>
-              <div className="rr-price-amount">{PRICING.currency}0<span className="rr-price-per">forever</span></div>
-              <p>Everything you need to build the habit.</p>
-              <Link className="rr-btn rr-btn-outline" to="/?auth=signup">Start free</Link>
-            </div>
-            <div className="rr-price is-featured">
-              <span className="rr-price-badge">Best value</span>
-              <h3>Premium</h3>
-              <div className="rr-price-amount">{PRICING.currency}{PRICING.premiumMonthly}<span className="rr-price-per">/month</span></div>
-              <p>Your personal coach, nutritionist, and recovery tracker.</p>
-              <Link className="rr-btn rr-btn-primary" to="/?auth=signup">Try Premium free for {PRICING.trialDays} days</Link>
-            </div>
-            <div className="rr-price is-dark">
-              <h3>Gyms & coaches</h3>
-              <div className="rr-price-amount">{PRICING.currency}0<span className="rr-price-per">to join</span></div>
-              <p>Keep {PRICING.gymPayoutPercent}% of every program you sell through Reprummble.</p>
-              <Link className="rr-btn rr-btn-white" to="/for-gyms">Partner with us</Link>
-            </div>
+            {PLANS.map((plan) => (
+              <div className={`rr-price${plan.id === 'pro' ? ' is-featured' : ''}`} key={plan.id}>
+                {'badge' in plan && <span className="rr-price-badge">{plan.badge}</span>}
+                <h3>{plan.name}</h3>
+                <div className="rr-price-amount">
+                  {fmtPrice(plan.price)}<span className="rr-price-per">{plan.price === 0 ? 'forever' : '/month'}</span>
+                </div>
+                <p>{plan.tagline}</p>
+                <Link
+                  className={`rr-btn ${plan.id === 'pro' ? 'rr-btn-primary' : plan.id === 'premium' ? 'rr-btn-dark' : 'rr-btn-outline'}`}
+                  to="/?auth=signup"
+                >
+                  {plan.cta}
+                </Link>
+              </div>
+            ))}
           </div>
+          <p className="rr-price-note" style={{ marginTop: 20, fontSize: 15 }}>
+            <strong style={{ color: 'var(--rr-ink)' }}>Train at a partner gym?</strong> Pro is included with your membership — upgrade to Premium for just {fmtPrice(PREMIUM_UPGRADE)}/month.
+          </p>
           <div style={{ textAlign: 'center', marginTop: 28 }}>
             <Link className="rr-link-arrow" to="/pricing">Compare plans in detail <ArrowRight size={16} /></Link>
           </div>

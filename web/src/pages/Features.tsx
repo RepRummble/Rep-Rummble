@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Bell, Check, LineChart, Moon, Trophy, Users, Watch } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
-import { PRICING } from '../config/pricing';
+import { PRICING, fmtPrice } from '../config/pricing';
 import { NutritionScreen, PhoneMockup, TodayScreen, WorkoutScreen } from '../components/site/Mockups';
 
 const MORE = [
@@ -104,8 +104,8 @@ export default function Features() {
         <div className="rr-container">
           <div className="rr-cta" data-reveal>
             <div>
-              <h2>Try every feature free for {PRICING.trialDays} days.</h2>
-              <p>Start on the free plan and unlock Premium whenever you're ready — {PRICING.currency}{PRICING.premiumMonthly}/month, cancel anytime.</p>
+              <h2>Try Pro free for {PRICING.trialDays} days.</h2>
+              <p>Every feature on this page, unlocked — then {fmtPrice(PRICING.proMonthly)}/month. Included free for members of partner gyms.</p>
             </div>
             <div className="rr-cta-actions">
               <Link className="rr-btn rr-btn-white rr-btn-lg" to="/?auth=signup">Start free</Link>

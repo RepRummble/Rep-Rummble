@@ -1,16 +1,17 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, Minus } from 'lucide-react';
+import { ArrowRight, Building2, Check, Minus } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
-import { PLAN_FEATURES, PRICING } from '../config/pricing';
+import { PLAN_FEATURES, PLANS, PREMIUM_UPGRADE, PRICING, fmtPrice } from '../config/pricing';
 import Faq from '../components/site/Faq';
 
 const FAQS = [
-  { q: 'Is the free plan really free?', a: 'Yes. The free plan has no time limit and never asks for a card. Upgrade only if and when you want more.' },
-  { q: `How does the ${PRICING.trialDays}-day Premium trial work?`, a: `You get full Premium access for ${PRICING.trialDays} days. We remind you before it ends, and if you don't continue you simply return to the free plan — no surprise charges.` },
-  { q: 'Can I cancel anytime?', a: 'Yes. Cancel from your account settings in a couple of clicks. You keep Premium until the end of the period you paid for.' },
+  { q: 'Is the free plan really free?', a: 'Yes. The free plan has no time limit and never asks for a card. It has limits on logging and challenges, and you can upgrade whenever you want more.' },
+  { q: "What's the difference between Pro and Premium?", a: `Pro gives you full access to every app feature. Premium adds a human touch: 1-on-1 check-ins with a coach twice a month, a custom nutrition plan, PDF progress reports, and priority support — for ${fmtPrice(PREMIUM_UPGRADE)} more a month.` },
+  { q: 'I train at a partner gym. Do I get Pro for free?', a: `Yes. Members of Reprummble partner gyms get Pro included with their gym membership. Want coaching extras? Upgrade to Premium for just ${fmtPrice(PREMIUM_UPGRADE)}/month.` },
+  { q: `How does the ${PRICING.trialDays}-day Pro trial work?`, a: `You get full Pro access for ${PRICING.trialDays} days. We remind you before it ends, and if you don't continue you simply return to the free plan — no surprise charges.` },
+  { q: 'Can I switch plans or cancel anytime?', a: 'Yes. Upgrade, downgrade, or cancel from your account settings. Changes apply at the end of your current billing period.' },
   { q: 'Do I need a gym membership or a wearable?', a: 'No. Reprummble works at home, outdoors, or in any gym. Wearables add richer recovery data but are completely optional.' },
-  { q: 'What are partner gym programs?', a: 'Training programs created by coaches at gyms that partner with Reprummble. You can buy them individually on the free plan, and Premium members get member pricing.' },
-  { q: 'I run a gym. How do I partner with you?', a: `It's free to join. You publish programs, we handle the app and payments, and you keep ${PRICING.gymPayoutPercent}% of every sale. Apply on our For Gyms page.` },
+  { q: 'I run a gym. How do I partner with you?', a: `It's free to join. Your members get Pro included, you publish programs, and you keep ${PRICING.gymPayoutPercent}% of every program sale. Apply on our For Gyms page.` },
 ];
 
 function Cell({ value }: { value: boolean | string }) {
@@ -22,12 +23,9 @@ function Cell({ value }: { value: boolean | string }) {
 export default function Pricing() {
   usePageMeta({
     title: 'Pricing',
-    description: `Reprummble is free to start. Premium is ${PRICING.currency}${PRICING.premiumMonthly}/month with a ${PRICING.trialDays}-day free trial. Gyms join free and keep ${PRICING.gymPayoutPercent}% of program sales.`,
+    description: `Reprummble plans: Free, Pro ${fmtPrice(PRICING.proMonthly)}/month, Premium ${fmtPrice(PRICING.premiumMonthly)}/month. Pro is included for members of partner gyms.`,
     canonical: '/pricing',
   });
-
-  const free = PLAN_FEATURES.filter((f) => f.free !== false);
-  const premiumExtras = PLAN_FEATURES.filter((f) => f.free === false || typeof f.premium === 'string');
 
   return (
     <div className="rr-page">
@@ -35,37 +33,41 @@ export default function Pricing() {
         <div className="rr-container">
           <span className="rr-eyebrow">Pricing</span>
           <h1>Simple pricing for <span className="rr-gradient-text">every household.</span></h1>
-          <p>Start free. Upgrade for less than one drop-in gym class a month. No contracts, cancel anytime.</p>
+          <p>Start free. Go Pro for full access, or Premium for real coaching. No contracts, cancel anytime.</p>
         </div>
       </header>
 
       <section className="rr-section" style={{ paddingTop: 16 }}>
         <div className="rr-container">
-          <div className="rr-price-grid is-two" data-stagger>
-            <div className="rr-price">
-              <h3>Free</h3>
-              <div className="rr-price-amount">{PRICING.currency}0<span className="rr-price-per">forever</span></div>
-              <p>Build the habit with the essentials.</p>
-              <Link className="rr-btn rr-btn-outline rr-btn-block" to="/?auth=signup">Create free account</Link>
-              <ul>
-                {free.map((f) => (
-                  <li key={f.label}><Check size={18} />{f.label}{typeof f.free === 'string' ? ` (${f.free.toLowerCase()})` : ''}</li>
-                ))}
-              </ul>
+          <div className="rr-price-grid" data-stagger>
+            {PLANS.map((plan) => (
+              <div className={`rr-price${plan.id === 'pro' ? ' is-featured' : ''}`} key={plan.id}>
+                {'badge' in plan && <span className="rr-price-badge">{plan.badge}</span>}
+                <h3>{plan.name}</h3>
+                <div className="rr-price-amount">
+                  {fmtPrice(plan.price)}<span className="rr-price-per">{plan.price === 0 ? 'forever' : '/month'}</span>
+                </div>
+                <p>{plan.tagline}</p>
+                <Link
+                  className={`rr-btn rr-btn-block ${plan.id === 'pro' ? 'rr-btn-primary' : plan.id === 'premium' ? 'rr-btn-dark' : 'rr-btn-outline'}`}
+                  to="/?auth=signup"
+                >
+                  {plan.cta}
+                </Link>
+                <ul>
+                  {plan.highlights.map((h) => <li key={h}><Check size={18} />{h}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <div className="rr-gym-perk" data-reveal>
+            <span className="rr-icon"><Building2 size={22} /></span>
+            <div>
+              <strong>Train at a partner gym? Pro is included.</strong>
+              <p>Members of Reprummble partner gyms get Pro at no extra cost — and can upgrade to Premium for just {fmtPrice(PREMIUM_UPGRADE)}/month.</p>
             </div>
-            <div className="rr-price is-featured">
-              <span className="rr-price-badge">Most popular</span>
-              <h3>Premium</h3>
-              <div className="rr-price-amount">{PRICING.currency}{PRICING.premiumMonthly}<span className="rr-price-per">/month</span></div>
-              <p>Everything in Free, plus your personal coaching tools.</p>
-              <Link className="rr-btn rr-btn-primary rr-btn-block" to="/?auth=signup">Start {PRICING.trialDays}-day free trial</Link>
-              <ul>
-                <li><Check size={18} /><strong>Everything in Free</strong></li>
-                {premiumExtras.map((f) => (
-                  <li key={f.label}><Check size={18} />{f.label}{typeof f.premium === 'string' ? ` (${f.premium.toLowerCase()})` : ''}</li>
-                ))}
-              </ul>
-            </div>
+            <Link className="rr-link-arrow" to="/for-gyms">Is my gym a partner? <ArrowRight size={16} /></Link>
           </div>
           <p className="rr-price-note" style={{ marginTop: 20 }}>Prices in USD. Taxes may apply depending on your location.</p>
         </div>
@@ -79,13 +81,19 @@ export default function Pricing() {
           <div className="rr-compare-wrap" data-reveal>
             <table className="rr-compare">
               <thead>
-                <tr><th scope="col">Feature</th><th scope="col">Free</th><th scope="col">Premium</th></tr>
+                <tr>
+                  <th scope="col">Feature</th>
+                  <th scope="col">Free</th>
+                  <th scope="col">Pro<br /><small>{fmtPrice(PRICING.proMonthly)}/mo</small></th>
+                  <th scope="col">Premium<br /><small>{fmtPrice(PRICING.premiumMonthly)}/mo</small></th>
+                </tr>
               </thead>
               <tbody>
                 {PLAN_FEATURES.map((f) => (
                   <tr key={f.label}>
                     <td>{f.label}</td>
                     <td><Cell value={f.free} /></td>
+                    <td><Cell value={f.pro} /></td>
                     <td><Cell value={f.premium} /></td>
                   </tr>
                 ))}
@@ -100,8 +108,8 @@ export default function Pricing() {
           <div className="rr-cta" data-reveal>
             <div>
               <span className="rr-eyebrow" style={{ background: 'rgba(255,255,255,0.08)', color: '#5eead4' }}>For gyms & coaches</span>
-              <h2 style={{ marginTop: 14 }}>Free to join. Keep {PRICING.gymPayoutPercent}% of every sale.</h2>
-              <p>No setup fees, no monthly subscription. Publish your programs and reach members across the city.</p>
+              <h2 style={{ marginTop: 14 }}>Give your members Pro. Keep {PRICING.gymPayoutPercent}% of every sale.</h2>
+              <p>Free to join, no monthly subscription. Your members get Pro included, and you earn from every program you publish.</p>
             </div>
             <div className="rr-cta-actions">
               <Link className="rr-btn rr-btn-white rr-btn-lg" to="/for-gyms">Learn about partnering <ArrowRight size={18} /></Link>

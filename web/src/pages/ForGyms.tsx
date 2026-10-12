@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  ArrowRight, BarChart3, Check, CreditCard, Globe, LayoutDashboard, Megaphone, Smartphone,
+  ArrowRight, Gift, Check, CreditCard, Globe, LayoutDashboard, Megaphone, Smartphone,
 } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
-import { PRICING } from '../config/pricing';
+import { PREMIUM_UPGRADE, PRICING, fmtPrice } from '../config/pricing';
 import { GymDashboard } from '../components/site/Mockups';
 import Faq from '../components/site/Faq';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const BENEFITS = [
-  { icon: Globe, tone: '', title: 'Reach beyond your four walls', desc: 'Members who can\'t make it in every day can still train with your coaches from anywhere.' },
+  { icon: Gift, tone: '', title: 'Pro included for your members', desc: `Every member of your gym gets Reprummble Pro (normally ${fmtPrice(PRICING.proMonthly)}/month) as part of their membership — a perk that helps you win and keep members.` },
+  { icon: Globe, tone: 'is-violet', title: 'Reach beyond your four walls', desc: 'Members who can\'t make it in every day can still train with your coaches from anywhere.' },
   { icon: CreditCard, tone: 'is-orange', title: 'New revenue, zero upfront cost', desc: `No setup or monthly fees. You keep ${PRICING.gymPayoutPercent}% of every program you sell.` },
-  { icon: Smartphone, tone: 'is-violet', title: 'Your programs, in a real app', desc: 'Publish workouts and plans to iOS, Android, and web without building anything yourself.' },
+  { icon: Smartphone, tone: '', title: 'Your programs, in a real app', desc: 'Publish workouts and plans to iOS, Android, and web without building anything yourself.' },
   { icon: LayoutDashboard, tone: '', title: 'One partner dashboard', desc: 'See who joined, who is training, and who needs a check-in — all in one place.' },
-  { icon: BarChart3, tone: 'is-orange', title: 'Data that improves coaching', desc: 'Member workouts, nutrition, and recovery data help you coach with context.' },
   { icon: Megaphone, tone: 'is-violet', title: 'Get discovered', desc: 'Your gym and programs appear to Reprummble members looking for coaching nearby.' },
 ];
 
@@ -27,8 +27,8 @@ const STEPS = [
 
 const FAQS = [
   { q: 'What does it cost to become a partner?', a: `Nothing upfront. There are no setup fees and no monthly subscription. Reprummble keeps ${100 - PRICING.gymPayoutPercent}% of program sales to cover the app, payments, and support; you keep ${PRICING.gymPayoutPercent}%.` },
-  { q: 'Who sets the price of my programs?', a: 'You do. Premium Reprummble members receive member pricing, which we agree with you during onboarding.' },
-  { q: 'Do my existing members need to pay for Reprummble?', a: 'No. Your members can use the free plan and buy your programs directly. Premium is optional.' },
+  { q: 'Who sets the price of my programs?', a: 'You do. Pro and Premium members receive member pricing, which we agree with you during onboarding.' },
+  { q: 'Do my members need to pay for Reprummble?', a: `No. Members of partner gyms get Reprummble Pro included. If they want 1-on-1 coaching extras, they can upgrade to Premium for just ${fmtPrice(PREMIUM_UPGRADE)}/month.` },
   { q: 'What kinds of businesses can partner?', a: 'Gyms, CrossFit boxes, studios, personal trainers, and online coaches. If you deliver training, we want to hear from you.' },
   { q: 'Is there a long-term contract?', a: 'No. You can pause or remove your programs at any time.' },
 ];
@@ -174,6 +174,7 @@ export default function ForGyms() {
             </div>
             <ul className="rr-hero-checks">
               <li><Check size={16} /> $0 to join</li>
+              <li><Check size={16} /> Members get Pro free</li>
               <li><Check size={16} /> Keep {PRICING.gymPayoutPercent}% of revenue</li>
               <li><Check size={16} /> No contract</li>
             </ul>

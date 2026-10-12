@@ -393,7 +393,7 @@ export default function Layout() {
             <div className="auth-card-header">
               <div>
                 <h2>{authMode === 'signup' ? 'Create your free account' : authMode === 'forgot' ? 'Reset your password' : 'Welcome back'}</h2>
-                <p>{authMode === 'signup' ? 'No card needed. Upgrade to Premium anytime.' : 'Sign in to continue your training.'}</p>
+                <p>{authMode === 'signup' ? 'No card needed. Upgrade anytime.' : 'Sign in to continue your training.'}</p>
               </div>
               <button className="icon-close" type="button" onClick={() => setAuthOpen(false)} aria-label="Close">
                 ×

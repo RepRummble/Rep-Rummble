@@ -1,30 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../config/supabase';
-import { PRICING } from '../config/pricing';
+import { PLANS as CONFIG_PLANS, fmtPrice } from '../config/pricing';
 
-const PLANS = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: `${PRICING.currency}0`,
-    cycle: '/month',
-    features: ['Workout & meal logging', 'Habit streaks', 'Weekly insights'],
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: `${PRICING.currency}${PRICING.premiumMonthly}`,
-    cycle: '/month',
-    features: ['Personalized AI training plan', 'AI meal photo analysis', 'Wearable sync', 'Daily recovery score', 'Unlimited challenges'],
-    featured: true,
-  },
-];
+const PLANS = CONFIG_PLANS.map((p) => ({
+  id: p.id,
+  name: p.name,
+  price: fmtPrice(p.price),
+  cycle: '/month',
+  features: [...p.highlights],
+  featured: p.id === 'pro',
+}));
 
 export default function Payment() {
   const [searchParams] = useSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(searchParams.get('plan') || 'premium');
+  const [selectedPlan, setSelectedPlan] = useState(searchParams.get('plan') || 'pro');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

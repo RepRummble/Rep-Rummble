@@ -503,7 +503,7 @@ a.rr-card:hover, .rr-card-hover:hover { transform: translateY(-3px); box-shadow:
 .rr-price.is-dark h3, .rr-price.is-dark .rr-price-amount { color: #fff; }
 .rr-price.is-dark p, .rr-price.is-dark li, .rr-price.is-dark .rr-price-per { color: #b7c0cc; }
 .rr-price-badge {
-  position: absolute; top: -13px; left: 32px;
+  position: absolute; top: -13px; left: 32px; white-space: nowrap;
   background: var(--rr-brand); color: #fff;
   font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px;
 }
@@ -528,7 +528,20 @@ a.rr-card:hover, .rr-card-hover:hover { transform: translateY(-3px); box-shadow:
 .rr-compare tr:last-child td { border-bottom: none; }
 .rr-compare th { font-family: var(--rr-font-head); font-size: 14px; color: var(--rr-ink); background: var(--rr-surface); }
 .rr-compare td { color: var(--rr-ink-2); }
-.rr-compare td:not(:first-child), .rr-compare th:not(:first-child) { text-align: center; width: 22%; }
+.rr-compare td:not(:first-child), .rr-compare th:not(:first-child) { text-align: center; width: 18%; }
+.rr-compare th small { font-family: var(--rr-font-body); font-weight: 500; color: var(--rr-muted); }
+.rr-gym-perk {
+  margin-top: 28px;
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 22px 26px;
+  border-radius: var(--rr-radius-lg);
+  background: var(--rr-brand-soft);
+  border: 1px solid #cdebe5;
+}
+.rr-gym-perk > div { flex: 1; min-width: 240px; }
+.rr-gym-perk strong { color: var(--rr-ink); font-size: 17px; }
+.rr-gym-perk p { margin-top: 4px; font-size: 15px; }
+.rr-gym-perk .rr-icon { background: #fff; }
 .rr-yes { color: var(--rr-brand); }
 .rr-no { color: #c0c6cf; }
 

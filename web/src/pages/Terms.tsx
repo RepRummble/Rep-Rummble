@@ -181,11 +181,16 @@ const termsSections: TermsSection[] = [
         <h4>Subscription Plans</h4>
         <ul>
           <li>
-            <strong>Free</strong> — No charge, with access to core tracking features.
+            <strong>Free</strong> — No charge, with limited access to core tracking features.
           </li>
           <li>
-            <strong>Premium</strong> — Paid monthly; includes personalized training
+            <strong>Pro</strong> — Paid monthly; full access to personalized training
             plans, AI meal analysis, wearable sync, recovery scores, and advanced analytics.
+            Pro may be included for members of participating partner gyms.
+          </li>
+          <li>
+            <strong>Premium</strong> — Paid monthly; includes everything in Pro plus
+            coach check-ins, custom nutrition plans, and priority support.
           </li>
           <li>
             <strong>Partner gym programs</strong> — Optional programs sold by partner
