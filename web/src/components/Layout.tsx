@@ -5,17 +5,15 @@ import { FaXTwitter } from 'react-icons/fa6';
 import { Menu, X } from 'lucide-react';
 import { DEV_BYPASS_AUTH, DEV_USER } from '../config/devAuth';
 import api from '../config/api';
-import { supabase } from '../config/supabase';
+import { supabase, auth as supabaseAuth } from '../config/supabase';
 import ChatWidget from './chat/ChatWidget';
 import CookieBanner from './CookieBanner';
 import { useAnalytics } from '../hooks/useAnalytics';
 import SiteFooter from './site/SiteFooter';
 import '../styles/site.css';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
 const PRIVATE_ROUTES = ['/analytics', '/reports', '/referral', '/profile', '/wearables'];
 const LIGHT_ROUTES = ['/', '/features', '/pricing', '/for-gyms'];
-const LIBRARY_ROUTES = ['/workouts', '/programs', '/challenges', '/exercises'];
 const navClass = ({ isActive }: { isActive: boolean }) => `rr-nav-link${isActive ? ' active' : ''}`;
 
 export default function Layout() {
@@ -39,7 +37,6 @@ export default function Layout() {
     password: '',
   });
   const profileRef = useRef<HTMLDivElement>(null);
-  const [dashOpen, setDashOpen] = useState(false);
   const lastScroll = useRef(0);
   const hasMounted = useRef(false);
   useEffect(() => {
@@ -91,8 +88,7 @@ export default function Layout() {
     }
   }, [location.pathname, isLoggedIn, navigate]);
 
-  const isLight = LIGHT_ROUTES.includes(location.pathname)
-    || LIBRARY_ROUTES.some((route) => location.pathname === route || location.pathname.startsWith(`${route}/`));
+  const isLight = LIGHT_ROUTES.includes(location.pathname);
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('theme-light', isLight);
   }, [isLight]);
@@ -116,7 +112,6 @@ export default function Layout() {
     lastScroll.current = 0;
     setHeaderVisible(true);
     setMobileMenuOpen(false);
-    setDashOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -256,7 +251,7 @@ export default function Layout() {
         sessionStorage.removeItem('postAuthPath');
         navigate(postAuthPath, { replace: true });
       } else {
-        navigate('/analytics', { replace: true });
+        navigate('/', { replace: true });
       }
     } catch (error: unknown) {
       setAuthStatus('error');
@@ -288,6 +283,18 @@ export default function Layout() {
     } else {
       setAuthStatus('success');
       setAuthMessage('Check your email for a reset link.');
+    }
+  };
+
+  // Starts social sign-in in the browser via Supabase, so visitors go straight from
+  // reprummble.com to the provider instead of bouncing through the API host.
+  const handleOAuth = async (provider: 'google' | 'apple' | 'facebook' | 'twitter') => {
+    setAuthStatus('loading');
+    setAuthMessage('');
+    const { error } = await supabaseAuth.signInWithOAuth(provider);
+    if (error) {
+      setAuthStatus('error');
+      setAuthMessage(error.message);
     }
   };
 
@@ -327,10 +334,6 @@ export default function Layout() {
           <nav className="rr-nav" aria-label="Main">
             {!isLoggedIn ? (
               <>
-                <NavLink to="/workouts" className={navClass}>Workouts</NavLink>
-                <NavLink to="/programs" className={navClass}>Programs</NavLink>
-                <NavLink to="/challenges" className={navClass}>Challenges</NavLink>
-                <NavLink to="/exercises" className={navClass}>Exercises</NavLink>
                 <NavLink to="/pricing" className={navClass}>Pricing</NavLink>
                 <NavLink to="/faq" className={navClass}>FAQ</NavLink>
                 <NavLink to="/contact" className={navClass}>Contact</NavLink>
@@ -341,22 +344,12 @@ export default function Layout() {
               </>
             ) : (
               <>
-                <div className="rr-nav-group">
-                  <button className="rr-nav-link" onClick={() => setDashOpen((p) => !p)} aria-expanded={dashOpen}>Dashboard ▾</button>
-                  {dashOpen && (
-                    <div className="rr-nav-menu">
-                      <NavLink to="/analytics" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Analytics</NavLink>
-                      <NavLink to="/reports" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Reports</NavLink>
-                      <NavLink to="/wearables" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Wearables</NavLink>
-                    </div>
-                  )}
+                <NavLink to="/pricing" className={navClass}>Pricing</NavLink>
+                <NavLink to="/faq" className={navClass}>FAQ</NavLink>
+                <NavLink to="/contact" className={navClass}>Contact</NavLink>
+                <div className="rr-nav-mobile-actions">
+                  <button className="rr-btn rr-btn-outline" onClick={handleSignOut}>Sign out</button>
                 </div>
-                <NavLink to="/workouts" className={navClass}>Workouts</NavLink>
-                <NavLink to="/programs" className={navClass}>Programs</NavLink>
-                <NavLink to="/challenges" className={navClass}>Challenges</NavLink>
-                <NavLink to="/payment" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Subscription</NavLink>
-                <NavLink to="/referral" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Referral</NavLink>
-                <NavLink to="/profile" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Settings</NavLink>
               </>
             )}
           </nav>
@@ -366,6 +359,11 @@ export default function Layout() {
               <button className="rr-btn rr-btn-primary" onClick={() => { setAuthMode('signup'); setAuthOpen(true); }}>Start free</button>
             </div>
           ) : (
+            <div className="rr-header-actions rr-desktop-only">
+              <button className="rr-nav-link" onClick={handleSignOut}>Sign out</button>
+            </div>
+          )}
+          {isLoggedIn && (
             <div className="profile-shell" ref={profileRef}>
               <button className="rr-avatar-btn" onClick={handleProfileClick} aria-label="Open profile">
                 {(DEV_BYPASS_AUTH ? DEV_USER.name : currentUser?.name || '').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'RR'}
@@ -376,7 +374,8 @@ export default function Layout() {
                     <div className="rr-popover-name">{DEV_BYPASS_AUTH ? DEV_USER.name : (currentUser?.name || 'Your account')}</div>
                     <div className="rr-popover-email">{DEV_BYPASS_AUTH ? DEV_USER.email : (currentUser?.email || '')}</div>
                   </div>
-                  <Link to="/profile" onClick={() => setProfileOpen(false)}>View profile</Link>
+                  <Link to="/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>
+                  <Link to="/payment" onClick={() => setProfileOpen(false)}>Billing & subscription</Link>
                   <button type="button" onClick={handleSignOut}>Sign out</button>
                 </div>
               )}
@@ -500,7 +499,7 @@ export default function Layout() {
             )}
             {authMode !== 'forgot' && (
             <div className="social-buttons">
-              <a className="social-btn google" href={`${API_URL}/api/auth/oauth/google`}>
+              <button type="button" className="social-btn google" onClick={() => handleOAuth('google')} disabled={authStatus === 'loading'}>
                 <svg
                   className="social-icon google-multi"
                   viewBox="0 0 48 48"
@@ -525,19 +524,19 @@ export default function Layout() {
                   />
                 </svg>
                 <span className="sr-only">Continue with Google</span>
-              </a>
-              <a className="social-btn apple" href={`${API_URL}/api/auth/oauth/apple`}>
+              </button>
+              <button type="button" className="social-btn apple" onClick={() => handleOAuth('apple')} disabled={authStatus === 'loading'}>
                 <FaApple className="social-icon" />
                 <span className="sr-only">Continue with Apple</span>
-              </a>
-              <a className="social-btn facebook" href={`${API_URL}/api/auth/oauth/facebook`}>
+              </button>
+              <button type="button" className="social-btn facebook" onClick={() => handleOAuth('facebook')} disabled={authStatus === 'loading'}>
                 <FaFacebookF className="social-icon" />
                 <span className="sr-only">Continue with Facebook</span>
-              </a>
-              <a className="social-btn twitter" href={`${API_URL}/api/auth/oauth/twitter`}>
+              </button>
+              <button type="button" className="social-btn twitter" onClick={() => handleOAuth('twitter')} disabled={authStatus === 'loading'}>
                 <FaXTwitter className="social-icon" />
                 <span className="sr-only">Continue with Twitter</span>
-              </a>
+              </button>
             </div>
             )}
           </div>

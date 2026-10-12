@@ -124,10 +124,29 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 }
 
 // @route GET /api/auth/oauth/:provider
+// Only our own sites may receive the OAuth result. Anything else falls back to the
+// default, so this endpoint can't be used as an open redirect in phishing links.
+const OAUTH_REDIRECT_ORIGINS = new Set(
+  ['https://reprummble.com', 'https://www.reprummble.com', 'http://localhost:5173', process.env.CLIENT_URL]
+    .filter(Boolean)
+    .map((u) => { try { return new URL(u as string).origin } catch { return '' } })
+)
+
+function safeOAuthRedirect(requested: unknown): string {
+  const fallback = `${(process.env.CLIENT_URL || 'https://reprummble.com').replace(/\/$/, '')}/auth/callback`
+  if (typeof requested !== 'string') return fallback
+  try {
+    const url = new URL(requested)
+    return OAUTH_REDIRECT_ORIGINS.has(url.origin) && url.pathname === '/auth/callback' ? url.toString() : fallback
+  } catch {
+    return fallback
+  }
+}
+
 export const getOAuthUrl = async (req: Request, res: Response) => {
   try {
     const provider = req.params.provider as 'google' | 'facebook' | 'apple' | 'twitter'
-    const redirectTo = (req.query.redirect as string) || process.env.CLIENT_URL + '/auth/callback'
+    const redirectTo = safeOAuthRedirect(req.query.redirect)
 
     const validProviders = ['google', 'facebook', 'apple', 'twitter']
     if (!validProviders.includes(provider)) {

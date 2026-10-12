@@ -66,7 +66,8 @@ const corsOptions = {
     // Allow Vercel preview deployments
     if (origin.endsWith('.vercel.app')) return callback(null, true)
 
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
+    // Exact match: a prefix check would also allow e.g. https://reprummble.com.attacker.site
+    if (allowedOrigins.some(allowed => origin === allowed.replace(/\/$/, ''))) {
       return callback(null, true)
     }
 

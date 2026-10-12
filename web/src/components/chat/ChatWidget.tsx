@@ -23,7 +23,7 @@ const WELCOME: Message = {
   ts: Date.now(),
 }
 
-// Site paths ("reprummble.com/workouts") and email addresses become links.
+// Site paths ("reprummble.com/pricing") and email addresses become links.
 const LINK_RE = /((?:https?:\/\/)?(?:www\.)?reprummble\.com(?:\/[\w\-/]*)?|[\w.+-]+@[\w-]+\.[a-z]{2,})/gi
 
 function linkify(text: string) {

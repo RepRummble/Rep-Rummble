@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import StoreButtons from './StoreButtons';
 
 export default function SiteFooter() {
   return (
@@ -11,15 +12,10 @@ export default function SiteFooter() {
               <span className="rr-logo-name">Reprummble</span>
             </Link>
             <p>Training, nutrition, and recovery in one app — at a price that works for every household, and a platform that grows local gyms.</p>
-          </div>
-          <div>
-            <h4>Train</h4>
-            <ul>
-              <li><Link to="/workouts">Workouts</Link></li>
-              <li><Link to="/programs">Programs</Link></li>
-              <li><Link to="/challenges">Challenges</Link></li>
-              <li><Link to="/exercises">Exercise library</Link></li>
-            </ul>
+            <div className="rr-footer-apps">
+              <h4>Get the app</h4>
+              <StoreButtons variant="dark" />
+            </div>
           </div>
           <div>
             <h4>Product</h4>

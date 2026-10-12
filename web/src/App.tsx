@@ -19,14 +19,6 @@ import Terms from './pages/Terms';
 import NotFound from './pages/NotFound';
 import AgentDashboard from './pages/agent/AgentDashboard';
 import AuthCallback from './pages/AuthCallback';
-import Workouts from './pages/library/Workouts';
-import WorkoutDetail from './pages/library/WorkoutDetail';
-import Programs from './pages/library/Programs';
-import ProgramDetail from './pages/library/ProgramDetail';
-import Challenges from './pages/library/Challenges';
-import ChallengeDetail from './pages/library/ChallengeDetail';
-import Exercises from './pages/library/Exercises';
-import ExerciseDetail from './pages/library/ExerciseDetail';
 
 function App() {
   return (
@@ -37,19 +29,15 @@ function App() {
           <Route path="features" element={<Features />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="for-gyms" element={<ForGyms />} />
-          <Route path="workouts" element={<Workouts />} />
-          <Route path="workouts/:slug" element={<WorkoutDetail />} />
-          <Route path="programs" element={<Programs />} />
-          <Route path="programs/:slug" element={<ProgramDetail />} />
-          <Route path="challenges" element={<Challenges />} />
-          <Route path="challenges/:slug" element={<ChallengeDetail />} />
-          <Route path="exercises" element={<Exercises />} />
-          <Route path="exercises/:slug" element={<ExerciseDetail />} />
           <Route path="services" element={<Navigate to="/features" replace />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="reports" element={<Reports />} />
           <Route path="wearables" element={<Wearables />} />
           <Route path="plans" element={<Navigate to="/pricing" replace />} />
+          {/* Workout content now lives only in the app; send old links home. */}
+          {['workouts', 'programs', 'challenges', 'exercises'].map((path) => (
+            <Route key={path} path={`${path}/*`} element={<Navigate to="/" replace />} />
+          ))}
           <Route path="profile" element={<Profile />} />
           <Route path="referral" element={<Referral />} />
           <Route path="payment" element={<Payment />} />

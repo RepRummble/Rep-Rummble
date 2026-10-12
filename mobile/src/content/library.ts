@@ -1,4 +1,4 @@
-// Public catalog of the training content members get in the app.
+// Training content shown in the app: exercises, workouts, programs, and challenges.
 // Everything here is original Reprummble content. When an exercise has its own
 // licensed or self-recorded demo, set `videoUrl` (and optionally `posterUrl`).
 
