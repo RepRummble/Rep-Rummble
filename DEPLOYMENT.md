@@ -42,7 +42,7 @@ the pipeline calls to trigger a deploy on demand instead.
 | `VERCEL_PROJECT_ID` | Same as above |
 | `RENDER_DEPLOY_HOOK_URL` | Render service → Settings → Deploy Hook (from step 1) |
 | `RENDER_SERVICE_URL` | *(optional)* your Render service's public URL — enables an automatic post-deploy health check |
-| `TEST_REPOS_TOKEN` | **Required.** Fine-grained GitHub token (resource owner: RepRummble) with **Contents: Read-only** on `reprummble-e2e` and `reprummble-perf`. CI uses it to check out the private test suites; without it the `e2e` and `perf` jobs fail and production deploys are blocked |
+| `E2E_REPO_SSH_KEY` / `PERF_REPO_SSH_KEY` | **Required (already set).** Private halves of read-only deploy keys on `reprummble-e2e` / `reprummble-perf`. CI uses them to check out the private test suites; without them the `e2e` and `perf` jobs fail and production deploys are blocked. To rotate: generate a new ed25519 key, add the public key as a read-only deploy key on the test repo, and replace the secret |
 
 Already-referenced but optional (unskips more Playwright tests in CI — see
 the [reprummble-e2e README](https://github.com/RepRummble/reprummble-e2e)): `SUPABASE_URL`, `SUPABASE_ANON_KEY`,

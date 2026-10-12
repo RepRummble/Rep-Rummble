@@ -161,11 +161,11 @@ jobs:
       TEST_USER_B_PASSWORD: ${{ secrets.TEST_USER_B_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
-      # Tests live in a separate private repo; TEST_REPOS_TOKEN needs read access to it.
+      # Tests live in a separate private repo, read via a read-only deploy key.
       - uses: actions/checkout@v7
         with:
           repository: RepRummble/reprummble-e2e
-          token: ${{ secrets.TEST_REPOS_TOKEN }}
+          ssh-key: ${{ secrets.E2E_REPO_SSH_KEY }}
           path: e2e
       - uses: actions/setup-node@v7
         with: { node-version: '24' }
@@ -199,11 +199,11 @@ jobs:
       MONGODB_URI: mongodb://localhost:27017/reprummble_perf
     steps:
       - uses: actions/checkout@v7
-      # Simulations live in a separate private repo; TEST_REPOS_TOKEN needs read access to it.
+      # Simulations live in a separate private repo, read via a read-only deploy key.
       - uses: actions/checkout@v7
         with:
           repository: RepRummble/reprummble-perf
-          token: ${{ secrets.TEST_REPOS_TOKEN }}
+          ssh-key: ${{ secrets.PERF_REPO_SSH_KEY }}
           path: perf
       - uses: actions/setup-node@v7
         with: { node-version: '24' }
