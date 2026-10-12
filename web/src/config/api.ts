@@ -1,16 +1,19 @@
 import { supabase } from './supabase'
+import { DEV_BYPASS_AUTH } from './devAuth'
 
 // API Base URL - uses proxy in development, direct URL in production
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 // Get auth token from Supabase session
 async function getAuthToken(): Promise<string | null> {
+  // Dev-only shortcut (never enabled in production builds); the server only honours it outside production too.
+  if (DEV_BYPASS_AUTH) return 'dev-bypass-token'
   const { data: { session } } = await supabase.auth.getSession()
   return session?.access_token || null
 }
 
 // API request helper
-async function apiRequest<T>(
+export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<{ data?: T; error?: string }> {
@@ -41,6 +44,34 @@ async function apiRequest<T>(
   } catch (error: unknown) {
     return { error: error instanceof Error ? error.message : 'Network error' }
   }
+}
+
+// Authenticated file download (used for CSV reports)
+export async function apiBlob(endpoint: string): Promise<{ blob?: Blob; error?: string }> {
+  try {
+    const token = await getAuthToken()
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      return { error: body?.message || 'Download failed' }
+    }
+    return { blob: await response.blob() }
+  } catch (error: unknown) {
+    return { error: error instanceof Error ? error.message : 'Network error' }
+  }
+}
+
+export interface ReferralSummary {
+  code: string
+  link: string
+  invited: number
+  rewarded: number
+  rewardPercent: number
+  maxPercent: number
+  availablePercent: number
+  history: { at: string; rewarded: boolean }[]
 }
 
 // API methods
@@ -181,17 +212,16 @@ export const api = {
       apiRequest(`/api/leaderboard${limit ? `?limit=${limit}` : ''}`),
   },
 
-  // Reports
+  // Reports (the signed-in user's own data, as CSV)
   reports: {
-    getDaily: (date?: string) =>
-      apiRequest(`/api/reports/daily${date ? `?date=${date}` : ''}`),
+    download: (period: 'monthly' | 'yearly' | 'historical') => apiBlob(`/api/reports/export?period=${period}`),
+  },
 
-    getWeekly: () => apiRequest('/api/reports/weekly'),
-
-    getMonthly: () => apiRequest('/api/reports/monthly'),
-
-    export: (format: 'pdf' | 'csv', period: 'week' | 'month' | 'year') =>
-      apiRequest(`/api/reports/export?format=${format}&period=${period}`),
+  // Referral rewards
+  referrals: {
+    me: () => apiRequest<ReferralSummary>('/api/referrals/me'),
+    claim: (code: string) =>
+      apiRequest<{ discountPercent: number }>('/api/referrals/claim', { method: 'POST', body: JSON.stringify({ code }) }),
   },
 
   // Contact

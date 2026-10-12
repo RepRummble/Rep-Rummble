@@ -21,7 +21,7 @@ export interface IFoodAlternative {
 }
 
 export interface IMeal extends Document {
-  userId: mongoose.Types.ObjectId
+  userId: string // Supabase user id (UUID)
   foodName: string
   calories: number
   carbs: number
@@ -48,8 +48,7 @@ export interface IMeal extends Document {
 
 const MealSchema = new Schema<IMeal>({
   userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     index: true
   },

@@ -11,7 +11,7 @@ const FAQS = [
   { q: `How does the ${PRICING.trialDays}-day Pro trial work?`, a: `You get full Pro access for ${PRICING.trialDays} days. We remind you before it ends, and if you don't continue you simply return to the free plan — no surprise charges.` },
   { q: 'Can I switch plans or cancel anytime?', a: 'Yes. Upgrade, downgrade, or cancel from your account settings. Changes apply at the end of your current billing period.' },
   { q: 'Do I need a gym membership or a wearable?', a: 'No. Reprummble works at home, outdoors, or in any gym. Wearables add richer recovery data but are completely optional.' },
-  { q: 'I run a gym. How do I partner with you?', a: `It's free to join. Your members get Pro included, you publish programs, and you keep ${PRICING.gymPayoutPercent}% of every program sale. Apply on our For Gyms page.` },
+  { q: 'I run a gym. How do I partner with you?', a: `It's free to join. Your members get Pro included, you publish programs, and you keep ${PRICING.gymPayoutPercent}% of every program sale. Apply on our Collaboration page.` },
 ];
 
 function Cell({ value }: { value: boolean | string }) {
@@ -67,7 +67,7 @@ export default function Pricing() {
               <strong>Train at a partner gym? Pro is included.</strong>
               <p>Members of Reprummble partner gyms get Pro at no extra cost — and can upgrade to Premium for just {fmtPrice(PREMIUM_UPGRADE)}/month.</p>
             </div>
-            <Link className="rr-link-arrow" to="/for-gyms">Is my gym a partner? <ArrowRight size={16} /></Link>
+            <Link className="rr-link-arrow" to="/collaborate">Is my gym a partner? <ArrowRight size={16} /></Link>
           </div>
           <p className="rr-price-note" style={{ marginTop: 20 }}>Prices in USD. Taxes may apply depending on your location.</p>
         </div>
@@ -112,7 +112,7 @@ export default function Pricing() {
               <p>Free to join, no monthly subscription. Your members get Pro included, and you earn from every program you publish.</p>
             </div>
             <div className="rr-cta-actions">
-              <Link className="rr-btn rr-btn-white rr-btn-lg" to="/for-gyms">Learn about partnering <ArrowRight size={18} /></Link>
+              <Link className="rr-btn rr-btn-white rr-btn-lg" to="/collaborate">Learn about collaborating <ArrowRight size={18} /></Link>
             </div>
           </div>
         </div>

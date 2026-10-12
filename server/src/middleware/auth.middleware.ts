@@ -23,8 +23,9 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       token = req.headers.authorization.split(' ')[1]
     }
 
-    // Temporary: allow bypass token for local development
-    const BYPASS_TOKEN = process.env.TEMP_BYPASS_TOKEN || 'dev-bypass-token'
+    // Local development only. In production this token is never accepted, otherwise anyone
+    // could send "Bearer dev-bypass-token" and be treated as a signed-in user.
+    const BYPASS_TOKEN = process.env.NODE_ENV === 'production' ? '' : (process.env.TEMP_BYPASS_TOKEN || 'dev-bypass-token')
 
     if (!token) {
       res.status(401).json({
@@ -34,7 +35,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       return
     }
 
-    if (token === BYPASS_TOKEN) {
+    if (BYPASS_TOKEN && token === BYPASS_TOKEN) {
       // Attach a fake bypass user for local testing
       req.user = {
         id: '00000000-0000-0000-0000-000000000000',
