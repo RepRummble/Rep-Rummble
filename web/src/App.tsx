@@ -37,23 +37,6 @@ function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ReferralClaimer />
       <Routes>
-        <Route path="dashboard" element={<AccountLayout />}>
-          <Route index element={<AccountDashboard />} />
-          <Route path="reports" element={<AccountReports />} />
-          <Route path="wearables" element={<AccountWearables />} />
-          <Route path="referral" element={<AccountReferral />} />
-          <Route path="billing" element={<AccountBilling />} />
-          <Route path="profile" element={<AccountProfile />} />
-        </Route>
-        <Route path="admin/applications" element={<BusinessApplications />} />
-        <Route path="business" element={<BusinessLayout />}>
-          <Route index element={<BusinessOverview />} />
-          <Route path="members" element={<BusinessMembers />} />
-          <Route path="workouts" element={<BusinessWorkouts />} />
-          <Route path="nutrition" element={<BusinessNutrition />} />
-          <Route path="reports" element={<BusinessReports />} />
-          <Route path="settings" element={<BusinessSettings />} />
-        </Route>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="features" element={<Features />} />
@@ -82,6 +65,23 @@ function App() {
           <Route path="agent" element={<AgentDashboard />} />
           <Route path="auth/callback" element={<AuthCallback />} />
           <Route path="oauth/consent" element={<OAuthConsent />} />
+          <Route path="dashboard" element={<AccountLayout />}>
+            <Route index element={<AccountDashboard />} />
+            <Route path="reports" element={<AccountReports />} />
+            <Route path="wearables" element={<AccountWearables />} />
+            <Route path="referral" element={<AccountReferral />} />
+            <Route path="billing" element={<AccountBilling />} />
+            <Route path="profile" element={<AccountProfile />} />
+          </Route>
+          <Route path="admin/applications" element={<BusinessApplications />} />
+          <Route path="business" element={<BusinessLayout />}>
+            <Route index element={<BusinessOverview />} />
+            <Route path="members" element={<BusinessMembers />} />
+            <Route path="workouts" element={<BusinessWorkouts />} />
+            <Route path="nutrition" element={<BusinessNutrition />} />
+            <Route path="reports" element={<BusinessReports />} />
+            <Route path="settings" element={<BusinessSettings />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

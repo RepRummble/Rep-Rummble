@@ -8,6 +8,8 @@ import { supabase, auth as supabaseAuth } from '../config/supabase';
 import ChatWidget from './chat/ChatWidget';
 import CookieBanner from './CookieBanner';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { biz, can, type BusinessInfo, type Role } from '../pages/business/api';
+import { BUSINESS_NAV, MEMBER_NAV, isAppPath, type NavItem } from '../config/appNav';
 import SiteFooter from './site/SiteFooter';
 import '../styles/site.css';
 
@@ -24,6 +26,12 @@ export default function Layout() {
   const [authMessage, setAuthMessage] = useState('');
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [isLoggedIn, setIsLoggedIn] = useState(DEV_BYPASS_AUTH);
+  // False until we know whether someone is signed in, so a signed-in visitor never sees a flash of the public home page.
+  const [sessionChecked, setSessionChecked] = useState(DEV_BYPASS_AUTH);
+  // What kind of account this is, so the bar can show member pages or business pages.
+  const [account, setAccount] = useState<{ ready: boolean; business: BusinessInfo | null; role?: Role; isAdmin: boolean; pending: number }>(
+    { ready: false, business: null, isAdmin: false, pending: 0 },
+  );
   const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
@@ -56,6 +64,7 @@ export default function Layout() {
           email: session.user.email || '',
         });
       }
+      setSessionChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session);
@@ -71,6 +80,39 @@ export default function Layout() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Find out whether this person runs an approved business (and whether they review applications).
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setAccount({ ready: false, business: null, isAdmin: false, pending: 0 });
+      return;
+    }
+    let cancelled = false;
+    Promise.all([biz.me(), biz.admin.status()]).then(([me, admin]) => {
+      if (cancelled) return;
+      setAccount({
+        ready: true,
+        business: me.data?.business ?? null,
+        role: me.data?.role,
+        isAdmin: !!admin.data?.isAdmin,
+        pending: admin.data?.pending ?? 0,
+      });
+    });
+    return () => { cancelled = true; };
+  }, [isLoggedIn]);
+
+  const isBusiness = account.business?.status === 'approved' && !!account.role;
+  const homePath = isBusiness ? '/business' : '/dashboard';
+  const accountNav: NavItem[] = !account.ready
+    ? []
+    : isBusiness
+      ? BUSINESS_NAV.filter((n) => !n.area || can(account.role as Role, n.area, 'read'))
+      : MEMBER_NAV;
+
+  // Signed-in people live in their own pages: the public landing page is only for visitors.
+  useEffect(() => {
+    if (isLoggedIn && account.ready && location.pathname === '/') navigate(homePath, { replace: true });
+  }, [isLoggedIn, account.ready, homePath, location.pathname, navigate]);
+
   useEffect(() => {
     if (DEV_BYPASS_AUTH || isLoggedIn) return;
     const params = new URLSearchParams(location.search);
@@ -81,7 +123,7 @@ export default function Layout() {
     }
   }, [location.search, isLoggedIn]);
 
-  const isLight = LIGHT_ROUTES.includes(location.pathname);
+  const isLight = LIGHT_ROUTES.includes(location.pathname) || isAppPath(location.pathname);
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('theme-light', isLight);
   }, [isLight]);
@@ -271,7 +313,7 @@ export default function Layout() {
         sessionStorage.removeItem('postAuthPath');
         navigate(postAuthPath, { replace: true });
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate('/', { replace: true });
       }
     } catch (error: unknown) {
       setAuthStatus('error');
@@ -355,7 +397,7 @@ export default function Layout() {
       </div>
       <header className={`rr-header${scrolled ? ' is-scrolled' : ''}${headerVisible || mobileMenuOpen ? '' : ' is-hidden'}${mobileMenuOpen ? ' menu-open' : ''}`}>
         <div className="rr-container rr-header-inner">
-          <Link to="/" className="rr-logo" aria-label="Reprummble home">
+          <Link to={isLoggedIn ? homePath : '/'} className="rr-logo" aria-label={isLoggedIn ? 'Reprummble dashboard' : 'Reprummble home'}>
             <span className="rr-logo-mark">RR</span>
             <span className="rr-logo-name">Reprummble</span>
           </Link>
@@ -374,13 +416,9 @@ export default function Layout() {
               </>
             ) : (
               <>
-                <NavLink to="/features" className={navClass}>Features</NavLink>
-                <NavLink to="/pricing" className={navClass}>Pricing</NavLink>
-                <NavLink to="/faq" className={navClass}>FAQ</NavLink>
+                {accountNav.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={navClass}>{n.label}</NavLink>)}
                 <NavLink to="/contact" className={navClass}>Contact</NavLink>
-                <NavLink to="/collaborate" className={navClass}>Collaboration</NavLink>
                 <div className="rr-nav-mobile-actions">
-                  <Link className="rr-btn rr-btn-primary" to="/dashboard">My dashboard</Link>
                   <button className="rr-btn rr-btn-outline" onClick={handleSignOut}>Sign out</button>
                 </div>
               </>
@@ -393,7 +431,6 @@ export default function Layout() {
             </div>
           ) : (
             <div className="rr-header-actions rr-desktop-only">
-              <Link className="rr-btn rr-btn-primary" to="/dashboard">My dashboard</Link>
               <button className="rr-nav-link" onClick={handleSignOut}>Sign out</button>
             </div>
           )}
@@ -408,9 +445,13 @@ export default function Layout() {
                     <div className="rr-popover-name">{DEV_BYPASS_AUTH ? DEV_USER.name : (currentUser?.name || 'Your account')}</div>
                     <div className="rr-popover-email">{DEV_BYPASS_AUTH ? DEV_USER.email : (currentUser?.email || '')}</div>
                   </div>
-                  <Link to="/dashboard" onClick={() => setProfileOpen(false)}>My dashboard</Link>
-                  <Link to="/dashboard/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>
-                  <Link to="/dashboard/billing" onClick={() => setProfileOpen(false)}>Billing</Link>
+                  {isBusiness && <Link to="/dashboard" onClick={() => setProfileOpen(false)}>My own dashboard</Link>}
+                  {isBusiness && <Link to="/dashboard/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>}
+                  {account.isAdmin && (
+                    <Link to="/admin/applications" onClick={() => setProfileOpen(false)}>
+                      Review applications{account.pending > 0 ? ` (${account.pending})` : ''}
+                    </Link>
+                  )}
                   <button type="button" onClick={handleSignOut}>Sign out</button>
                 </div>
               )}
@@ -577,7 +618,7 @@ export default function Layout() {
       )}
 
       <main className="page" key={location.pathname}>
-        <Outlet />
+        {location.pathname === '/' && (!sessionChecked || (isLoggedIn && !account.ready)) ? null : <Outlet />}
       </main>
 
 
@@ -585,7 +626,7 @@ export default function Layout() {
       <CookieBanner />
 
     </div>
-    <SiteFooter />
+    {!isAppPath(location.pathname) && <SiteFooter />}
     </>
   );
 }

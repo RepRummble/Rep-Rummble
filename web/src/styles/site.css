@@ -234,7 +234,7 @@ html.theme-light { scrollbar-color: #d0d5dd #fff; }
 }
 .rr-popover a:hover, .rr-popover button:hover { background: var(--rr-surface); color: var(--rr-ink); }
 
-@media (max-width: 960px) {
+@media (max-width: 1040px) {
   .rr-menu-btn { display: inline-flex; }
   .rr-nav, .rr-header-actions.rr-desktop-only { display: none; }
   .rr-header.menu-open .rr-nav {
@@ -974,3 +974,10 @@ html.theme-light .route-transition { display: none; }
 .rr-consent h1 { font-size: 26px; }
 .rr-consent-scopes { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; color: var(--rr-ink-2); }
 .rr-consent-note { font-size: 14px; color: var(--rr-muted) !important; margin: 0; }
+
+/* Header links never wrap, and spacing tightens on mid-size screens so a signed-in menu always fits. */
+.rr-nav-link, .rr-header-actions .rr-nav-link, .rr-header-actions .rr-btn { white-space: nowrap; }
+@media (max-width: 1240px) {
+  .rr-header-inner { gap: 20px; }
+  .rr-nav-link { padding: 8px 9px; font-size: 14.5px; }
+}

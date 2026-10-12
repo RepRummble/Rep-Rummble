@@ -1,5 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { biz, useLoad } from '../business/api';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import '../../styles/dashboard.css';
@@ -10,11 +9,6 @@ export default function Applications() {
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const { data, error, loading, reload } = useLoad(() => biz.admin.list(status), [status]);
   const [message, setMessage] = useState('');
-
-  useLayoutEffect(() => {
-    document.documentElement.classList.add('theme-light');
-    return () => document.documentElement.classList.remove('theme-light');
-  }, []);
 
   const approve = async (id: string) => {
     const res = await biz.admin.approve(id);
@@ -37,9 +31,9 @@ export default function Applications() {
   };
 
   return (
-    <div className="dash-gate" style={{ alignItems: 'start' }}>
-      <div style={{ width: 'min(960px, 100%)', display: 'grid', gap: 16 }}>
-        <div className="dash-head"><h1>Business applications</h1><p><Link to="/" className="rr-link-arrow">← Back to website</Link></p></div>
+    <div className="dash-page">
+      <div className="rr-container dash-content" style={{ maxWidth: 960 }}>
+        <div className="dash-head"><h1>Business applications</h1></div>
         <div className="dash-tabs" role="tablist">
           {(['pending', 'approved', 'rejected'] as const).map((s) => (
             <button key={s} role="tab" aria-selected={status === s} className={status === s ? 'active' : ''} onClick={() => { setStatus(s); setMessage(''); }}>{s[0].toUpperCase() + s.slice(1)}</button>

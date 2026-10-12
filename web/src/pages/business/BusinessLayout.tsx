@@ -1,22 +1,11 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import {
-  ClipboardList, Clock, FileBarChart, LayoutDashboard, LogOut, Menu, Settings, Users, Utensils, X,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Clock } from 'lucide-react';
 import { DEV_BYPASS_AUTH } from '../../config/devAuth';
 import { supabase } from '../../config/supabase';
 import { usePageMeta } from '../../hooks/usePageMeta';
-import { biz, can, useLoad, type Area } from './api';
+import { biz, useLoad } from './api';
 import '../../styles/dashboard.css';
-
-const NAV: { to: string; end?: boolean; label: string; icon: typeof Users; area?: Area }[] = [
-  { to: '/business', end: true, label: 'Overview', icon: LayoutDashboard, area: 'reports' },
-  { to: '/business/members', label: 'Members', icon: Users, area: 'members' },
-  { to: '/business/workouts', label: 'Workout plans', icon: ClipboardList, area: 'plans' },
-  { to: '/business/nutrition', label: 'Nutrition & food', icon: Utensils, area: 'nutrition' },
-  { to: '/business/reports', label: 'Reports', icon: FileBarChart, area: 'reports' },
-  { to: '/business/settings', label: 'Settings', icon: Settings },
-];
 
 function Gate({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -30,16 +19,11 @@ function Gate({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+/** Business pages. The menu for them lives in the site's top bar, so this checks access and shows the content. */
 export default function BusinessLayout() {
   usePageMeta({ title: 'Business dashboard', canonical: '/business' });
   const navigate = useNavigate();
   const [auth, setAuth] = useState<'checking' | 'in' | 'out'>(DEV_BYPASS_AUTH ? 'in' : 'checking');
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  useLayoutEffect(() => {
-    document.documentElement.classList.add('theme-light');
-    return () => document.documentElement.classList.remove('theme-light');
-  }, []);
 
   useEffect(() => {
     if (DEV_BYPASS_AUTH) return;
@@ -53,10 +37,6 @@ export default function BusinessLayout() {
   const signIn = () => {
     try { sessionStorage.setItem('postAuthPath', '/business'); } catch { /* ignore */ }
     navigate('/?auth=signin');
-  };
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/', { replace: true });
   };
 
   if (auth === 'checking' || (auth === 'in' && me.loading)) return <Gate title="Business dashboard"><p>Loading…</p></Gate>;
@@ -88,7 +68,7 @@ export default function BusinessLayout() {
       <Gate title="Business dashboard">
         <p>You do not have a business account yet. Apply to collaborate and, once we approve it, your dashboard opens here.</p>
         <Link className="rr-btn rr-btn-primary rr-btn-lg" to="/collaborate#apply">Apply to collaborate</Link>
-        <Link className="rr-link-arrow" to="/">Back to website</Link>
+        <Link className="rr-link-arrow" to="/dashboard">Go to my dashboard</Link>
       </Gate>
     );
   }
@@ -98,7 +78,7 @@ export default function BusinessLayout() {
       <Gate title="Application under review">
         <p className="dash-gate-icon"><Clock size={28} /></p>
         <p>Thanks for applying, <strong>{business.name}</strong>. We review every application personally and reply within two business days. Your dashboard will open here as soon as it is approved.</p>
-        <Link className="rr-link-arrow" to="/">Back to website</Link>
+        <Link className="rr-link-arrow" to="/dashboard">Go to my dashboard</Link>
       </Gate>
     );
   }
@@ -114,39 +94,10 @@ export default function BusinessLayout() {
   }
 
   return (
-    <div className="dash">
-      <aside className={`dash-side${menuOpen ? ' is-open' : ''}`}>
-        <Link to="/business" className="rr-logo dash-logo">
-          <span className="rr-logo-mark">RR</span>
-          <span className="rr-logo-name">Business</span>
-        </Link>
-        <nav aria-label="Business dashboard">
-          {NAV.filter((n) => !n.area || can(role, n.area, 'read')).map(({ to, end, label, icon: Icon }) => (
-            <NavLink key={to} to={to} end={end} onClick={() => setMenuOpen(false)} className={({ isActive }) => `dash-nav${isActive ? ' active' : ''}`}>
-              <Icon size={18} /> {label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="dash-side-foot">
-          <Link to="/dashboard" className="dash-nav">My own dashboard</Link>
-          <Link to="/" className="dash-nav">← Back to website</Link>
-          <button className="dash-nav" onClick={signOut}><LogOut size={18} /> Sign out</button>
-        </div>
-      </aside>
-
-      <div className="dash-main">
-        <header className="dash-top">
-          <button className="dash-menu" onClick={() => setMenuOpen((v) => !v)} aria-label="Toggle menu" aria-expanded={menuOpen}>
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-          <div>
-            <div className="dash-top-label">{role} · Business dashboard</div>
-            <strong>{business.name}</strong>
-          </div>
-        </header>
-        <main className="dash-content">
-          <Outlet context={{ business, role }} />
-        </main>
+    <div className="dash-page">
+      <div className="rr-container dash-content">
+        <p className="dash-top-label">{role} · {business.name}</p>
+        <Outlet context={{ business, role }} />
       </div>
     </div>
   );

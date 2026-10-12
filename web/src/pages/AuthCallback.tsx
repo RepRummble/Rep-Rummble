@@ -30,7 +30,7 @@ export default function AuthCallback() {
         if (type === 'recovery') {
           setMode('recovery')
         } else {
-          let next = '/dashboard'
+          let next = '/'
           try {
             const saved = sessionStorage.getItem('postAuthPath')
             sessionStorage.removeItem('postAuthPath')
