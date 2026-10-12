@@ -6,7 +6,7 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { PLANS, PREMIUM_UPGRADE, PRICING, fmtPrice } from '../config/pricing';
 import { PhoneMockup } from '../components/site/Mockups';
 import { LiveStats, ReviewsSection } from '../components/site/Reviews';
-import WaitlistForm from '../components/site/WaitlistForm';
+import StoreButtons from '../components/site/StoreButtons';
 
 const DEVICES = ['Apple Health', 'Garmin', 'Oura', 'Whoop', 'Fitbit', 'Polar'];
 
@@ -38,7 +38,7 @@ export default function Home() {
       <section className="rr-hero">
         <div className="rr-container rr-hero-grid">
           <div>
-            <span className="rr-eyebrow"><span className="rr-eyebrow-dot" /> Now open for members & partner gyms</span>
+            <span className="rr-eyebrow"><span className="rr-eyebrow-dot" /> Now on web, iOS & Android</span>
             <h1>
               Fitness that fits <span className="rr-gradient-text">every budget.</span>
             </h1>
@@ -59,6 +59,10 @@ export default function Home() {
               <li><Check size={16} /> Pro from {fmtPrice(PRICING.proMonthly)}/mo</li>
               <li><Check size={16} /> Cancel anytime</li>
             </ul>
+            <div className="rr-hero-app">
+              <span>Get the app</span>
+              <StoreButtons />
+            </div>
           </div>
           <div className="rr-visual">
             <PhoneMockup />
@@ -215,8 +219,8 @@ export default function Home() {
           <div className="rr-cta" data-reveal>
             <div>
               <h2>Your stronger self starts today.</h2>
-              <p>Join free in two minutes. The mobile app is coming soon — get notified at launch.</p>
-              <div style={{ marginTop: 20 }}><WaitlistForm dark /></div>
+              <p>Join free in two minutes and start training with a plan built around your goals.</p>
+              <div style={{ marginTop: 22 }}><StoreButtons variant="light" /></div>
             </div>
             <div className="rr-cta-actions">
               <Link className="rr-btn rr-btn-white rr-btn-lg" to="/?auth=signup">Start free</Link>

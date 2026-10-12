@@ -24,7 +24,6 @@ export function LiveStats() {
   const items = [
     { value: stats.userCount, label: 'Members' },
     { value: stats.workoutCount, label: 'Workouts completed' },
-    { value: stats.waitlistCount, label: 'On the app waitlist' },
   ].filter((i) => i.value > 0);
   if (stats.averageRating !== null && stats.reviewCount > 0) {
     items.push({ value: -1, label: `Average from ${stats.reviewCount} review${stats.reviewCount === 1 ? '' : 's'}` });

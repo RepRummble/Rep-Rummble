@@ -9,6 +9,7 @@ Reprummble helps athletes and everyday fitness enthusiasts train smarter, recove
 - **Personalised Training Plans** – AI-built programs that adapt to your schedule, gear, and fitness goals
 - **Smart Nutrition** – Instant meal logging, macro tracking, and smart food swap suggestions
 - **Recovery & Readiness** – Daily readiness scores powered by HRV, resting HR, and sleep quality data
+- **Apps** – Available on the web, iOS (App Store), and Android (Google Play)
 - **Wearable Sync** – Automatic data import from Apple Watch, Oura Ring, Garmin, and Whoop
 - **Actionable Analytics** – Weekly insights connecting habits to results
 - **30-Day Challenges** – Leaderboards and coach nudges to maintain momentum
