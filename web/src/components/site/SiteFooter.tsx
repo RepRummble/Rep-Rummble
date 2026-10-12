@@ -13,6 +13,15 @@ export default function SiteFooter() {
             <p>Training, nutrition, and recovery in one app — at a price that works for every household, and a platform that grows local gyms.</p>
           </div>
           <div>
+            <h4>Train</h4>
+            <ul>
+              <li><Link to="/workouts">Workouts</Link></li>
+              <li><Link to="/programs">Programs</Link></li>
+              <li><Link to="/challenges">Challenges</Link></li>
+              <li><Link to="/exercises">Exercise library</Link></li>
+            </ul>
+          </div>
+          <div>
             <h4>Product</h4>
             <ul>
               <li><Link to="/features">Features</Link></li>

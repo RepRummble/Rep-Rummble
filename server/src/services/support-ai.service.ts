@@ -37,7 +37,14 @@ Reprummble facts (do not contradict or invent beyond these):
 - Gyms and coaches can partner for free, publish their training programs in the app, and keep 80% of program sales. Applications: reprummble.com/for-gyms.
 - Available on the web (reprummble.com), iPhone, and Android.
 - Wearables: on iPhone, Reprummble reads Apple Health, which includes Apple Watch and any device whose app syncs to Apple Health (Garmin, Oura, Whoop, Fitbit, Polar). Android Health Connect support is coming.
-- Human support: support@reprummble.com (replies within 24 hours on weekdays).
+- One account works on the web, iPhone, and Android; plans, workouts, and progress sync automatically. On the website people browse content, manage billing, and see reports; guided workouts run in the app.
+- Human support: support@reprummble.com (replies within 24 hours on weekdays). Contact form: reprummble.com/contact.
+
+Content library (keep in sync with web/src/content/library.ts). Recommend by name and point to the page:
+- Workouts (reprummble.com/workouts, filter by focus, level, equipment, time): First Steps Full Body (beginner, 15 min, no equipment), Living Room Strength (intermediate, 25 min, no equipment), Dumbbell Total Body (Pro, 35 min), Upper Body Push (20 min, no equipment), Dumbbell Upper Builder (Pro, 30 min), Desk Posture Fix (12 min, bands), Leg Day No Gym (beginner, 20 min), Glute Builder (Pro, 30 min, dumbbells), Gym Lower Power (Pro, advanced, 45 min), Core 10 (beginner, 10 min), Iron Core (advanced, 20 min), HIIT 20 (intermediate, 20 min), Low-Impact Cardio (beginner, 15 min, no jumping), Morning Mobility (10 min).
+- Programs (reprummble.com/programs): Start Here: 4 Weeks (complete beginners), Home Fat Loss (6 weeks, no equipment), Dumbbell Muscle Builder (Pro, 8 weeks), Gym Strength Foundations (Pro, 8 weeks, advanced), Strong Core & Posture (4 weeks, bands), 6-Week Conditioning (Pro).
+- Challenges (reprummble.com/challenges): 30-Day Squat, 30-Day Plank (20 s to 3 min), 21-Day Push-up Builder, 14-Day Glute Bridge, 30-Day Burpee Ladder (advanced), 21-Day Wall Sit. Free members can join 1 challenge a month; Pro unlocks all.
+- Exercise how-to guides by muscle group: reprummble.com/exercises.
 
 Rules:
 - If you are not sure how a specific screen or setting in the app works, say so and point to support@reprummble.com rather than inventing steps.
@@ -75,8 +82,10 @@ export function getContextualQuickReplies(msg: string, reply: string): string[] 
   const t = `${msg} ${reply}`.toLowerCase()
   if (/gym|partner|coach/.test(t)) return ['How do gyms partner?', 'Is my gym a partner?', 'What does Premium add?']
   if (/meal|food|nutrition|calorie|macro|protein/.test(t)) return ['Build me a meal plan', 'How much protein do I need?', 'Log a meal with a photo']
-  if (/workout|exercise|training|strength|muscle/.test(t)) return ['Make me a 3-day plan', 'How do I progress safely?', 'Best warm-up?']
+  if (/challenge|streak/.test(t)) return ['Which challenge suits a beginner?', 'How do challenges work?', 'Pricing & plans']
+  if (/workout|exercise|training|strength|muscle|program/.test(t)) return ['Which program should I start?', 'Workouts with no equipment', 'How do I progress safely?']
   if (/plan|price|subscription|premium|pro\b/.test(t)) return ['Free vs Pro vs Premium', 'Is there a free trial?', 'Partner gym perk']
+  if (/device|phone|android|iphone|web/.test(t)) return ['Does it sync across devices?', 'Which wearables work?', 'Pricing & plans']
   if (/wearable|watch|sync|health/.test(t)) return ['Connect Apple Watch', 'Which devices work?', 'Why is my data missing?']
   if (/sleep|recovery|hrv|rest/.test(t)) return ['How can I sleep better?', 'What is HRV?', 'When should I rest?']
   return ['Pricing & plans', 'Build me a workout', 'Nutrition help']

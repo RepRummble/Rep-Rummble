@@ -682,7 +682,7 @@ a.rr-store-dark:hover { background: #1d2939; }
 
 /* ── Footer ── */
 .rr-footer { background: var(--rr-surface); border-top: 1px solid var(--rr-line); padding: 64px 0 32px; font-family: var(--rr-font-body); position: relative; z-index: 1; }
-.rr-footer-grid { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 40px; }
+.rr-footer-grid { display: grid; grid-template-columns: 1.6fr repeat(4, 1fr); gap: 40px; }
 .rr-footer p { color: var(--rr-muted); font-size: 14px; margin-top: 14px; max-width: 300px; line-height: 1.6; }
 .rr-footer h4 { font-family: var(--rr-font-head); font-size: 14px; color: var(--rr-ink); margin-bottom: 14px; }
 .rr-footer ul { list-style: none; padding: 0; display: grid; gap: 10px; }

@@ -15,6 +15,8 @@ import '../styles/site.css';
 const API_URL = import.meta.env.VITE_API_URL || '';
 const PRIVATE_ROUTES = ['/analytics', '/reports', '/referral', '/profile', '/wearables'];
 const LIGHT_ROUTES = ['/', '/features', '/pricing', '/for-gyms'];
+const LIBRARY_ROUTES = ['/workouts', '/programs', '/challenges', '/exercises'];
+const navClass = ({ isActive }: { isActive: boolean }) => `rr-nav-link${isActive ? ' active' : ''}`;
 
 export default function Layout() {
   useAnalytics();
@@ -89,7 +91,8 @@ export default function Layout() {
     }
   }, [location.pathname, isLoggedIn, navigate]);
 
-  const isLight = LIGHT_ROUTES.includes(location.pathname);
+  const isLight = LIGHT_ROUTES.includes(location.pathname)
+    || LIBRARY_ROUTES.some((route) => location.pathname === route || location.pathname.startsWith(`${route}/`));
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('theme-light', isLight);
   }, [isLight]);
@@ -324,11 +327,13 @@ export default function Layout() {
           <nav className="rr-nav" aria-label="Main">
             {!isLoggedIn ? (
               <>
-                <NavLink to="/features" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Features</NavLink>
-                <NavLink to="/pricing" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Pricing</NavLink>
-                <NavLink to="/for-gyms" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>For Gyms</NavLink>
-                <NavLink to="/faq" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>FAQ</NavLink>
-                <NavLink to="/contact" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Contact</NavLink>
+                <NavLink to="/workouts" className={navClass}>Workouts</NavLink>
+                <NavLink to="/programs" className={navClass}>Programs</NavLink>
+                <NavLink to="/challenges" className={navClass}>Challenges</NavLink>
+                <NavLink to="/exercises" className={navClass}>Exercises</NavLink>
+                <NavLink to="/pricing" className={navClass}>Pricing</NavLink>
+                <NavLink to="/faq" className={navClass}>FAQ</NavLink>
+                <NavLink to="/contact" className={navClass}>Contact</NavLink>
                 <div className="rr-nav-mobile-actions">
                   <button className="rr-btn rr-btn-outline" onClick={() => { setAuthMode('signin'); setAuthOpen(true); setMobileMenuOpen(false); }}>Sign in</button>
                   <button className="rr-btn rr-btn-primary" onClick={() => { setAuthMode('signup'); setAuthOpen(true); setMobileMenuOpen(false); }}>Start free</button>
@@ -346,8 +351,9 @@ export default function Layout() {
                     </div>
                   )}
                 </div>
-                <NavLink to="/features" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Features</NavLink>
-                <NavLink to="/for-gyms" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>For Gyms</NavLink>
+                <NavLink to="/workouts" className={navClass}>Workouts</NavLink>
+                <NavLink to="/programs" className={navClass}>Programs</NavLink>
+                <NavLink to="/challenges" className={navClass}>Challenges</NavLink>
                 <NavLink to="/payment" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Subscription</NavLink>
                 <NavLink to="/referral" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Referral</NavLink>
                 <NavLink to="/profile" className={({ isActive }) => `rr-nav-link${isActive ? ' active' : ''}`}>Settings</NavLink>

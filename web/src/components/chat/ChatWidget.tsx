@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { OPEN_CHAT_EVENT } from './openChat'
 import './ChatWidget.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
+const TEASER_KEY = 'rr-chat-teaser-seen'
 
 interface Message {
   id: string
@@ -17,20 +19,35 @@ const WELCOME: Message = {
   id: 'welcome',
   role: 'assistant',
   text: "Hey! 👋 I'm **Rumi**, Reprummble's assistant. Ask me anything about training, nutrition, recovery, or our plans.\n\nWhat can I help you with today?",
-  quickReplies: ['Pricing & plans', 'Build me a workout', 'How much protein do I need?', 'Connect my Apple Watch'],
+  quickReplies: ['Pricing & plans', 'Which workout should I start with?', 'Does it sync across devices?', 'Talk to a person'],
   ts: Date.now(),
 }
 
+// Site paths ("reprummble.com/workouts") and email addresses become links.
+const LINK_RE = /((?:https?:\/\/)?(?:www\.)?reprummble\.com(?:\/[\w\-/]*)?|[\w.+-]+@[\w-]+\.[a-z]{2,})/gi
+
+function linkify(text: string) {
+  return text.split(LINK_RE).map((part, k) => {
+    if (k % 2 === 0) return part
+    const clean = part.replace(/[./-]+$/, '')
+    const trailing = part.slice(clean.length)
+    const href = clean.includes('@')
+      ? `mailto:${clean}`
+      : clean.replace(/^(?:https?:\/\/)?(?:www\.)?reprummble\.com/i, '') || '/'
+    return <React.Fragment key={k}><a href={href} className="chat-link">{clean}</a>{trailing}</React.Fragment>
+  })
+}
+
 function renderText(text: string) {
-  // Bold **text** and newlines
+  // Bold **text**, links, and newlines
   return text.split('\n').map((line, i) => {
     const parts = line.split(/(\*\*[^*]+\*\*)/g)
     return (
       <React.Fragment key={i}>
         {parts.map((p, j) =>
           p.startsWith('**') && p.endsWith('**')
-            ? <strong key={j}>{p.slice(2, -2)}</strong>
-            : p
+            ? <strong key={j}>{linkify(p.slice(2, -2))}</strong>
+            : <React.Fragment key={j}>{linkify(p)}</React.Fragment>
         )}
         {i < text.split('\n').length - 1 && <br />}
       </React.Fragment>
@@ -137,13 +154,41 @@ export default function ChatWidget() {
     }
   }, [messages, loading, isOpen])
 
+  // Let buttons elsewhere on the site open the chat (and optionally ask a question).
+  const sendRef = useRef(sendMessage)
+  sendRef.current = sendMessage
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const message = (e as CustomEvent<{ message?: string }>).detail?.message
+      setIsOpen(true)
+      setTeaser(false)
+      if (message) sendRef.current(message)
+    }
+    window.addEventListener(OPEN_CHAT_EVENT, onOpen)
+    return () => window.removeEventListener(OPEN_CHAT_EVENT, onOpen)
+  }, [])
+
+  // A one-time nudge beside the button so visitors know they can ask questions.
+  const [teaser, setTeaser] = useState(false)
+  useEffect(() => {
+    let seen = false
+    try { seen = sessionStorage.getItem(TEASER_KEY) === '1' } catch { /* storage blocked */ }
+    if (seen) return
+    const t = window.setTimeout(() => setTeaser(true), 4000)
+    return () => window.clearTimeout(t)
+  }, [])
+  useEffect(() => {
+    if (!teaser && !isOpen) return
+    try { sessionStorage.setItem(TEASER_KEY, '1') } catch { /* storage blocked */ }
+  }, [teaser, isOpen])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     sendMessage(input)
   }
 
   const handleQuickReply = (text: string) => {
-    if (text === 'Email support') {
+    if (text === 'Email support' || text === 'Talk to a person' || text === 'Contact support') {
       window.location.href = 'mailto:support@reprummble.com'
       return
     }
@@ -247,8 +292,18 @@ export default function ChatWidget() {
         </div>
       )}
 
+      {teaser && !isOpen && (
+        <div className="chat-teaser" role="status">
+          <button type="button" className="chat-teaser-body" onClick={() => { setTeaser(false); setIsOpen(true) }}>
+            <strong>Questions? Ask Rumi 👋</strong>
+            <span>Plans, workouts, or getting started — I reply instantly.</span>
+          </button>
+          <button type="button" className="chat-teaser-close" onClick={() => setTeaser(false)} aria-label="Dismiss">×</button>
+        </div>
+      )}
+
       {/* FAB */}
-      <button className="chat-fab" onClick={() => setIsOpen(o => !o)} aria-label="Open support chat">
+      <button className="chat-fab" onClick={() => { setTeaser(false); setIsOpen(o => !o) }} aria-label={isOpen ? 'Close support chat' : 'Open support chat'}>
         {isOpen ? (
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
