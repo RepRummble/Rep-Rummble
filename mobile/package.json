@@ -54,7 +54,7 @@
     "braces": ">=3.0.3",
     "minimatch": ">=3.1.4",
     "decode-uri-component": ">=0.4.3",
-    "image-size": ">=2.0.3",
+    "image-size": "^1.2.1",
     "postcss": ">=8.5.23",
     "postcss-selector-parser": ">=7.1.6",
     "@xmldom/xmldom": ">=0.8.15"
