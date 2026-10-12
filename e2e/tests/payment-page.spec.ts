@@ -38,7 +38,9 @@ test.describe('Payment / plans page', () => {
     });
 
     await page.goto('/payment');
-    await page.getByRole('button', { name: /elite/i }).click().catch(() => {});
+    for (const plan of [/^free$/i, /^pro$/i, /^premium$/i]) {
+      await page.getByRole('button', { name: plan }).first().click({ timeout: 5000 });
+    }
     await page.waitForTimeout(500);
 
     expect(suspiciousRequests).toEqual([]);
