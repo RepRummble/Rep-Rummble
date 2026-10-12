@@ -59,10 +59,6 @@ export default function Home() {
               <li><Check size={16} /> Pro from {fmtPrice(PRICING.proMonthly)}/mo</li>
               <li><Check size={16} /> Cancel anytime</li>
             </ul>
-            <div className="rr-hero-app">
-              <span>Get the app</span>
-              <StoreButtons />
-            </div>
           </div>
           <div className="rr-visual">
             <PhoneMockup />
