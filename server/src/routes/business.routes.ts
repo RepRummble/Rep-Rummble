@@ -1,11 +1,14 @@
 import { Router } from 'express'
 import { protect } from '../middleware/auth.middleware'
 import { adminByEmail, loadApprovedBusiness, requireAccess } from '../middleware/business.middleware'
-import { businessApplyLimiter } from '../middleware/rateLimit.middleware'
+import { businessApplyLimiter, perIpLimiter, perUserLimiter } from '../middleware/rateLimit.middleware'
 import * as c from '../controllers/business.controller'
 
 const router = Router()
+// Per-IP first (so junk tokens are stopped before the sign-in check), then per person once known.
+router.use(perIpLimiter(300))
 router.use(protect)
+router.use(perUserLimiter(120))
 
 // Any signed-in user
 router.post('/apply', businessApplyLimiter, c.apply)
@@ -13,9 +16,11 @@ router.get('/me', c.getMe)
 router.get('/memberships', c.getMemberships)
 
 // Reviewers
+router.get('/admin/status', c.adminStatus)
 router.get('/admin/applications', adminByEmail, c.adminList)
-router.post('/admin/applications/:id/approve', adminByEmail, c.adminReview('approved'))
-router.post('/admin/applications/:id/reject', adminByEmail, c.adminReview('rejected'))
+router.post('/admin/applications/:id/approve', adminByEmail, c.adminApprove)
+router.post('/admin/applications/:id/reject', adminByEmail, c.adminReject)
+router.post('/admin/applications/:id/revoke', adminByEmail, c.adminRevoke)
 
 // Approved businesses, by role
 router.use(loadApprovedBusiness)

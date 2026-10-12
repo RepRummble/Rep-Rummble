@@ -35,33 +35,71 @@ export interface AuthResult {
   error?: string
 }
 
+const clientUrl = () => (process.env.CLIENT_URL || 'https://www.reprummble.com').replace(/\/$/, '')
+
+/** A throwaway client with the public (anon) key: the same thing a browser would use. */
+function anonClient(): SupabaseClient | null {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return null
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
+
+export interface SignUpResult extends AuthResult {
+  /** True when the person must click the link we emailed before they can sign in. */
+  needsVerification?: boolean
+  /** True when the email already has an account (Supabase hides this from the response on purpose). */
+  alreadyRegistered?: boolean
+}
+
 /**
- * Sign up with email and password
+ * Sign up with email and password.
+ *
+ * This uses the normal sign-up flow, so when "Confirm email" is on in the Supabase
+ * dashboard Supabase emails a verification link and gives no session until it is clicked.
+ * (The old admin createUser call marked every email as verified without checking.)
  */
 export async function signUpWithEmail(
   email: string,
   password: string,
   metadata?: { displayName?: string }
-): Promise<AuthResult> {
-  if (!supabase) {
+): Promise<SignUpResult> {
+  const client = anonClient()
+  if (!supabase || !client) {
     return { success: false, error: 'Supabase not configured' }
   }
 
   try {
-    const { data, error } = await supabase.auth.admin.createUser({
+    const { data, error } = await client.auth.signUp({
       email,
       password,
-      email_confirm: true,
-      user_metadata: metadata
+      options: { data: metadata, emailRedirectTo: `${clientUrl()}/auth/callback` },
     })
 
     if (error) {
       return { success: false, error: error.message }
     }
 
-    return { success: true, user: data.user }
+    return {
+      success: true,
+      user: data.user ?? undefined,
+      session: data.session,
+      needsVerification: !data.session,
+      alreadyRegistered: !!data.user && (data.user.identities?.length ?? 0) === 0,
+    }
   } catch (error: any) {
     return { success: false, error: error.message }
+  }
+}
+
+/** Sends the verification email again. Callers should not reveal whether the address exists. */
+export async function resendVerification(email: string): Promise<void> {
+  const client = anonClient()
+  if (!client) return
+  try {
+    await client.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${clientUrl()}/auth/callback` } })
+  } catch (error) {
+    console.error('resendVerification error:', error instanceof Error ? error.message : error)
   }
 }
 
@@ -251,6 +289,7 @@ export { supabase }
 
 export default {
   signUpWithEmail,
+  resendVerification,
   signInWithEmail,
   verifyToken,
   getOAuthUrl,

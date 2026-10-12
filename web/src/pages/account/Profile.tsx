@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { OAuthGrant } from '@supabase/supabase-js';
 import { Link, useNavigate } from 'react-router-dom';
 import { DEV_BYPASS_AUTH } from '../../config/devAuth';
 import { supabase } from '../../config/supabase';
@@ -54,7 +55,7 @@ export default function Profile() {
       {section === 'profile' && <ProfileSection user={user} />}
       {section === 'goals' && <GoalsSection user={user} />}
       {section === 'notifications' && <NotificationsSection user={user} />}
-      {section === 'security' && <SecuritySection user={user} />}
+      {section === 'security' && <><SecuritySection user={user} /><ConnectedApps /></>}
       {section === 'privacy' && <PrivacySection />}
       {section === 'delete' && <DeleteSection user={user} />}
     </>
@@ -141,6 +142,45 @@ function SecuritySection({ user }: { user: AccountUser }) {
       <div><button className="rr-btn rr-btn-outline" onClick={send} disabled={state === 'sent'}>Send password reset email</button></div>
       {state === 'sent' && <p className="dash-ok" role="status">Check your inbox for the reset link.</p>}
       {state === 'error' && <p className="dash-error" role="alert">Could not send the email. Please try again.</p>}
+    </section>
+  );
+}
+
+/** Apps the person has allowed to sign in with their Reprummble account. Hidden if the OAuth server is off. */
+function ConnectedApps() {
+  const [grants, setGrants] = useState<OAuthGrant[] | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.oauth.listGrants().then(({ data }) => { if (!cancelled) setGrants(data ?? null); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!grants) return null; // loading, or the OAuth server is not enabled
+  const revoke = async (g: OAuthGrant) => {
+    if (!window.confirm(`Disconnect ${g.client.name}? It will stop being able to sign you in.`)) return;
+    setError('');
+    const { error: err } = await supabase.auth.oauth.revokeGrant({ clientId: g.client.id });
+    if (err) { setError('Could not disconnect the app. Please try again.'); return; }
+    setGrants((prev) => (prev ?? []).filter((x) => x.client.id !== g.client.id));
+  };
+
+  return (
+    <section className="dash-card">
+      <h2>Connected apps</h2>
+      <p className="dash-muted">Apps you have allowed to sign in with your Reprummble account.</p>
+      {grants.length === 0 ? <p className="dash-muted">No apps connected.</p> : (
+        <ul className="dash-list">
+          {grants.map((g) => (
+            <li key={g.client.id}>
+              <div><strong>{g.client.name}</strong><small>Can: {g.scopes.join(', ')} · since {new Date(g.granted_at).toLocaleDateString()}</small></div>
+              <button className="rr-btn rr-btn-outline" onClick={() => revoke(g)}>Disconnect</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <p className="dash-error" role="alert">{error}</p>}
     </section>
   );
 }

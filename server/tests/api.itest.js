@@ -18,6 +18,14 @@ const users = {
   newbie2:{ id: '99999999-9999-4999-8999-999999999999', email: 'newbie2@x.test', created: Date.now() - 1 * DAY },
   oldtimer:{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', email: 'old@x.test', created: Date.now() - 60 * DAY },
   ref:    { id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', email: 'ref@x.test', created: Date.now() - 200 * DAY },
+  // Same email as a real person but never verified (someone who signed up with an address they don't own).
+  lateFake:  { id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', email: 'late@gym.test', created: Date.now() - 1 * DAY, verified: false },
+  lateReal:  { id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', email: 'late@gym.test', created: Date.now() - 1 * DAY },
+  inviteFake:{ id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', email: 'invitee@members.test', created: Date.now() - 1 * DAY, verified: false },
+  inviteReal:{ id: 'ffffffff-ffff-4fff-8fff-ffffffffffff', email: 'invitee@members.test', created: Date.now() - 1 * DAY },
+  adminFake: { id: '12121212-1212-4212-8212-121212121212', email: 'admin@site.test', created: Date.now() - 1 * DAY, verified: false },
+  ownerC:    { id: '14141414-1414-4414-8414-141414141414', email: 'ownerc@gym.test', created: Date.now() - 400 * DAY },
+  unver:     { id: '13131313-1313-4313-8313-131313131313', email: 'unver@x.test', created: Date.now() - 1 * DAY, verified: false },
 };
 process.env.ADMIN_EMAILS = 'admin@site.test';
 
@@ -31,15 +39,37 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
 
   // Stand in for Supabase: token = key of the users map.
   const sup = require(SRC + '/services/supabase.service');
-  sup.verifyToken = async (token) => users[token] ? { success: true, user: { id: users[token].id, email: users[token].email, user_metadata: {} } } : { success: false };
+  // A JWT-shaped token for a person, optionally carrying a client_id like Supabase's OAuth server adds.
+  const jwtFor = (key, claims) => 'h.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.s';
+  const firstParty = jwtFor('owner', { sub: users.owner.id });
+  const thirdParty = jwtFor('owner', { sub: users.owner.id, client_id: 'c-1234' });
+  const realVerify = async (token) => users[token] ? { success: true, user: { id: users[token].id, email: users[token].email, user_metadata: {}, email_confirmed_at: users[token].verified === false ? null : new Date().toISOString() } } : { success: false };
+  sup.verifyToken = async (token) => (token === firstParty || token === thirdParty) ? realVerify('owner') : realVerify(token);
   sup.getUserById = async (id) => { const u = Object.values(users).find((x) => x.id === id); return u ? { success: true, user: { id, created_at: new Date(u.created).toISOString() } } : { success: false }; };
 
-  const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n();
+  const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n(); rl.authLimiter = (q, r, n) => n(); rl.loginLimiter = (q, r, n) => n(); rl.resendLimiter = (q, r, n) => n();
+  const realPerUserLimiter = rl.perUserLimiter; // kept for its own tests below
+  const realPerIpLimiter = rl.perIpLimiter;
+  rl.perUserLimiter = () => (q, r, n) => n();
+  rl.perIpLimiter = () => (q, r, n) => n();
+  const sent = [];
+  require(SRC + '/services/mail.service').sendMail = async (to, subject, body) => { sent.push({ to, subject, body }); return true; };
+  const resent = [];
+  let signUpMode = 'verify'; // 'verify' = Supabase "Confirm email" is on; 'open' = it is off
+  sup.signUpWithEmail = async (email) => {
+    if (signUpMode === 'existing') return { success: true, user: { id: 'x', email, identities: [] }, needsVerification: true, alreadyRegistered: true };
+    return signUpMode === 'verify'
+      ? { success: true, user: { id: 'new-1', email, user_metadata: {} }, needsVerification: true }
+      : { success: true, user: { id: 'new-2', email, user_metadata: {} }, session: { access_token: 'sb-access', refresh_token: 'sb-refresh' }, needsVerification: false };
+  };
+  sup.signInWithEmail = async (email, password) => password === 'right-but-unverified' ? { success: false, error: 'Email not confirmed' } : { success: false, error: 'Invalid login credentials' };
+  sup.resendVerification = async (email) => { resent.push(email); };
   const express = require('express');
   const { connectDB } = require(SRC + '/config/database');
   await connectDB();
   const app = express();
   app.use(express.json());
+  app.use('/api/auth', require(SRC + '/routes/auth.routes').default);
   app.use('/api/business', require(SRC + '/routes/business.routes').default);
   app.use('/api/referrals', require(SRC + '/routes/referral.routes').default);
   app.use('/api/reports', require(SRC + '/routes/report.routes').default);
@@ -242,6 +272,212 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal((await call('owner', 'DELETE', '/api/business/members/not-an-id')).status, 400);
     assert.equal((await call('owner', 'PATCH', `/api/business/members/${memberId}`, { planId: { $ne: null } })).status, 400);
     assert.equal((await call('owner', 'POST', '/api/business/members', { name: { $gt: '' }, email: 'x@y.test' })).status, 400);
+  });
+
+
+  console.log('Email verification');
+  await t('sign-up with verification on: accepted, but no token is issued', async () => {
+    signUpMode = 'verify';
+    const r = await call(null, 'POST', '/api/auth/register', { email: 'new@x.test', password: 'a-long-password', displayName: 'New' });
+    assert.equal(r.status, 202);
+    assert.equal(r.body.data.emailVerificationRequired, true);
+    assert.equal(r.body.data.token, undefined, 'must not hand out a token before the email is confirmed');
+    assert.equal(JSON.stringify(r.body).includes('token'), false);
+  });
+  await t('sign-up with an email that already exists looks identical (no account enumeration)', async () => {
+    signUpMode = 'existing';
+    const r = await call(null, 'POST', '/api/auth/register', { email: 'new@x.test', password: 'a-long-password' });
+    assert.equal(r.status, 202); assert.equal(r.body.data.emailVerificationRequired, true);
+  });
+  await t('sign-up with verification off: signed in straight away with the Supabase session', async () => {
+    signUpMode = 'open';
+    const r = await call(null, 'POST', '/api/auth/register', { email: 'open@x.test', password: 'a-long-password' });
+    assert.equal(r.status, 201); assert.equal(r.body.data.token, 'sb-access'); assert.equal(r.body.data.emailVerificationRequired, false);
+  });
+  await t('register rejects missing or non-string fields', async () => {
+    assert.equal((await call(null, 'POST', '/api/auth/register', { email: 'a@b.test' })).status, 400);
+    assert.equal((await call(null, 'POST', '/api/auth/register', { email: { $ne: '' }, password: 'x' })).status, 400);
+  });
+  await t('signing in before verifying gives a clear message; wrong passwords stay generic', async () => {
+    const r = await call(null, 'POST', '/api/auth/login', { email: 'new@x.test', password: 'right-but-unverified' });
+    assert.equal(r.status, 403); assert.equal(r.body.code, 'email_not_verified');
+    assert.equal((await call(null, 'POST', '/api/auth/login', { email: 'new@x.test', password: 'nope' })).status, 401);
+  });
+  await t('resend gives the same answer for any address, and only sends for valid ones', async () => {
+    const a = await call(null, 'POST', '/api/auth/resend-verification', { email: 'someone@x.test' });
+    const b = await call(null, 'POST', '/api/auth/resend-verification', { email: 'not an email' });
+    assert.equal(a.status, 200); assert.equal(b.status, 200); assert.deepEqual(a.body, b.body);
+    assert.deepEqual(resent, ['someone@x.test']);
+  });
+  await t('an unverified account cannot apply as a business', async () => {
+    const r = await call('unver', 'POST', '/api/business/apply', { name: 'Fake Gym', type: 'Gym' });
+    assert.equal(r.status, 403); assert.match(r.body.message, /verify/i);
+  });
+  await t('an unverified account cannot use an admin email to review applications', async () => {
+    assert.equal((await call('adminFake', 'GET', '/api/business/admin/applications')).status, 403);
+    assert.equal((await call('admin', 'GET', '/api/business/admin/applications')).status, 200, 'the verified admin still can');
+  });
+  await t('team access by email needs a verified email', async () => {
+    assert.equal((await call('owner', 'POST', '/api/business/staff', { name: 'Late Coach', email: 'late@gym.test', role: 'Coach' })).status, 201);
+    const fake = await call('lateFake', 'GET', '/api/business/me');
+    assert.equal(fake.body.data.business, null, 'unverified sign-up must not inherit the team seat');
+    assert.equal((await call('lateFake', 'GET', '/api/business/members')).status, 404);
+    const real = await call('lateReal', 'GET', '/api/business/me');
+    assert.equal(real.body.data.role, 'Coach');
+  });
+  await t('an invite is only linked to a verified email', async () => {
+    assert.equal((await call('owner', 'POST', '/api/business/members', { name: 'Invitee', email: 'invitee@members.test' })).status, 201);
+    assert.deepEqual((await call('inviteFake', 'GET', '/api/business/memberships')).body.data, []);
+    const stillInvited = (await call('owner', 'GET', '/api/business/members')).body.data.find((m) => m.email === 'invitee@members.test');
+    assert.equal(stillInvited.status, 'invited', 'an unverified account must not link the invite');
+    assert.equal((await call('inviteReal', 'GET', '/api/business/memberships')).body.data.length, 1);
+  });
+
+
+  console.log('Admin review');
+  await t('reviewers see an admin flag and the pending count; everyone else does not', async () => {
+    const a = (await call('admin', 'GET', '/api/business/admin/status')).body.data;
+    assert.equal(a.isAdmin, true); assert.equal(typeof a.pending, 'number');
+    assert.deepEqual((await call('owner', 'GET', '/api/business/admin/status')).body.data, { isAdmin: false });
+    assert.deepEqual((await call('adminFake', 'GET', '/api/business/admin/status')).body.data, { isAdmin: false }, 'unverified email never counts as admin');
+    assert.equal((await call(null, 'GET', '/api/business/admin/status')).status, 401);
+  });
+  await t('a new application emails the reviewers', async () => {
+    sent.length = 0;
+    assert.equal((await call('ownerC', 'POST', '/api/business/apply', { name: 'Peak Fitness', type: 'Studio', city: 'Denver' })).status, 201);
+    const mail = sent.find((m) => /Peak Fitness/.test(m.subject));
+    assert.ok(mail, 'no reviewer email'); assert.deepEqual(mail.to, ['admin@site.test']); assert.match(mail.body, /\/admin\/applications/);
+    assert.equal((await call('admin', 'GET', '/api/business/admin/status')).body.data.pending, 1);
+  });
+  await t('approving emails the applicant and opens the dashboard', async () => {
+    sent.length = 0;
+    const id = (await call('admin', 'GET', '/api/business/admin/applications')).body.data.find((a) => a.name === 'Peak Fitness').id;
+    assert.equal((await call('admin', 'POST', `/api/business/admin/applications/${id}/approve`)).status, 200);
+    const mail = sent.find((m) => m.to === 'ownerc@gym.test'); assert.ok(mail); assert.match(mail.subject, /approved/i); assert.match(mail.body, /\/business/);
+    assert.equal((await call('ownerC', 'GET', '/api/business/members')).status, 200);
+  });
+  await t('revoking turns access off at once, emails the owner, and cannot be applied twice', async () => {
+    const id = (await call('admin', 'GET', '/api/business/admin/applications?status=approved')).body.data.find((a) => a.name === 'Peak Fitness').id;
+    assert.equal((await call('owner', 'POST', `/api/business/admin/applications/${id}/revoke`, { reason: 'x' })).status, 403, 'only reviewers can revoke');
+    sent.length = 0;
+    assert.equal((await call('admin', 'POST', `/api/business/admin/applications/${id}/revoke`, { reason: 'Terms breach' })).status, 200);
+    const mail = sent.find((m) => m.to === 'ownerc@gym.test'); assert.ok(mail); assert.match(mail.body, /Terms breach/);
+    const blocked = await call('ownerC', 'GET', '/api/business/members');
+    assert.equal(blocked.status, 403); assert.equal(blocked.body.code, 'rejected');
+    assert.equal((await call('admin', 'POST', `/api/business/admin/applications/${id}/revoke`)).status, 404, 'already revoked');
+    assert.equal((await call('ownerC', 'GET', '/api/business/me')).body.data.business.rejectionReason, 'Terms breach');
+  });
+  await t('only pending applications can be approved or rejected, and a revoked business can re-apply', async () => {
+    const id = (await call('admin', 'GET', '/api/business/admin/applications?status=rejected')).body.data.find((a) => a.name === 'Peak Fitness').id;
+    assert.equal((await call('admin', 'POST', `/api/business/admin/applications/${id}/approve`)).status, 404);
+    assert.equal((await call('ownerC', 'POST', '/api/business/apply', { name: 'Peak Fitness', type: 'Studio' })).status, 200);
+    assert.equal((await call('ownerC', 'GET', '/api/business/me')).body.data.business.status, 'pending');
+  });
+
+
+  console.log('Third-party OAuth tokens');
+  await t('our own sign-in token works, a token issued to a third-party app is refused', async () => {
+    assert.equal((await call(firstParty, 'GET', '/api/business/me')).status, 200);
+    const r = await call(thirdParty, 'GET', '/api/business/me');
+    assert.equal(r.status, 403); assert.match(r.body.message, /third-party/i);
+    assert.equal((await call(thirdParty, 'GET', '/api/referrals/me')).status, 403);
+    assert.equal((await call(thirdParty, 'GET', '/api/reports/export?period=monthly')).status, 403);
+  });
+
+
+  console.log('Hardening (from the security scan)');
+  const { isEmail } = require(SRC + '/utils/validation');
+  await t('email check accepts normal addresses and rejects malformed ones', async () => {
+    for (const ok of ['a@b.co', 'first.last+tag@sub.example.com', 'x@y-z.org']) assert.equal(isEmail(ok), true, ok);
+    for (const bad of ['', 'a', 'a@b', 'a@b.', 'a@.com', 'a@b..c', 'a b@c.com', 'a@@b.com', '@b.com', 'a@b.c@d.com']) assert.equal(isEmail(bad), false, bad);
+    assert.equal(isEmail('a'.repeat(250) + '@b.co'), false, 'over 254 characters');
+  });
+  await t('email check stays fast on input crafted to make the old regex slow', async () => {
+    const old = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const ms = (fn) => { const t0 = process.hrtime.bigint(); fn(); return Number(process.hrtime.bigint() - t0) / 1e6; };
+    const attack = '!@!.'.repeat(5000) + '!'; // 20,000 characters, the pattern GitHub flagged
+    const oldMs = ms(() => old.test(attack));
+    const newMs = ms(() => isEmail(attack));
+    console.log(`        20,000-character attack: old regex ${oldMs.toFixed(0)} ms, new check ${newMs.toFixed(3)} ms`);
+    assert.ok(newMs < 5, `new check took ${newMs} ms`);
+    assert.equal(isEmail(attack), false);
+  });
+  await t('sign-up rejects an invalid email before it reaches Supabase or the database', async () => {
+    signUpMode = 'verify';
+    assert.equal((await call(null, 'POST', '/api/auth/register', { email: 'not-an-email', password: 'a-long-password' })).status, 400);
+    assert.equal((await call(null, 'POST', '/api/auth/register', { email: '!@!.'.repeat(300), password: 'a-long-password' })).status, 400);
+  });
+  await t('sign-up cannot be used to read or overwrite other users by sending query operators', async () => {
+    const { User } = require(SRC + '/models/User.model');
+    // Inserted directly: saving a User through the model currently fails on Mongoose 9 (old next() hook).
+    await User.collection.insertOne({ email: 'victim@x.test', password: 'x', displayName: 'Victim', role: 'user' });
+    const r = await call(null, 'POST', '/api/auth/register', { email: { $ne: 'nobody' }, password: 'a-long-password', displayName: 'Hacked' });
+    assert.equal(r.status, 400);
+    const v = await User.findOne({ email: 'victim@x.test' });
+    assert.equal(v.displayName, 'Victim', 'existing record must be untouched');
+    const r2 = await call(null, 'POST', '/api/auth/register', { email: 'fresh@x.test', password: 'a-long-password', displayName: { $set: { role: 'admin' } } });
+    assert.equal(r2.status, 202);
+    assert.equal((await User.findOne({ email: 'fresh@x.test' })).displayName, '', 'non-text display name is dropped');
+  });
+  await t('referral code lookups treat operators as plain text', async () => {
+    assert.equal((await call('newbie', 'POST', '/api/referrals/claim', { code: { $ne: '' } })).status, 400);
+  });
+  await t('per-IP limiter sits in front of sign-in checks, so floods of junk tokens are stopped first', async () => {
+    const guarded = express();
+    let authChecks = 0;
+    guarded.use(realPerIpLimiter(3, 60_000));
+    guarded.use((req, res) => { authChecks++; res.status(401).json({ success: false }); }); // stands in for `protect`
+    const srv = guarded.listen(0);
+    const hit = () => fetch(`http://127.0.0.1:${srv.address().port}/x`, { headers: { Authorization: 'Bearer junk' } }).then((r) => r.status);
+    assert.deepEqual([await hit(), await hit(), await hit(), await hit(), await hit()], [401, 401, 401, 429, 429]);
+    assert.equal(authChecks, 3, 'the sign-in check must not run once the limit is hit');
+    srv.close();
+  });
+  await t('per-user limiter: each person has their own allowance, and the limit holds', async () => {
+    const limited = express();
+    limited.use((req, res, next) => { req.user = { id: req.headers['x-user'] }; next(); });
+    limited.use(realPerUserLimiter(3, 60_000));
+    limited.get('/x', (req, res) => res.json({ ok: true }));
+    const srv = limited.listen(0);
+    const hit = (user) => fetch(`http://127.0.0.1:${srv.address().port}/x`, { headers: { 'x-user': user } }).then((r) => r.status);
+    assert.deepEqual([await hit('a'), await hit('a'), await hit('a'), await hit('a')], [200, 200, 200, 429]);
+    assert.equal(await hit('b'), 200, 'another person is not affected');
+    srv.close();
+  });
+
+
+  console.log('Model save hooks (Mongoose 9)');
+  const mongoose = require('mongoose');
+  await t('a User can be saved and the password is hashed', async () => {
+    const { User } = require(SRC + '/models/User.model');
+    const u = await new User({ email: 'hash@x.test', password: 'plain-text-pw' }).save();
+    const stored = await User.findById(u._id).select('+password');
+    assert.notEqual(stored.password, 'plain-text-pw');
+    assert.equal(await stored.comparePassword('plain-text-pw'), true);
+    assert.equal(await stored.comparePassword('wrong'), false);
+    stored.displayName = 'Renamed'; await stored.save(); // unchanged password is not hashed again
+    assert.equal(await (await User.findById(u._id).select('+password')).comparePassword('plain-text-pw'), true);
+  });
+  await t('an Exercise gets its slug from its name', async () => {
+    const { Exercise } = require(SRC + '/models/Exercise.model');
+    const e = await new Exercise({ name: 'Push-Ups (Wide!)', category: 'strength', difficulty: 'beginner', description: 'd', instructions: ['i'] }).save();
+    assert.equal(e.slug, 'push-ups-wide');
+  });
+  await t('a WorkoutPlan counts its training days', async () => {
+    const { WorkoutPlan } = require(SRC + '/models/WorkoutPlan.model');
+    const day = (n, rest) => ({ day: n, name: 'D' + n, focus: 'f', exercises: [], estimatedDuration: 30, estimatedCalories: 200, isRestDay: rest });
+    const plan = await new WorkoutPlan({ userId: new mongoose.Types.ObjectId(), name: 'P', description: 'd', goal: 'strength', fitnessLevel: 'beginner', durationWeeks: 4, daysPerWeek: 3, minutesPerWorkout: 30, schedule: [day(1, false), day(2, true), day(3, false)] }).save();
+    assert.equal(plan.totalWorkouts, 8); // 2 training days x 4 weeks
+  });
+  await t('a WorkoutSession totals its reps and sets and awards XP', async () => {
+    const { WorkoutSession } = require(SRC + '/models/WorkoutSession.model');
+    const oid = new mongoose.Types.ObjectId();
+    const sess = await new WorkoutSession({ userId: oid, workoutPlanId: oid, exercises: [
+      { exerciseName: 'Squat', completedSets: 3, completedReps: 30, averageFormScore: 90 },
+      { exerciseName: 'Push-up', completedSets: 2, completedReps: 20, averageFormScore: 70 },
+    ] }).save();
+    assert.equal(sess.totalReps, 50); assert.equal(sess.totalSets, 5);
+    assert.equal(sess.overallFormScore, 80); assert.equal(sess.xpEarned, 40); // 2 x 10 + 20 for good form
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);

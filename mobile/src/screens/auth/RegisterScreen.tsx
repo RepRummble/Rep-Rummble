@@ -49,11 +49,18 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     try {
-      await register({
+      const { emailVerificationRequired } = await register({
         email: email.trim(),
         password,
         displayName: displayName.trim() || undefined,
       });
+      if (emailVerificationRequired) {
+        Alert.alert(
+          'Check your inbox',
+          `We sent a verification link to ${email.trim()}. Tap it to confirm your email, then sign in.`
+        );
+        navigation.goBack();
+      }
     } catch (error: any) {
       Alert.alert('Registration Failed', error.message);
     } finally {

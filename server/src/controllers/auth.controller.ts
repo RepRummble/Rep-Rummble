@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 import jwt from "jsonwebtoken"
 import { AuthRequest } from "../middleware/auth.middleware"
 import { ApiError } from "../types"
+import { isEmail } from "../utils/validation"
 import * as supabaseService from "../services/supabase.service"
 import { User } from "../models/User.model"
 import nodemailer from "nodemailer"
@@ -18,40 +19,71 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, displayName } = req.body
 
-    if (!email || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return res.status(400).json({ success: false, message: "Please provide email and password" })
     }
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!isEmail(normalizedEmail)) {
+      return res.status(400).json({ success: false, message: "Please enter a valid email address" })
+    }
 
-    const result = await supabaseService.signUpWithEmail(email, password, { displayName })
+    const result = await supabaseService.signUpWithEmail(normalizedEmail, password, { displayName })
 
     if (!result.success || !result.user) {
       return res.status(400).json({ success: false, message: result.error || "Registration failed" })
     }
 
-    // Also create in MongoDB
+    // Verification is on: the person has to click the link in their inbox before they can sign in.
+    // No token is issued yet, otherwise anyone could use an email address they do not own.
+    // The same answer is given whether or not the email already has an account.
+    if (result.needsVerification) {
+      if (!result.alreadyRegistered) {
+        await User.findOneAndUpdate(
+          { email: { $eq: normalizedEmail } },
+          { email: normalizedEmail, displayName: typeof displayName === 'string' ? displayName : "" },
+          { upsert: true, new: true }
+        )
+      }
+      return res.status(202).json({
+        success: true,
+        data: { emailVerificationRequired: true, email: result.user.email },
+      })
+    }
+
+    // Verification is switched off in Supabase: the account is usable straight away.
     await User.findOneAndUpdate(
-      { email: result.user.email },
-      { email: result.user.email, displayName: displayName || "" },
+      { email: { $eq: normalizedEmail } },
+      { email: normalizedEmail, displayName: typeof displayName === 'string' ? displayName : "" },
       { upsert: true, new: true }
     )
-
-    const token = generateToken(result.user.id)
 
     return res.status(201).json({
       success: true,
       data: {
+        emailVerificationRequired: false,
         user: {
           id: result.user.id,
           email: result.user.email,
           displayName: displayName || result.user.user_metadata?.displayName,
         },
-        token,
+        token: result.session?.access_token,
+        refreshToken: result.session?.refresh_token,
       },
     })
   } catch (error) {
     const err = error as ApiError
     return res.status(500).json({ success: false, message: err.message || "Server error" })
   }
+}
+
+// @route POST /api/auth/resend-verification
+export const resendVerification = async (req: Request, res: Response) => {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+  if (isEmail(email)) {
+    await supabaseService.resendVerification(email)
+  }
+  // Always the same answer, so this cannot be used to find out who has an account.
+  return res.json({ success: true, message: 'If that address needs verifying, we have sent a new link.' })
 }
 
 // @route POST /api/auth/login
@@ -66,6 +98,13 @@ export const login = async (req: Request, res: Response) => {
     const result = await supabaseService.signInWithEmail(email, password)
 
     if (!result.success || !result.user) {
+      if (/not confirmed/i.test(result.error || '')) {
+        return res.status(403).json({
+          success: false,
+          code: 'email_not_verified',
+          message: 'Please verify your email address first. Check your inbox for the link we sent.',
+        })
+      }
       return res.status(401).json({ success: false, message: result.error || "Invalid credentials" })
     }
 

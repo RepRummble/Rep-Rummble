@@ -1,5 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { biz, useLoad } from '../business/api';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import '../../styles/dashboard.css';
@@ -11,14 +10,16 @@ export default function Applications() {
   const { data, error, loading, reload } = useLoad(() => biz.admin.list(status), [status]);
   const [message, setMessage] = useState('');
 
-  useLayoutEffect(() => {
-    document.documentElement.classList.add('theme-light');
-    return () => document.documentElement.classList.remove('theme-light');
-  }, []);
-
   const approve = async (id: string) => {
     const res = await biz.admin.approve(id);
     setMessage(res.error || 'Approved.');
+    reload();
+  };
+  const revoke = async (id: string, name: string) => {
+    const reason = window.prompt(`Turn off ${name}'s access? Reason (shown to the owner):`, '');
+    if (reason === null) return;
+    const res = await biz.admin.revoke(id, reason);
+    setMessage(res.error || 'Access revoked.');
     reload();
   };
   const reject = async (id: string) => {
@@ -30,9 +31,9 @@ export default function Applications() {
   };
 
   return (
-    <div className="dash-gate" style={{ alignItems: 'start' }}>
-      <div style={{ width: 'min(960px, 100%)', display: 'grid', gap: 16 }}>
-        <div className="dash-head"><h1>Business applications</h1><p><Link to="/" className="rr-link-arrow">← Back to website</Link></p></div>
+    <div className="dash-page">
+      <div className="rr-container dash-content" style={{ maxWidth: 960 }}>
+        <div className="dash-head"><h1>Business applications</h1></div>
         <div className="dash-tabs" role="tablist">
           {(['pending', 'approved', 'rejected'] as const).map((s) => (
             <button key={s} role="tab" aria-selected={status === s} className={status === s ? 'active' : ''} onClick={() => { setStatus(s); setMessage(''); }}>{s[0].toUpperCase() + s.slice(1)}</button>
@@ -50,6 +51,9 @@ export default function Applications() {
               </div>
               <p className="dash-muted">Account: {a.ownerEmail}{a.contactEmail && a.contactEmail !== a.ownerEmail ? ` · Contact: ${a.contactEmail}` : ''}</p>
               {a.message && <p style={{ whiteSpace: 'pre-wrap' }}>{a.message}</p>}
+              {status === 'approved' && (
+                <div className="dash-actions"><button className="rr-btn rr-btn-outline" onClick={() => revoke(a.id, a.name)}>Revoke access</button></div>
+              )}
               {status === 'pending' && (
                 <div className="dash-actions">
                   <button className="rr-btn rr-btn-primary" onClick={() => approve(a.id)}>Approve</button>

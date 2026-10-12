@@ -1,13 +1,14 @@
 import { Router } from 'express'
-import { register, login, getMe, getOAuthUrl, logout, updateProfile, deleteAccount } from '../controllers/auth.controller'
+import { register, login, resendVerification, getMe, getOAuthUrl, logout, updateProfile, deleteAccount } from '../controllers/auth.controller'
 import { protect } from '../middleware/auth.middleware'
-import { authLimiter, loginLimiter } from '../middleware/rateLimit.middleware'
+import { authLimiter, loginLimiter, resendLimiter } from '../middleware/rateLimit.middleware'
 
 const router = Router()
 
 // Public routes (rate-limited against brute-force / credential stuffing)
 router.post('/register', authLimiter, register)
 router.post('/login', loginLimiter, login)
+router.post('/resend-verification', resendLimiter, resendVerification)
 
 // OAuth routes (Supabase handles the callback)
 router.get('/oauth/:provider', getOAuthUrl)

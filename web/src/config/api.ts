@@ -84,6 +84,12 @@ export const api = {
         body: JSON.stringify({ email, password, displayName }),
       }),
 
+    resendVerification: (email: string) =>
+      apiRequest('/api/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+
     login: (email: string, password: string) =>
       apiRequest('/api/auth/login', {
         method: 'POST',

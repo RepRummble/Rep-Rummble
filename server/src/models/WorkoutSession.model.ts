@@ -215,7 +215,7 @@ WorkoutSessionSchema.index({ userId: 1, startTime: -1 })
 WorkoutSessionSchema.index({ userId: 1, status: 1 })
 
 // Calculate metrics before saving
-WorkoutSessionSchema.pre('save', function(next: any) {
+WorkoutSessionSchema.pre('save', function() {
   if (this.exercises && this.exercises.length > 0) {
     // Calculate totals
     this.totalReps = this.exercises.reduce((sum, ex) => sum + ex.completedReps, 0)
@@ -237,7 +237,6 @@ WorkoutSessionSchema.pre('save', function(next: any) {
       this.xpEarned += 10 // Good form bonus
     }
   }
-  next()
 })
 
 export const WorkoutSession = mongoose.model<IWorkoutSession>('WorkoutSession', WorkoutSessionSchema)

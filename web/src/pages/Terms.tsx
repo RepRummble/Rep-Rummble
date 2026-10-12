@@ -1,21 +1,11 @@
-import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePageMeta } from '../hooks/usePageMeta';
-import Breadcrumb from '../components/Breadcrumb';
+import LegalDoc, { type LegalSection } from '../components/site/LegalDoc';
 
-interface TermsSection {
-  id: string;
-  title: string;
-  icon: string;
-  summary: string;
-  details: React.ReactNode;
-}
-
-const termsSections: TermsSection[] = [
+const termsSections: LegalSection[] = [
   {
     id: 'acceptance',
     title: 'Acceptance of Terms',
-    icon: '✋',
     summary: 'By using Reprummble you agree to these Terms',
     details: (
       <>
@@ -41,7 +31,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'service',
     title: 'What We Provide',
-    icon: '📱',
     summary: 'Training, nutrition, recovery tools and analytics',
     details: (
       <>
@@ -88,7 +77,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'medical',
     title: 'Medical Disclaimer',
-    icon: '⚠️',
     summary: 'Reprummble is not a medical service — always consult a professional',
     details: (
       <>
@@ -131,7 +119,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'account',
     title: 'Account Registration',
-    icon: '👤',
     summary: 'You are responsible for your account and its security',
     details: (
       <>
@@ -151,6 +138,11 @@ const termsSections: TermsSection[] = [
           </li>
           <li>Use the Service only for lawful purposes and in accordance with these Terms.</li>
           <li>Not create more than one account without our express permission.</li>
+          <li>
+            Verify your email address using the link we send when you sign up. Some
+            features, such as team access and invitations from a business, only work with a
+            verified email.
+          </li>
         </ul>
         <p>
           <strong>Age requirement:</strong> You must be at least 16 years old to
@@ -167,7 +159,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'payments',
     title: 'Subscriptions & Billing',
-    icon: '💳',
     summary: 'Free trial, recurring billing, cancellations, and refunds',
     details: (
       <>
@@ -239,9 +230,94 @@ const termsSections: TermsSection[] = [
     ),
   },
   {
+    id: 'business',
+    title: 'Business Accounts & Collaboration',
+    summary: 'Rules for gyms, coaches, and other businesses that use Reprummble',
+    details: (
+      <>
+        <p>
+          Businesses (gyms, studios, coaches, nutritionists, clinics, employers, clubs, and
+          similar) can apply to collaborate with Reprummble. This section applies in
+          addition to the rest of these Terms.
+        </p>
+        <h4>Applying and approval</h4>
+        <ul>
+          <li>
+            Applying does not guarantee approval. We review every application, may ask for
+            more information, and may approve or decline it.
+          </li>
+          <li>
+            Access to the business dashboard begins when we approve your application. We
+            may suspend or withdraw it at any time, for example if these Terms are broken
+            or members are put at risk. We will tell you when we do.
+          </li>
+          <li>You must give us accurate information and keep it up to date.</li>
+        </ul>
+        <h4>Your responsibilities</h4>
+        <ul>
+          <li>
+            Only add people you have the right to invite, and only use member information
+            to look after those members.
+          </li>
+          <li>
+            Choose team members and roles carefully. You are responsible for what your team
+            does in your account, and for removing people who should no longer have access.
+          </li>
+          <li>
+            Do not share, sell, or use member information for marketing or any purpose
+            unrelated to training and nutrition support, and follow applicable privacy and
+            health-data laws.
+          </li>
+          <li>
+            The plans and advice you give are yours, not Reprummble's. You are responsible
+            for them being safe and suitable. Reprummble is not a medical provider.
+          </li>
+        </ul>
+        <h4>Money</h4>
+        <p>
+          Any revenue share, pricing, or payout arrangement is agreed with Reprummble in
+          writing during onboarding and is not created by these Terms or by the marketing
+          pages on our website.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'referrals',
+    title: 'Referral Program',
+    summary: 'How invite discounts work, and what is not allowed',
+    details: (
+      <>
+        <ul>
+          <li>
+            When a friend creates a <strong>new</strong> account through your invite link,
+            you and your friend each earn a 5% discount toward your next subscription.
+          </li>
+          <li>
+            Discounts add up to a maximum of 25% per person. After you reach that, further
+            referrals still reward your friend, but no more discount is added to you.
+          </li>
+          <li>
+            Invite links work only for accounts created in the last seven days, and each
+            account can use one invite. You cannot use your own link.
+          </li>
+          <li>
+            Discounts have no cash value, cannot be transferred or sold, and apply to a
+            future subscription payment once online billing is available.
+          </li>
+        </ul>
+        <p>
+          We may withhold, cancel, or change rewards, or close accounts, if we believe the
+          program is being abused, for example by creating fake or duplicate accounts. We
+          may change or end the program at any time; discounts already earned stay valid
+          for the next subscription payment unless they were obtained by abuse.
+        </p>
+      </>
+    ),
+  },
+  {
     id: 'content',
     title: 'Your Content',
-    icon: '🖼️',
     summary: 'You own your data; we need a limited licence to run the Service',
     details: (
       <>
@@ -276,7 +352,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'acceptable',
     title: 'Acceptable Use',
-    icon: '🚫',
     summary: 'Fair use rules that protect all members',
     details: (
       <>
@@ -322,7 +397,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'ip',
     title: 'Intellectual Property',
-    icon: '©️',
     summary: 'Reprummble owns its software, branding, and content',
     details: (
       <>
@@ -348,14 +422,13 @@ const termsSections: TermsSection[] = [
   {
     id: 'thirdparty',
     title: 'Third-Party Services',
-    icon: '🔗',
     summary: 'Integrations with wearables, payment processors, and health apps',
     details: (
       <>
         <p>
           The Service integrates with third-party platforms including, but not limited
           to, Apple Health, Google Fit, Oura Ring, Garmin Connect, Whoop, Fitbit,
-          and payment processors (currently Stripe).
+          and payment processors.
         </p>
         <p>
           <strong>We are not responsible for:</strong>
@@ -379,7 +452,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'warranties',
     title: 'Disclaimers',
-    icon: '⚡',
     summary: 'The Service is provided "as is" without guarantees',
     details: (
       <>
@@ -409,7 +481,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'liability',
     title: 'Limitation of Liability',
-    icon: '⚖️',
     summary: 'Our liability is limited to fees paid in the last 12 months',
     details: (
       <>
@@ -446,7 +517,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'termination',
     title: 'Termination',
-    icon: '🛑',
     summary: 'Either party may end the relationship; your data is deleted within 30 days',
     details: (
       <>
@@ -481,7 +551,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'changes',
     title: 'Changes to These Terms',
-    icon: '📋',
     summary: 'We notify you before material changes take effect',
     details: (
       <>
@@ -511,7 +580,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'law',
     title: 'Governing Law & Disputes',
-    icon: '⚖️',
     summary: 'English law applies; disputes resolved through negotiation first',
     details: (
       <>
@@ -549,7 +617,6 @@ const termsSections: TermsSection[] = [
   {
     id: 'contact',
     title: 'Contact & Support',
-    icon: '💬',
     summary: 'Questions? Our team is here to help',
     details: (
       <>
@@ -580,72 +647,16 @@ const termsSections: TermsSection[] = [
 export default function Terms() {
   usePageMeta({
     title: 'Terms of Service',
-    description: 'The rules and conditions for using the Reprummble platform. Read before signing up.',
+    description: 'The rules and conditions for using Reprummble, including business accounts and referrals.',
     canonical: '/terms',
   });
-  const [selectedSection, setSelectedSection] = useState<TermsSection | null>(null);
-
-  const closeModal = () => setSelectedSection(null);
-
   return (
-    <section className="section page-section legal-page-modern">
-      <Breadcrumb items={[{ label: 'Terms of Service', to: '/terms' }]} />
-      <div className="legal-page-header">
-        <div className="legal-page-badge">Terms of Service</div>
-        <h1>Clear, fair rules for using Reprummble.</h1>
-        <p>
-          Last updated: March 2025 &nbsp;·&nbsp; Effective: March 2025
-        </p>
-        <p className="legal-subtitle">
-          Plain-English overview below. Click any section for the full details.
-        </p>
-        <div className="legal-quick-links">
-          <a href="#medical" onClick={(e) => { e.preventDefault(); setSelectedSection(termsSections.find(s => s.id === 'medical')!); }}>Medical disclaimer</a>
-          <a href="#payments" onClick={(e) => { e.preventDefault(); setSelectedSection(termsSections.find(s => s.id === 'payments')!); }}>Billing & refunds</a>
-          <a href="#contact" onClick={(e) => { e.preventDefault(); setSelectedSection(termsSections.find(s => s.id === 'contact')!); }}>Contact us</a>
-        </div>
-      </div>
-
-      <div className="legal-grid">
-        {termsSections.map((section) => (
-          <button
-            key={section.id}
-            className="legal-card"
-            onClick={() => setSelectedSection(section)}
-          >
-            <span className="legal-card-icon">{section.icon}</span>
-            <h3>{section.title}</h3>
-            <p>{section.summary}</p>
-            <span className="legal-card-cta">Read more →</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="legal-footer-note">
-        <p>
-          Questions? <Link to="/contact">Contact us</Link> or start a live chat using
-          the button in the corner.
-        </p>
-      </div>
-
-      {selectedSection && (
-        <div className="legal-modal-overlay" onClick={closeModal}>
-          <div className="legal-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="legal-modal-header">
-              <span className="legal-modal-icon">{selectedSection.icon}</span>
-              <h2>{selectedSection.title}</h2>
-              <button
-                className="legal-modal-close"
-                onClick={closeModal}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-            <div className="legal-modal-content">{selectedSection.details}</div>
-          </div>
-        </div>
-      )}
-    </section>
+    <LegalDoc
+      badge="Terms of Service"
+      title="Clear, fair rules for using Reprummble."
+      updated="October 2026"
+      lead="A plain-English guide to what you can expect from us, and what we expect from you. Please read it before signing up."
+      sections={termsSections}
+    />
   );
 }

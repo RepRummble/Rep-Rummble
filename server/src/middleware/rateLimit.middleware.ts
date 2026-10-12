@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 
 /**
  * Throttles the auth endpoints most attractive to credential stuffing /
@@ -87,3 +87,40 @@ export const businessApplyLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many applications. Please try again later.' },
 })
+
+/** Verification emails cost money and can be used to annoy someone, so keep resends scarce. */
+export const resendLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+})
+
+/**
+ * A limit per signed-in person (falling back to IP), for routes that read or write the database.
+ * Use it after `protect`. People behind a shared office or phone-carrier IP get their own bucket.
+ */
+export const perUserLimiter = (limit: number, windowMs = 60 * 1000) =>
+  rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => (req as { user?: { id?: string } }).user?.id ?? ipKeyGenerator(req.ip ?? ''),
+    message: { success: false, message: 'Too many requests. Please slow down and try again shortly.' },
+  })
+
+/**
+ * A limit per IP address, meant to sit in front of `protect`. Checking a sign-in token calls out
+ * to Supabase, so flooding an endpoint with junk tokens should be stopped before that happens.
+ * (perUserLimiter then gives each signed-in person their own allowance after the check.)
+ */
+export const perIpLimiter = (limit: number, windowMs = 60 * 1000) =>
+  rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests. Please slow down and try again shortly.' },
+  })

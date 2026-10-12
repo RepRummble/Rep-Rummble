@@ -8,10 +8,12 @@ import { supabase, auth as supabaseAuth } from '../config/supabase';
 import ChatWidget from './chat/ChatWidget';
 import CookieBanner from './CookieBanner';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { biz, can, type BusinessInfo, type Role } from '../pages/business/api';
+import { BUSINESS_NAV, MEMBER_NAV, isAppPath, type NavItem } from '../config/appNav';
 import SiteFooter from './site/SiteFooter';
 import '../styles/site.css';
 
-const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact'];
+const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact', '/privacy', '/terms', '/oauth/consent'];
 const navClass = ({ isActive }: { isActive: boolean }) => `rr-nav-link${isActive ? ' active' : ''}`;
 
 export default function Layout() {
@@ -24,11 +26,20 @@ export default function Layout() {
   const [authMessage, setAuthMessage] = useState('');
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [isLoggedIn, setIsLoggedIn] = useState(DEV_BYPASS_AUTH);
+  // False until we know whether someone is signed in, so a signed-in visitor never sees a flash of the public home page.
+  const [sessionChecked, setSessionChecked] = useState(DEV_BYPASS_AUTH);
+  // What kind of account this is, so the bar can show member pages or business pages.
+  const [account, setAccount] = useState<{ ready: boolean; business: BusinessInfo | null; role?: Role; isAdmin: boolean; pending: number }>(
+    { ready: false, business: null, isAdmin: false, pending: 0 },
+  );
   const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Set after sign-up (or a sign-in attempt) when the email still has to be verified.
+  const [verifyEmail, setVerifyEmail] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [transitioning, setTransitioning] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -53,6 +64,7 @@ export default function Layout() {
           email: session.user.email || '',
         });
       }
+      setSessionChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session);
@@ -68,6 +80,39 @@ export default function Layout() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Find out whether this person runs an approved business (and whether they review applications).
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setAccount({ ready: false, business: null, isAdmin: false, pending: 0 });
+      return;
+    }
+    let cancelled = false;
+    Promise.all([biz.me(), biz.admin.status()]).then(([me, admin]) => {
+      if (cancelled) return;
+      setAccount({
+        ready: true,
+        business: me.data?.business ?? null,
+        role: me.data?.role,
+        isAdmin: !!admin.data?.isAdmin,
+        pending: admin.data?.pending ?? 0,
+      });
+    });
+    return () => { cancelled = true; };
+  }, [isLoggedIn]);
+
+  const isBusiness = account.business?.status === 'approved' && !!account.role;
+  const homePath = isBusiness ? '/business' : '/dashboard';
+  const accountNav: NavItem[] = !account.ready
+    ? []
+    : isBusiness
+      ? BUSINESS_NAV.filter((n) => !n.area || can(account.role as Role, n.area, 'read'))
+      : MEMBER_NAV;
+
+  // Signed-in people live in their own pages: the public landing page is only for visitors.
+  useEffect(() => {
+    if (isLoggedIn && account.ready && location.pathname === '/') navigate(homePath, { replace: true });
+  }, [isLoggedIn, account.ready, homePath, location.pathname, navigate]);
+
   useEffect(() => {
     if (DEV_BYPASS_AUTH || isLoggedIn) return;
     const params = new URLSearchParams(location.search);
@@ -78,7 +123,7 @@ export default function Layout() {
     }
   }, [location.search, isLoggedIn]);
 
-  const isLight = LIGHT_ROUTES.includes(location.pathname);
+  const isLight = LIGHT_ROUTES.includes(location.pathname) || isAppPath(location.pathname);
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('theme-light', isLight);
   }, [isLight]);
@@ -233,7 +278,22 @@ export default function Layout() {
           : await api.auth.register(formData.email, formData.password, formData.name);
 
       if (result.error) {
+        // Signing in before clicking the verification link: offer to send it again.
+        if (authMode === 'signin' && /verify your email/i.test(result.error)) {
+          setVerifyEmail(formData.email.trim());
+          setResendState('idle');
+        }
         throw new Error(result.error);
+      }
+
+      // New account: Supabase has emailed a link, and nobody is signed in until it is clicked.
+      if (authMode === 'signup' && (result.data as { emailVerificationRequired?: boolean } | undefined)?.emailVerificationRequired) {
+        setVerifyEmail(formData.email.trim());
+        setResendState('idle');
+        setAuthStatus('idle');
+        setAuthMessage('');
+        setFormData((prev) => ({ ...prev, password: '' }));
+        return;
       }
 
       // The API confirms the credentials; this opens the browser session, so the
@@ -253,7 +313,7 @@ export default function Layout() {
         sessionStorage.removeItem('postAuthPath');
         navigate(postAuthPath, { replace: true });
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate('/', { replace: true });
       }
     } catch (error: unknown) {
       setAuthStatus('error');
@@ -261,7 +321,15 @@ export default function Layout() {
     }
   };
 
+  const handleResend = async () => {
+    if (!verifyEmail) return;
+    setResendState('sending');
+    await api.auth.resendVerification(verifyEmail);
+    setResendState('sent');
+  };
+
   const handleAuthModeChange = (mode: 'signin' | 'signup' | 'forgot') => {
+    setVerifyEmail(null);
     setAuthMode(mode);
     setAuthMessage('');
     setAuthStatus('idle');
@@ -329,7 +397,7 @@ export default function Layout() {
       </div>
       <header className={`rr-header${scrolled ? ' is-scrolled' : ''}${headerVisible || mobileMenuOpen ? '' : ' is-hidden'}${mobileMenuOpen ? ' menu-open' : ''}`}>
         <div className="rr-container rr-header-inner">
-          <Link to="/" className="rr-logo" aria-label="Reprummble home">
+          <Link to={isLoggedIn ? homePath : '/'} className="rr-logo" aria-label={isLoggedIn ? 'Reprummble dashboard' : 'Reprummble home'}>
             <span className="rr-logo-mark">RR</span>
             <span className="rr-logo-name">Reprummble</span>
           </Link>
@@ -348,13 +416,9 @@ export default function Layout() {
               </>
             ) : (
               <>
-                <NavLink to="/features" className={navClass}>Features</NavLink>
-                <NavLink to="/pricing" className={navClass}>Pricing</NavLink>
-                <NavLink to="/faq" className={navClass}>FAQ</NavLink>
+                {accountNav.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={navClass}>{n.label}</NavLink>)}
                 <NavLink to="/contact" className={navClass}>Contact</NavLink>
-                <NavLink to="/collaborate" className={navClass}>Collaboration</NavLink>
                 <div className="rr-nav-mobile-actions">
-                  <Link className="rr-btn rr-btn-primary" to="/dashboard">My dashboard</Link>
                   <button className="rr-btn rr-btn-outline" onClick={handleSignOut}>Sign out</button>
                 </div>
               </>
@@ -367,7 +431,6 @@ export default function Layout() {
             </div>
           ) : (
             <div className="rr-header-actions rr-desktop-only">
-              <Link className="rr-btn rr-btn-primary" to="/dashboard">My dashboard</Link>
               <button className="rr-nav-link" onClick={handleSignOut}>Sign out</button>
             </div>
           )}
@@ -382,9 +445,13 @@ export default function Layout() {
                     <div className="rr-popover-name">{DEV_BYPASS_AUTH ? DEV_USER.name : (currentUser?.name || 'Your account')}</div>
                     <div className="rr-popover-email">{DEV_BYPASS_AUTH ? DEV_USER.email : (currentUser?.email || '')}</div>
                   </div>
-                  <Link to="/dashboard" onClick={() => setProfileOpen(false)}>My dashboard</Link>
-                  <Link to="/dashboard/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>
-                  <Link to="/dashboard/billing" onClick={() => setProfileOpen(false)}>Billing</Link>
+                  {isBusiness && <Link to="/dashboard" onClick={() => setProfileOpen(false)}>My own dashboard</Link>}
+                  {isBusiness && <Link to="/dashboard/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>}
+                  {account.isAdmin && (
+                    <Link to="/admin/applications" onClick={() => setProfileOpen(false)}>
+                      Review applications{account.pending > 0 ? ` (${account.pending})` : ''}
+                    </Link>
+                  )}
                   <button type="button" onClick={handleSignOut}>Sign out</button>
                 </div>
               )}
@@ -425,17 +492,28 @@ export default function Layout() {
             </aside>
 
             <div className="rr-auth-main">
-              <button className="rr-auth-x" type="button" onClick={() => setAuthOpen(false)} aria-label="Close"><X size={18} /></button>
+              <button className="rr-auth-x" type="button" onClick={() => { setAuthOpen(false); setVerifyEmail(null); }} aria-label="Close"><X size={18} /></button>
               <div className="rr-auth-head">
                 <h2 id="auth-title">
-                  {authMode === 'signup' ? 'Create your free account' : authMode === 'forgot' ? 'Reset your password' : 'Welcome back'}
+                  {verifyEmail && authMode !== 'forgot' ? 'Check your inbox' : authMode === 'signup' ? 'Create your free account' : authMode === 'forgot' ? 'Reset your password' : 'Welcome back'}
                 </h2>
                 <p>
-                  {authMode === 'signup' ? 'Start in two minutes. Upgrade anytime.' : authMode === 'forgot' ? "Enter your email and we'll send a reset link." : 'Sign in to continue your training.'}
+                  {verifyEmail && authMode !== 'forgot' ? 'One more step to finish.' : authMode === 'signup' ? 'Start in two minutes. Upgrade anytime.' : authMode === 'forgot' ? "Enter your email and we'll send a reset link." : 'Sign in to continue your training.'}
                 </p>
               </div>
 
-              {authMode === 'forgot' ? (
+              {verifyEmail && authMode !== 'forgot' ? (
+                <div className="rr-auth-verify">
+                  <p>
+                    We sent a verification link to <strong>{verifyEmail}</strong>. Click it to confirm your email, then sign in.
+                    It can take a minute, and it may land in your spam folder.
+                  </p>
+                  <button type="button" className="rr-btn rr-btn-outline rr-btn-block" onClick={handleResend} disabled={resendState !== 'idle'}>
+                    {resendState === 'sending' ? 'Sending…' : resendState === 'sent' ? 'Sent. Check your inbox' : 'Resend verification email'}
+                  </button>
+                  <button type="button" className="rr-auth-link" onClick={() => { setVerifyEmail(null); setAuthMode('signin'); setAuthMessage(''); setAuthStatus('idle'); }}>← Back to sign in</button>
+                </div>
+              ) : authMode === 'forgot' ? (
                 <form className="rr-auth-form" onSubmit={handleForgotSubmit} noValidate>
                   <label className="rr-auth-field">
                     <span>Email</span>
@@ -540,7 +618,7 @@ export default function Layout() {
       )}
 
       <main className="page" key={location.pathname}>
-        <Outlet />
+        {location.pathname === '/' && (!sessionChecked || (isLoggedIn && !account.ready)) ? null : <Outlet />}
       </main>
 
 
@@ -548,7 +626,7 @@ export default function Layout() {
       <CookieBanner />
 
     </div>
-    <SiteFooter />
+    {!isAppPath(location.pathname) && <SiteFooter />}
     </>
   );
 }

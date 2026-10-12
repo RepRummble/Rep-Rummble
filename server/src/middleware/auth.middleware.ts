@@ -3,10 +3,26 @@ import jwt from 'jsonwebtoken'
 import { verifyToken } from '../services/supabase.service'
 import { JWT_SECRET } from '../config/security'
 
+/**
+ * Tokens issued by Supabase's OAuth server to a third-party app are ordinary sign-in tokens for the
+ * user plus a `client_id` claim, and their scopes do not limit what an API accepts. This API is for
+ * Reprummble's own apps, so those tokens are refused (the signature is already checked by Supabase).
+ */
+export function isThirdPartyToken(token: string): boolean {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8'))
+    return typeof payload?.client_id === 'string' && payload.client_id.length > 0
+  } catch {
+    return false
+  }
+}
+
 export interface AuthUser {
   id: string
   email?: string
   displayName?: string
+  /** True once the person has proven they own this email (link clicked, or a social provider vouched for it). */
+  emailVerified?: boolean
   isBypass?: boolean
 }
 
@@ -41,6 +57,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         id: '00000000-0000-0000-0000-000000000000',
         email: 'dev@local',
         displayName: 'Dev Bypass User',
+        emailVerified: true,
         isBypass: true,
       }
       console.log('[auth.middleware] bypass token used, user set to', req.user)
@@ -52,10 +69,18 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     const supabaseResult = await verifyToken(token)
 
     if (supabaseResult.success && supabaseResult.user) {
+      if (isThirdPartyToken(token)) {
+        res.status(403).json({
+          success: false,
+          message: 'Access tokens issued to third-party apps cannot be used with this API'
+        })
+        return
+      }
       req.user = {
         id: supabaseResult.user.id,
         email: supabaseResult.user.email,
-        displayName: supabaseResult.user.user_metadata?.displayName
+        displayName: supabaseResult.user.user_metadata?.displayName,
+        emailVerified: !!supabaseResult.user.email_confirmed_at,
       }
       next()
       return
@@ -106,10 +131,13 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
     const supabaseResult = await verifyToken(token)
 
     if (supabaseResult.success && supabaseResult.user) {
-      req.user = {
-        id: supabaseResult.user.id,
-        email: supabaseResult.user.email,
-        displayName: supabaseResult.user.user_metadata?.displayName
+      if (!isThirdPartyToken(token)) {
+        req.user = {
+          id: supabaseResult.user.id,
+          email: supabaseResult.user.email,
+          displayName: supabaseResult.user.user_metadata?.displayName,
+          emailVerified: !!supabaseResult.user.email_confirmed_at,
+        }
       }
     } else {
       // Fallback to JWT
