@@ -24,20 +24,31 @@ function getTransporter() {
   })
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 async function sendNotification(name: string, email: string, message: string) {
   const transporter = getTransporter()
   if (!transporter) return
 
+  const safeName = escapeHtml(name)
+  const safeEmail = escapeHtml(email)
   await transporter.sendMail({
     from: `"Reprummble Contact" <${process.env.GMAIL_USER}>`,
     to: 'makamdilip1997@gmail.com',
-    subject: `New contact message from ${name}`,
+    subject: `New contact message from ${name.replace(/[\r\n]/g, ' ').slice(0, 100)}`,
     html: `
       <h2>New Contact Form Submission</h2>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+      <p><strong>Name:</strong> ${safeName}</p>
+      <p><strong>Email:</strong> ${safeEmail}</p>
       <p><strong>Message:</strong></p>
-      <p>${message.replace(/\n/g, '<br>')}</p>
+      <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
     `,
   })
 }

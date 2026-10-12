@@ -35,3 +35,28 @@ export const loginLimiter = rateLimit({
     message: 'Too many login attempts from this IP. Please try again later.',
   },
 })
+
+export const publicReadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please slow down.' },
+})
+
+// Public form submissions (reviews, contact, waitlist) — stops spam floods.
+export const submitLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many submissions. Please try again later.' },
+})
+
+export const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please slow down.' },
+})
