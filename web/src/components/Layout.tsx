@@ -1,8 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { FaApple, FaFacebookF } from 'react-icons/fa';
-import { FaXTwitter } from 'react-icons/fa6';
-import { Menu, X } from 'lucide-react';
+import { Check, Eye, EyeOff, Menu, X } from 'lucide-react';
 import { DEV_BYPASS_AUTH, DEV_USER } from '../config/devAuth';
 import api from '../config/api';
 import { supabase, auth as supabaseAuth } from '../config/supabase';
@@ -12,8 +11,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import SiteFooter from './site/SiteFooter';
 import '../styles/site.css';
 
-const PRIVATE_ROUTES = ['/analytics', '/reports', '/referral', '/profile', '/wearables'];
-const LIGHT_ROUTES = ['/', '/features', '/pricing', '/for-gyms'];
+const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact'];
 const navClass = ({ isActive }: { isActive: boolean }) => `rr-nav-link${isActive ? ' active' : ''}`;
 
 export default function Layout() {
@@ -30,6 +28,7 @@ export default function Layout() {
   const [headerVisible, setHeaderVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -78,15 +77,6 @@ export default function Layout() {
       setAuthOpen(true);
     }
   }, [location.search, isLoggedIn]);
-
-  useEffect(() => {
-    if (DEV_BYPASS_AUTH || isLoggedIn) return;
-    const needsAuth = PRIVATE_ROUTES.some((route) => location.pathname.startsWith(route));
-    if (needsAuth) {
-      sessionStorage.setItem('postAuthPath', location.pathname);
-      navigate('/?auth=signin', { replace: true });
-    }
-  }, [location.pathname, isLoggedIn, navigate]);
 
   const isLight = LIGHT_ROUTES.includes(location.pathname);
   useLayoutEffect(() => {
@@ -231,6 +221,11 @@ export default function Layout() {
         setAuthMessage('Please enter your email and password.');
         return;
       }
+      if (authMode === 'signup' && formData.password.length < 8) {
+        setAuthStatus('error');
+        setAuthMessage('Your password needs at least 8 characters.');
+        return;
+      }
 
       const result =
         authMode === 'signin'
@@ -239,6 +234,13 @@ export default function Layout() {
 
       if (result.error) {
         throw new Error(result.error);
+      }
+
+      // The API confirms the credentials; this opens the browser session, so the
+      // account stays signed in after a reload and works across the dashboard.
+      const { error: sessionError } = await supabaseAuth.signIn(formData.email, formData.password);
+      if (sessionError) {
+        throw new Error(sessionError.message);
       }
 
       setAuthStatus('success');
@@ -251,7 +253,7 @@ export default function Layout() {
         sessionStorage.removeItem('postAuthPath');
         navigate(postAuthPath, { replace: true });
       } else {
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       }
     } catch (error: unknown) {
       setAuthStatus('error');
@@ -334,9 +336,11 @@ export default function Layout() {
           <nav className="rr-nav" aria-label="Main">
             {!isLoggedIn ? (
               <>
+                <NavLink to="/features" className={navClass}>Features</NavLink>
                 <NavLink to="/pricing" className={navClass}>Pricing</NavLink>
                 <NavLink to="/faq" className={navClass}>FAQ</NavLink>
                 <NavLink to="/contact" className={navClass}>Contact</NavLink>
+                <NavLink to="/collaborate" className={navClass}>Collaboration</NavLink>
                 <div className="rr-nav-mobile-actions">
                   <button className="rr-btn rr-btn-outline" onClick={() => { setAuthMode('signin'); setAuthOpen(true); setMobileMenuOpen(false); }}>Sign in</button>
                   <button className="rr-btn rr-btn-primary" onClick={() => { setAuthMode('signup'); setAuthOpen(true); setMobileMenuOpen(false); }}>Start free</button>
@@ -344,10 +348,13 @@ export default function Layout() {
               </>
             ) : (
               <>
+                <NavLink to="/features" className={navClass}>Features</NavLink>
                 <NavLink to="/pricing" className={navClass}>Pricing</NavLink>
                 <NavLink to="/faq" className={navClass}>FAQ</NavLink>
                 <NavLink to="/contact" className={navClass}>Contact</NavLink>
+                <NavLink to="/collaborate" className={navClass}>Collaboration</NavLink>
                 <div className="rr-nav-mobile-actions">
+                  <Link className="rr-btn rr-btn-primary" to="/dashboard">My dashboard</Link>
                   <button className="rr-btn rr-btn-outline" onClick={handleSignOut}>Sign out</button>
                 </div>
               </>
@@ -360,6 +367,7 @@ export default function Layout() {
             </div>
           ) : (
             <div className="rr-header-actions rr-desktop-only">
+              <Link className="rr-btn rr-btn-primary" to="/dashboard">My dashboard</Link>
               <button className="rr-nav-link" onClick={handleSignOut}>Sign out</button>
             </div>
           )}
@@ -374,8 +382,9 @@ export default function Layout() {
                     <div className="rr-popover-name">{DEV_BYPASS_AUTH ? DEV_USER.name : (currentUser?.name || 'Your account')}</div>
                     <div className="rr-popover-email">{DEV_BYPASS_AUTH ? DEV_USER.email : (currentUser?.email || '')}</div>
                   </div>
-                  <Link to="/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>
-                  <Link to="/payment" onClick={() => setProfileOpen(false)}>Billing & subscription</Link>
+                  <Link to="/dashboard" onClick={() => setProfileOpen(false)}>My dashboard</Link>
+                  <Link to="/dashboard/profile" onClick={() => setProfileOpen(false)}>Account settings</Link>
+                  <Link to="/dashboard/billing" onClick={() => setProfileOpen(false)}>Billing</Link>
                   <button type="button" onClick={handleSignOut}>Sign out</button>
                 </div>
               )}
@@ -394,151 +403,138 @@ export default function Layout() {
 
       {authOpen && !isLoggedIn && (
         <div className="auth-modal" onClick={() => setAuthOpen(false)}>
-          <div className="auth-card rr-auth" onClick={(event) => event.stopPropagation()}>
-            <div className="auth-card-header">
-              <div>
-                <h2>{authMode === 'signup' ? 'Create your free account' : authMode === 'forgot' ? 'Reset your password' : 'Welcome back'}</h2>
-                <p>{authMode === 'signup' ? 'No card needed. Upgrade anytime.' : 'Sign in to continue your training.'}</p>
-              </div>
-              <button className="icon-close" type="button" onClick={() => setAuthOpen(false)} aria-label="Close">
-                ×
-              </button>
-            </div>
-            {authMode !== 'forgot' && (
-            <div className="popover-tabs">
-              <button
-                className={`tab-chip${authMode === 'signin' ? ' active' : ''}`}
-                onClick={() => handleAuthModeChange('signin')}
-              >
-                Sign In
-              </button>
-              <button
-                className={`tab-chip${authMode === 'signup' ? ' active' : ''}`}
-                onClick={() => handleAuthModeChange('signup')}
-              >
-                Sign Up
-              </button>
-            </div>
-            )}
-            {authMode === 'forgot' && (
-              <form className="popover-form compact" onSubmit={handleForgotSubmit} noValidate>
-                <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--muted)' }}>
-                  Enter your email and we'll send a reset link.
+          <div
+            className="rr-authcard"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <aside className="rr-auth-aside" aria-hidden="true">
+              <Link to="/" className="rr-logo" tabIndex={-1} onClick={() => setAuthOpen(false)}>
+                <span className="rr-logo-mark">RR</span>
+                <span className="rr-logo-name">Reprummble</span>
+              </Link>
+              <h3>Your training, on every device.</h3>
+              <ul>
+                <li><Check size={18} /> Personalized plans built around your goals</li>
+                <li><Check size={18} /> Log meals with a photo</li>
+                <li><Check size={18} /> One account on iPhone, Android, and web</li>
+              </ul>
+              <p className="rr-auth-aside-note">Free plan. No card needed.</p>
+            </aside>
+
+            <div className="rr-auth-main">
+              <button className="rr-auth-x" type="button" onClick={() => setAuthOpen(false)} aria-label="Close"><X size={18} /></button>
+              <div className="rr-auth-head">
+                <h2 id="auth-title">
+                  {authMode === 'signup' ? 'Create your free account' : authMode === 'forgot' ? 'Reset your password' : 'Welcome back'}
+                </h2>
+                <p>
+                  {authMode === 'signup' ? 'Start in two minutes. Upgrade anytime.' : authMode === 'forgot' ? "Enter your email and we'll send a reset link." : 'Sign in to continue your training.'}
                 </p>
-                <label className="field-label">
-                  Email
-                  <input
-                    className="field-input"
-                    type="email"
-                    value={formData.email}
-                    autoFocus
-                    onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
-                  />
-                </label>
-                <button className="solid-btn" type="submit" disabled={authStatus === 'loading'}>
-                  {authStatus === 'loading' ? 'Sending…' : 'Send reset link'}
-                </button>
-                {authMessage && (
-                  <div className={authStatus === 'error' ? 'form-error' : 'form-success'}>{authMessage}</div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleAuthModeChange('signin')}
-                  style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
-                >
-                  Back to sign in
-                </button>
-              </form>
-            )}
-            {authMode !== 'forgot' && (
-            <form className="popover-form compact" onSubmit={handleAuthSubmit} noValidate>
-              {authMode === 'signup' && (
-                <label className="field-label">
-                  Name
-                  <input
-                    className="field-input"
-                    value={formData.name}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
-                  />
-                </label>
+              </div>
+
+              {authMode === 'forgot' ? (
+                <form className="rr-auth-form" onSubmit={handleForgotSubmit} noValidate>
+                  <label className="rr-auth-field">
+                    <span>Email</span>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      autoFocus
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
+                    />
+                  </label>
+                  <button className="rr-btn rr-btn-primary rr-btn-block" type="submit" disabled={authStatus === 'loading'}>
+                    {authStatus === 'loading' ? 'Sending…' : 'Send reset link'}
+                  </button>
+                  {authMessage && <div className={`rr-auth-msg ${authStatus === 'error' ? 'is-error' : 'is-ok'}`} role="alert">{authMessage}</div>}
+                  <button type="button" className="rr-auth-link" onClick={() => handleAuthModeChange('signin')}>← Back to sign in</button>
+                </form>
+              ) : (
+                <>
+                  <div className="rr-auth-tabs" role="tablist">
+                    <button type="button" role="tab" aria-selected={authMode === 'signin'} className={authMode === 'signin' ? 'active' : ''} onClick={() => handleAuthModeChange('signin')}>Sign in</button>
+                    <button type="button" role="tab" aria-selected={authMode === 'signup'} className={authMode === 'signup' ? 'active' : ''} onClick={() => handleAuthModeChange('signup')}>Sign up</button>
+                  </div>
+
+                  <div className="rr-auth-social">
+                    <button type="button" className="rr-social" onClick={() => handleOAuth('google')} disabled={authStatus === 'loading'}>
+                      <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true" focusable="false">
+                        <path fill="#EA4335" d="M24 9.5c3.2 0 5.4 1.4 6.7 2.6l4.9-4.9C32.6 4.4 28.8 2.5 24 2.5 14.9 2.5 7.1 7.9 3.4 15.7l5.8 4.5C11.4 13.6 17.2 9.5 24 9.5z" />
+                        <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-2.8-.4-4.1H24v7.8h12.7c-.3 2-1.6 5-4.6 7.1l5.7 4.4c3.4-3.1 5.7-7.8 5.7-15.2z" />
+                        <path fill="#FBBC05" d="M9.2 28.2c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-5.8-4.5C1.9 16.7 1 20.1 1 23.5s.9 6.8 2.4 9.7l5.8-4.5z" />
+                        <path fill="#34A853" d="M24 44.5c6.5 0 12-2.1 16-5.8l-5.7-4.4c-1.5 1-3.5 1.8-10.3 1.8-6.7 0-12.4-4.1-14.4-9.8l-5.8 4.5C7.1 39.1 14.9 44.5 24 44.5z" />
+                      </svg>
+                      Continue with Google
+                    </button>
+                    <button type="button" className="rr-social" onClick={() => handleOAuth('apple')} disabled={authStatus === 'loading'}>
+                      <FaApple size={20} aria-hidden="true" /> Continue with Apple
+                    </button>
+                    <button type="button" className="rr-social" onClick={() => handleOAuth('facebook')} disabled={authStatus === 'loading'}>
+                      <FaFacebookF size={18} color="#1877f2" aria-hidden="true" /> Continue with Facebook
+                    </button>
+                  </div>
+
+                  <div className="rr-auth-or"><span>or use your email</span></div>
+
+                  <form className="rr-auth-form" onSubmit={handleAuthSubmit} noValidate>
+                    {authMode === 'signup' && (
+                      <label className="rr-auth-field">
+                        <span>Name</span>
+                        <input
+                          value={formData.name}
+                          autoComplete="name"
+                          placeholder="Your name"
+                          onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+                        />
+                      </label>
+                    )}
+                    <label className="rr-auth-field">
+                      <span>Email</span>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        autoComplete="email"
+                        placeholder="you@example.com"
+                        onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
+                      />
+                    </label>
+                    <label className="rr-auth-field">
+                      <span className="rr-auth-field-row">
+                        Password
+                        {authMode === 'signin' && (
+                          <button type="button" className="rr-auth-link" onClick={() => handleAuthModeChange('forgot')}>Forgot password?</button>
+                        )}
+                      </span>
+                      <span className="rr-auth-pw">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={formData.password}
+                          autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+                          placeholder={authMode === 'signup' ? 'At least 8 characters' : 'Your password'}
+                          onChange={(event) => setFormData((prev) => ({ ...prev, password: event.target.value }))}
+                        />
+                        <button type="button" className="rr-auth-eye" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </span>
+                    </label>
+                    <button className="rr-btn rr-btn-primary rr-btn-block" type="submit" disabled={authStatus === 'loading'}>
+                      {authStatus === 'loading' ? 'Please wait…' : authMode === 'signin' ? 'Sign in' : 'Create account'}
+                    </button>
+                    {authMessage && <div className={`rr-auth-msg ${authStatus === 'error' ? 'is-error' : 'is-ok'}`} role="alert">{authMessage}</div>}
+                  </form>
+
+                  <p className="rr-auth-legal">
+                    By continuing you agree to our <Link to="/terms" onClick={() => setAuthOpen(false)}>Terms</Link> and <Link to="/privacy" onClick={() => setAuthOpen(false)}>Privacy Policy</Link>.
+                  </p>
+                </>
               )}
-              <label className="field-label">
-                Email
-                <input
-                  className="field-input"
-                  type="email"
-                  value={formData.email}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
-                />
-              </label>
-              <label className="field-label">
-                Password
-                <input
-                  className="field-input"
-                  type="password"
-                  value={formData.password}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, password: event.target.value }))}
-                />
-              </label>
-              <button className="solid-btn" type="submit" disabled={authStatus === 'loading'}>
-                {authMode === 'signin' ? 'Sign In' : 'Create Account'}
-              </button>
-              {authMode === 'signin' && (
-                <button
-                  type="button"
-                  onClick={() => handleAuthModeChange('forgot')}
-                  style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline', padding: 0, textAlign: 'left' }}
-                >
-                  Forgot password?
-                </button>
-              )}
-              {authMessage && (
-                <div className={authStatus === 'error' ? 'form-error' : 'form-success'}>{authMessage}</div>
-              )}
-            </form>
-            )}
-            {authMode !== 'forgot' && (
-            <div className="social-buttons">
-              <button type="button" className="social-btn google" onClick={() => handleOAuth('google')} disabled={authStatus === 'loading'}>
-                <svg
-                  className="social-icon google-multi"
-                  viewBox="0 0 48 48"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <path
-                    fill="#EA4335"
-                    d="M24 9.5c3.2 0 5.4 1.4 6.7 2.6l4.9-4.9C32.6 4.4 28.8 2.5 24 2.5 14.9 2.5 7.1 7.9 3.4 15.7l5.8 4.5C11.4 13.6 17.2 9.5 24 9.5z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M46.5 24.5c0-1.6-.1-2.8-.4-4.1H24v7.8h12.7c-.3 2-1.6 5-4.6 7.1l5.7 4.4c3.4-3.1 5.7-7.8 5.7-15.2z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M9.2 28.2c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-5.8-4.5C1.9 16.7 1 20.1 1 23.5s.9 6.8 2.4 9.7l5.8-4.5z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M24 44.5c6.5 0 12-2.1 16-5.8l-5.7-4.4c-1.5 1-3.5 1.8-10.3 1.8-6.7 0-12.4-4.1-14.4-9.8l-5.8 4.5C7.1 39.1 14.9 44.5 24 44.5z"
-                  />
-                </svg>
-                <span className="sr-only">Continue with Google</span>
-              </button>
-              <button type="button" className="social-btn apple" onClick={() => handleOAuth('apple')} disabled={authStatus === 'loading'}>
-                <FaApple className="social-icon" />
-                <span className="sr-only">Continue with Apple</span>
-              </button>
-              <button type="button" className="social-btn facebook" onClick={() => handleOAuth('facebook')} disabled={authStatus === 'loading'}>
-                <FaFacebookF className="social-icon" />
-                <span className="sr-only">Continue with Facebook</span>
-              </button>
-              <button type="button" className="social-btn twitter" onClick={() => handleOAuth('twitter')} disabled={authStatus === 'loading'}>
-                <FaXTwitter className="social-icon" />
-                <span className="sr-only">Continue with Twitter</span>
-              </button>
             </div>
-            )}
           </div>
         </div>
       )}

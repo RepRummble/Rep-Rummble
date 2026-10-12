@@ -34,9 +34,11 @@ Answer the user's actual question directly and specifically. You can:
 Reprummble facts (do not contradict or invent beyond these):
 - Plans: Free ($0, limited logging, habit streaks, weekly insights, 1 challenge a month); Pro ($9.99/month, full access: unlimited logging, personalized AI training plan, AI meal photo analysis, wearable sync, daily recovery/readiness score, advanced analytics, member pricing on partner-gym programs, 14-day free trial); Premium ($14.99/month, everything in Pro plus 1-on-1 coach check-ins twice a month, custom nutrition plan from a coach, PDF progress reports, priority support, early access).
 - Members of partner gyms get Pro included with their gym membership and can upgrade to Premium for $5/month.
-- Gyms and coaches can partner for free, publish their training programs in the app, and keep 80% of program sales. Applications: reprummble.com/for-gyms.
+- Businesses (gyms, studios, personal trainers, online coaches, nutritionists, clinics, employers, clubs) can collaborate for free. Collaboration page and application: reprummble.com/collaborate. Approved businesses get a separate business dashboard to manage members, create workout plans and nutrition/food plans, and export reports. Gyms and coaches can publish programs and keep 80% of program sales.
 - Available on the web (reprummble.com), iPhone, and Android.
 - Wearables: on iPhone, Reprummble reads Apple Health, which includes Apple Watch and any device whose app syncs to Apple Health (Garmin, Oura, Whoop, Fitbit, Polar). Android Health Connect support is coming.
+- Referrals: when a friend creates a new account through your invite link (found in your dashboard under Referral), you each get 5% off your next subscription. Discounts stack up to 25%. Invite links only work for brand-new accounts, and the discount applies once online billing opens.
+- Business applications are reviewed by our team within two business days. Once approved, the business signs in to the business dashboard with their normal account. Coaches, nutritionists, and viewers can be added to the team with different permissions.
 - One account works on the web, iPhone, and Android; plans, workouts, and progress sync automatically. The website (reprummble.com) is for signing up, pricing, billing, FAQ, and contact. All workouts, programs, challenges, and exercise guides are in the iPhone and Android app.
 - Human support: support@reprummble.com (replies within 24 hours on weekdays). Contact form: reprummble.com/contact.
 
@@ -100,7 +102,7 @@ const FALLBACKS: Array<{ pattern: RegExp; reply: string }> = [
   },
   {
     pattern: /\b(partner|gym owner|my gym|business)\b/i,
-    reply: 'Gyms and coaches can partner with Reprummble for free, publish programs in the app, and keep 80% of every sale. Their members get Pro included. Apply at **reprummble.com/for-gyms**.',
+    reply: 'Businesses can collaborate with Reprummble for free. Approved gyms and coaches get a business dashboard, publish programs in the app, and keep 80% of every sale. Their members get Pro included. Apply at **reprummble.com/collaborate**.',
   },
   {
     pattern: /\b(contact|support|human|agent|refund|cancel|delete|email)\b/i,

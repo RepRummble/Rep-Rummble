@@ -69,3 +69,21 @@ export const chatLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'You are sending messages too quickly. Please wait a few minutes.' },
 })
+
+/** Referral claims are one-time per account, so a handful of tries per hour is plenty. */
+export const referralClaimLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many attempts. Please try again later.' },
+})
+
+/** Business applications: a few per hour per IP stops form spam. */
+export const businessApplyLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many applications. Please try again later.' },
+})

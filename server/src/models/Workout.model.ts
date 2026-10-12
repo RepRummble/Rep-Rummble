@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IWorkout extends Document {
-  userId: mongoose.Types.ObjectId
+  userId: string // Supabase user id (UUID)
   exercise: string
   duration: number
   calories?: number
@@ -13,8 +13,7 @@ export interface IWorkout extends Document {
 
 const WorkoutSchema = new Schema<IWorkout>({
   userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     index: true
   },

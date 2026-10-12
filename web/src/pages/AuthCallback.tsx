@@ -30,7 +30,13 @@ export default function AuthCallback() {
         if (type === 'recovery') {
           setMode('recovery')
         } else {
-          navigate('/', { replace: true })
+          let next = '/dashboard'
+          try {
+            const saved = sessionStorage.getItem('postAuthPath')
+            sessionStorage.removeItem('postAuthPath')
+            if (saved && saved.startsWith('/') && !saved.startsWith('//')) next = saved
+          } catch { /* storage blocked */ }
+          navigate(next, { replace: true })
         }
       } else {
         navigate('/?auth=signin', { replace: true })
@@ -50,7 +56,7 @@ export default function AuthCallback() {
       setStatus('error')
     } else {
       setStatus('success')
-      setTimeout(() => navigate('/profile', { replace: true }), 1800)
+      setTimeout(() => navigate('/dashboard/profile', { replace: true }), 1800)
     }
   }
 

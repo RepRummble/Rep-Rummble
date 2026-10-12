@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
-  Activity, Apple, ArrowRight, Check, Dumbbell, HeartPulse, LineChart, Monitor, Moon, RefreshCw, Smartphone,
+  Activity, Apple, ArrowRight, Check, Dumbbell, HeartPulse, LineChart, Moon,
   Trophy, Users, Watch,
 } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -8,13 +8,9 @@ import { PLANS, PREMIUM_UPGRADE, PRICING, fmtPrice } from '../config/pricing';
 import { PhoneMockup } from '../components/site/Mockups';
 import { LiveStats, ReviewsSection } from '../components/site/Reviews';
 import DeviceMarquee from '../components/site/DeviceMarquee';
+import DeviceSync from '../components/site/DeviceSync';
 
 
-const SYNC = [
-  { icon: Smartphone, tone: '', title: 'iPhone & Android', desc: 'Train with guided workouts, log meals, and sync your wearable on the go.' },
-  { icon: Monitor, tone: 'is-orange', title: 'Web', desc: 'Manage your account and billing, and see your progress on a bigger screen.' },
-  { icon: RefreshCw, tone: 'is-violet', title: 'Always in sync', desc: 'Finish a workout on one device and it shows up everywhere — no exporting, no manual sync.' },
-];
 
 const PILLARS = [
   { icon: Dumbbell, tone: '', title: 'Training that adapts', desc: 'A plan built around your schedule, equipment, and level — at home, outdoors, or in the gym.' },
@@ -130,15 +126,7 @@ export default function Home() {
             <h2>Start on your phone. Pick up on the web.</h2>
             <p>Sign in with the same account everywhere. Your plan, workouts, and progress stay in sync automatically.</p>
           </div>
-          <div className="lib-sync" data-stagger>
-            {SYNC.map(({ icon: Icon, tone, title, desc }) => (
-              <div className="rr-card" key={title}>
-                <span className={`rr-icon ${tone}`}><Icon size={22} /></span>
-                <h3>{title}</h3>
-                <p>{desc}</p>
-              </div>
-            ))}
-          </div>
+          <DeviceSync />
         </div>
       </section>
 
@@ -208,7 +196,7 @@ export default function Home() {
                 <li><Check size={18} /> Keep {PRICING.gymPayoutPercent}% of every program sale</li>
                 <li><Check size={18} /> Track your members' progress in one dashboard</li>
               </ul>
-              <Link className="rr-btn rr-btn-white" to="/for-gyms">Become a partner <ArrowRight size={16} /></Link>
+              <Link className="rr-btn rr-btn-white" to="/collaborate">Collaborate with us <ArrowRight size={16} /></Link>
             </div>
           </div>
         </div>

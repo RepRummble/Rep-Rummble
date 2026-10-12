@@ -28,8 +28,9 @@ export default function SiteFooter() {
           <div>
             <h4>Business</h4>
             <ul>
-              <li><Link to="/for-gyms">For gyms & coaches</Link></li>
-              <li><Link to="/for-gyms#apply">Become a partner</Link></li>
+              <li><Link to="/collaborate">Collaboration</Link></li>
+              <li><Link to="/collaborate#apply">Apply to collaborate</Link></li>
+              <li><Link to="/business">Business dashboard</Link></li>
               <li><Link to="/contact">Contact sales</Link></li>
             </ul>
           </div>

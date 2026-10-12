@@ -68,6 +68,12 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
+      # ── Business applications ─────────────────────────────────
+      # Comma-separated emails allowed to approve or reject business applications
+      # at /admin/applications on the website.
+      - key: ADMIN_EMAILS
+        sync: false
+
       # ── Email (Gmail SMTP) ────────────────────────────────────
       - key: GMAIL_USER
         sync: false
