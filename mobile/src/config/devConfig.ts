@@ -1,7 +1,8 @@
 import { User } from '../types';
 
-// Toggle to skip login and use mock API data during development
-export const DEV_BYPASS_AUTH = true;
+// Skips login and serves mock data, for working on screens without a server.
+// Off by default and never on in a release build. Turn it on with EXPO_PUBLIC_DEV_BYPASS=1.
+export const DEV_BYPASS_AUTH = __DEV__ && process.env.EXPO_PUBLIC_DEV_BYPASS === '1';
 
 export const DEV_DUMMY_USER: User = {
   _id: 'dev-user-001',
