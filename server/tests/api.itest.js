@@ -33,6 +33,8 @@ const users = {
   billC:     { id: '1a1a1a1a-1a1a-4a1a-8a1a-1a1a1a1a1a1a', email: 'billc@x.test', created: Date.now() - 20 * DAY },
   billD:     { id: '1b1b1b1b-1b1b-4b1b-8b1b-1b1b1b1b1b1b', email: 'billd@x.test', created: Date.now() - 20 * DAY },
   billGym:   { id: '1c1c1c1c-1c1c-4c1c-8c1c-1c1c1c1c1c1c', email: 'billgym@x.test', created: Date.now() - 20 * DAY },
+  twin:      { id: '1d1d1d1d-1d1d-4d1d-8d1d-1d1d1d1d1d1d', email: 'twin@x.test', created: Date.now() - 20 * DAY },
+  twinFake:  { id: '1e1e1e1e-1e1e-4e1e-8e1e-1e1e1e1e1e1e', email: 'twin@x.test', created: Date.now() - 1 * DAY, verified: false },
   unver:     { id: '13131313-1313-4313-8313-131313131313', email: 'unver@x.test', created: Date.now() - 1 * DAY, verified: false },
 };
 process.env.ADMIN_EMAILS = 'admin@site.test';
@@ -921,6 +923,25 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     for (const body of [{}, { refreshToken: 42 }, { refreshToken: { $ne: 1 } }, { refreshToken: 'x'.repeat(3000) }]) {
       assert.equal((await call(null, 'POST', '/api/auth/refresh', body)).status, 400);
     }
+  });
+
+
+  console.log('Business owner on a different sign-in');
+  await t('the owner is recognised by verified email when they sign in with a different account than they applied with', async () => {
+    const { Business } = require(SRC + '/models/Business.model');
+    await Business.create({ ownerId: 'applied-with-another-identity', ownerEmail: users.twin.email, name: 'Twin Gym', type: 'Gym', status: 'approved' });
+    const r = await call('twin', 'GET', '/api/business/me');
+    assert.equal(r.status, 200); assert.equal(r.body.data.role, 'Owner'); assert.equal(r.body.data.business.name, 'Twin Gym'); assert.equal(r.body.data.business.status, 'approved');
+    assert.equal((await call('twin', 'GET', '/api/business/members')).status, 200, 'the dashboard data opens too');
+  });
+  await t('someone who only claims that email without verifying it gets nothing', async () => {
+    const r = await call('twinFake', 'GET', '/api/business/me');
+    assert.equal(r.body.data.business, null);
+    assert.equal((await call('twinFake', 'GET', '/api/business/members')).status, 404);
+  });
+  await t('a second sign-in for the same email cannot create a duplicate application', async () => {
+    const r = await call('twin', 'POST', '/api/business/apply', { name: 'Another', type: 'Gym' });
+    assert.equal(r.status, 409);
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);

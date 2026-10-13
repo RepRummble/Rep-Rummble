@@ -72,7 +72,7 @@ export const apply = async (req: AuthRequest, res: Response) => {
       city: text(req.body?.city, 120), size: text(req.body?.size, 40), message: text(req.body?.message, 2000),
     }
 
-    const existing = await Business.findOne({ ownerId: req.user!.id })
+    const existing = await Business.findOne({ $or: [{ ownerId: { $eq: req.user!.id } }, { ownerEmail: { $eq: ownerEmail } }] })
     if (existing) {
       if (existing.status !== 'rejected') return fail(res, 409, `You already have a ${existing.status} application`)
       // Rejected applicants may apply again with updated details.

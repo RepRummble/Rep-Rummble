@@ -24,11 +24,12 @@ export default function BusinessLayout() {
   usePageMeta({ title: 'Business dashboard', canonical: '/business' });
   const navigate = useNavigate();
   const [auth, setAuth] = useState<'checking' | 'in' | 'out'>(DEV_BYPASS_AUTH ? 'in' : 'checking');
+  const [signedInAs, setSignedInAs] = useState('');
 
   useEffect(() => {
     if (DEV_BYPASS_AUTH) return;
-    supabase.auth.getSession().then(({ data: { session } }) => setAuth(session ? 'in' : 'out'));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setAuth(session ? 'in' : 'out'));
+    supabase.auth.getSession().then(({ data: { session } }) => { setAuth(session ? 'in' : 'out'); setSignedInAs(session?.user.email ?? ''); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => { setAuth(session ? 'in' : 'out'); setSignedInAs(session?.user.email ?? ''); });
     return () => subscription.unsubscribe();
   }, []);
 
@@ -67,6 +68,11 @@ export default function BusinessLayout() {
     return (
       <Gate title="Business dashboard">
         <p>You do not have a business account yet. Apply to collaborate and, once we approve it, your dashboard opens here.</p>
+        {signedInAs && (
+          <p className="dash-muted">
+            You are signed in as <strong>{signedInAs}</strong>. A business belongs to the account that applied for it, so if you applied with a different email or sign-in method, sign out and sign in with that one.
+          </p>
+        )}
         <Link className="rr-btn rr-btn-primary rr-btn-lg" to="/collaborate#apply">Apply to collaborate</Link>
         <Link className="rr-link-arrow" to="/dashboard">Go to my dashboard</Link>
       </Gate>

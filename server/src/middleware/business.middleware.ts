@@ -26,11 +26,18 @@ export const can = (role: BusinessRole, area: Area, mode: 'read' | 'write') => {
 
 /** Finds the business the signed-in user owns, or works for as staff. */
 export async function findBusinessFor(user: { id: string; email?: string; emailVerified?: boolean }) {
-  const owned = await Business.findOne({ ownerId: user.id })
+  const owned = await Business.findOne({ ownerId: { $eq: user.id } })
   if (owned) return { business: owned, role: 'Owner' as BusinessRole }
+  // The same person can reach us through a different sign-in (email and password, Google, ...), which
+  // Supabase may keep as separate accounts. The application records the email it was made with, so a
+  // verified address that matches it is the owner too. Unverified addresses never count.
+  if (user.email && user.emailVerified) {
+    const byEmail = await Business.findOne({ ownerEmail: { $eq: user.email.toLowerCase() } })
+    if (byEmail) return { business: byEmail, role: 'Owner' as BusinessRole }
+  }
   // Team access is granted by email, so only for people who have proven they own that address.
   if (user.email && user.emailVerified) {
-    const staff = await BusinessStaff.findOne({ email: user.email.toLowerCase() })
+    const staff = await BusinessStaff.findOne({ email: { $eq: user.email.toLowerCase() } })
     if (staff) {
       const business = await Business.findById(staff.businessId)
       if (business) return { business, role: staff.role as BusinessRole }
