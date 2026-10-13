@@ -881,6 +881,26 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.ok(await subOf('billC'), 'billing record is kept so it can be retried');
   });
 
+
+  console.log('Supabase key check');
+  await t('the health check says plainly when Supabase rejects a key, and never reveals the keys', async () => {
+    const realFetch = global.fetch; const seen = [];
+    process.env.SUPABASE_URL = 'https://fake-project.supabase.co'; process.env.SUPABASE_ANON_KEY = 'anon-rotated-key'; process.env.SUPABASE_SERVICE_KEY = 'service-good-key';
+    global.fetch = async (url, opts) => {
+      if (!String(url).startsWith('https://fake-project.supabase.co')) return realFetch(url, opts);
+      seen.push(String(url));
+      const key = opts.headers.apikey;
+      return { ok: key === 'service-good-key', status: key === 'service-good-key' ? 200 : 401 };
+    };
+    try {
+      const result = await sup.checkSupabaseKeys();
+      assert.deepEqual(result, { anon: 'rejected', service: 'valid' });
+      assert.ok(!JSON.stringify(result).includes('rotated') && !JSON.stringify(result).includes('good-key'));
+      assert.equal(seen.length, 2);
+      await sup.checkSupabaseKeys(); assert.equal(seen.length, 2, 'result is cached for a minute');
+    } finally { global.fetch = realFetch; delete process.env.SUPABASE_URL; delete process.env.SUPABASE_ANON_KEY; delete process.env.SUPABASE_SERVICE_KEY; }
+  });
+
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
   server.close(); await require('mongoose').disconnect(); await mms.stop();
 })().catch((e) => { console.error('Harness error:', e); process.exit(1); });

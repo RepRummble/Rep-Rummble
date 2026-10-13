@@ -27,6 +27,7 @@ import leadRoutes from './routes/lead.routes'
 import reportRoutes from './routes/report.routes'
 import referralRoutes from './routes/referral.routes'
 import billingRoutes from './routes/billing.routes'
+import { checkSupabaseKeys } from './services/supabase.service'
 import { stripeWebhook } from './controllers/billing.controller'
 import analyticsRoutes from './routes/analytics.routes'
 import businessRoutes from './routes/business.routes'
@@ -90,7 +91,8 @@ app.use(express.json({ limit: '50mb' })) // Parse JSON bodies (increased for ima
 app.use(express.urlencoded({ extended: true, limit: '50mb' })) // Parse URL-encoded bodies
 
 // Health check endpoint with service status
-app.get("/api/health", (_req: Request, res: Response) => {
+app.get("/api/health", async (_req: Request, res: Response) => {
+  const keys = await checkSupabaseKeys()
   res.json({
     status: "OK",
     message: "Reprummble API is running",
@@ -98,6 +100,8 @@ app.get("/api/health", (_req: Request, res: Response) => {
     services: {
       mongodb: isDBConnected() ? "connected" : "not configured",
       supabase: process.env.SUPABASE_URL ? "configured" : "not configured",
+      // Whether Supabase accepts our keys. "rejected" explains "Invalid API key" on every sign-in.
+      supabaseKeys: keys,
       gemini: process.env.GEMINI_API_KEY ? "configured" : "not configured",
     }
   });

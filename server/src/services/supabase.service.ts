@@ -298,3 +298,36 @@ export default {
   updateUserMetadata,
   deleteUser
 }
+
+
+export type KeyStatus = 'valid' | 'rejected' | 'missing' | 'unreachable'
+
+async function probe(url: string, headers: Record<string, string>): Promise<KeyStatus> {
+  try {
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
+    if (res.ok) return 'valid'
+    return res.status === 401 || res.status === 403 ? 'rejected' : 'unreachable'
+  } catch {
+    return 'unreachable'
+  }
+}
+
+let keyCheck: { at: number; result: { anon: KeyStatus; service: KeyStatus } } | null = null
+
+/**
+ * Whether Supabase actually accepts the keys this server holds. "Configured" only means a value is
+ * set; a rotated or mistyped key still looks configured and then fails every sign-in with
+ * "Invalid API key". Checked at most once a minute, and the keys themselves are never reported.
+ */
+export async function checkSupabaseKeys(): Promise<{ anon: KeyStatus; service: KeyStatus }> {
+  if (keyCheck && Date.now() - keyCheck.at < 60_000) return keyCheck.result
+  const base = (process.env.SUPABASE_URL || '').replace(/\/$/, '')
+  const anonKey = process.env.SUPABASE_ANON_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY
+  const [anon, service] = await Promise.all([
+    base && anonKey ? probe(`${base}/auth/v1/settings`, { apikey: anonKey }) : ('missing' as KeyStatus),
+    base && serviceKey ? probe(`${base}/auth/v1/admin/users?per_page=1`, { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }) : ('missing' as KeyStatus),
+  ])
+  keyCheck = { at: Date.now(), result: { anon, service } }
+  return keyCheck.result
+}
