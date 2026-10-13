@@ -7,6 +7,7 @@ import SocialFeedScreen from "../screens/SocialFeedScreen";
 import FriendsScreen from "../screens/FriendsScreen";
 import ChallengesScreen from "../screens/ChallengesScreen";
 
+import { colors } from '../theme/colors';
 const Stack = createNativeStackNavigator<SocialStackParamList>();
 
 export default function SocialStackNavigator() {
@@ -14,7 +15,7 @@ export default function SocialStackNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#0d0f1a" },
+        contentStyle: { backgroundColor: colors.bg },
         animation: "slide_from_right",
       }}
     >

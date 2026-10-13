@@ -16,6 +16,7 @@ import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { RootStackParamList, FoodAnalysisResponse, DetectedFood } from '../types';
 
+import { colors } from '../theme/colors';
 type RouteProps = RouteProp<RootStackParamList, 'FoodResults'>;
 
 export default function FoodResultsScreen() {
@@ -81,10 +82,10 @@ export default function FoodResultsScreen() {
   };
 
   const getHealthScoreColor = (score: number) => {
-    if (score >= 80) return '#22c55e';
-    if (score >= 60) return '#eab308';
-    if (score >= 40) return '#f97316';
-    return '#ef4444';
+    if (score >= 80) return colors.success;
+    if (score >= 60) return colors.warning;
+    if (score >= 40) return colors.accent;
+    return colors.danger;
   };
 
   const getHealthScoreLabel = (score: number) => {
@@ -102,11 +103,11 @@ export default function FoodResultsScreen() {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Analysis Results</Text>
         <View style={styles.aiBadge}>
-          <Ionicons name="sparkles" size={14} color="#7c3aed" />
+          <Ionicons name="sparkles" size={14} color={colors.brand} />
           <Text style={styles.aiText}>AI</Text>
         </View>
       </View>
@@ -169,28 +170,28 @@ export default function FoodResultsScreen() {
           <View style={styles.nutritionGrid}>
             {/* Calories */}
             <View style={[styles.nutritionCard, styles.caloriesCard]}>
-              <Ionicons name="flame" size={24} color="#f97316" />
+              <Ionicons name="flame" size={24} color={colors.accent} />
               <Text style={styles.nutritionValue}>{totalNutrition.calories}</Text>
               <Text style={styles.nutritionLabel}>Calories</Text>
             </View>
 
             {/* Protein */}
             <View style={[styles.nutritionCard, styles.proteinCard]}>
-              <Ionicons name="fish" size={24} color="#22c55e" />
+              <Ionicons name="fish" size={24} color={colors.success} />
               <Text style={styles.nutritionValue}>{totalNutrition.protein}g</Text>
               <Text style={styles.nutritionLabel}>Protein</Text>
             </View>
 
             {/* Carbs */}
             <View style={[styles.nutritionCard, styles.carbsCard]}>
-              <Ionicons name="leaf" size={24} color="#eab308" />
+              <Ionicons name="leaf" size={24} color={colors.warning} />
               <Text style={styles.nutritionValue}>{totalNutrition.carbs}g</Text>
               <Text style={styles.nutritionLabel}>Carbs</Text>
             </View>
 
             {/* Fat */}
             <View style={[styles.nutritionCard, styles.fatCard]}>
-              <Ionicons name="water" size={24} color="#7c3aed" />
+              <Ionicons name="water" size={24} color={colors.brand} />
               <Text style={styles.nutritionValue}>{totalNutrition.fat}g</Text>
               <Text style={styles.nutritionLabel}>Fat</Text>
             </View>
@@ -230,7 +231,7 @@ export default function FoodResultsScreen() {
             <Text style={styles.sectionTitle}>AI Suggestions</Text>
             {suggestions.map((suggestion: string, index: number) => (
               <View key={index} style={styles.suggestionItem}>
-                <Ionicons name="bulb" size={20} color="#eab308" />
+                <Ionicons name="bulb" size={20} color={colors.warning} />
                 <Text style={styles.suggestionText}>{suggestion}</Text>
               </View>
             ))}
@@ -264,10 +265,10 @@ export default function FoodResultsScreen() {
           disabled={isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <>
-              <Ionicons name="checkmark-circle" size={24} color="#fff" />
+              <Ionicons name="checkmark-circle" size={24} color={colors.white} />
               <Text style={styles.saveButtonText}>Log This Meal</Text>
             </>
           )}
@@ -280,7 +281,7 @@ export default function FoodResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0f1a',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#161b2e',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 8,
@@ -298,12 +299,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.ink,
   },
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#8b5cf620',
+    backgroundColor: colors.brand + '20',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
   aiText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#7c3aed',
+    color: colors.brand,
   },
   scrollView: {
     flex: 1,
@@ -336,25 +337,25 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   confidenceText: {
-    color: '#22c55e',
+    color: colors.success,
     fontSize: 12,
     fontWeight: '600',
   },
   section: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#161b2e',
+    borderBottomColor: colors.surface,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.ink,
     marginBottom: 16,
   },
   foodItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -365,15 +366,15 @@ const styles = StyleSheet.create({
   foodName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#fff',
+    color: colors.ink,
   },
   foodPortion: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.muted,
     marginTop: 2,
   },
   foodConfidence: {
-    backgroundColor: '#22c55e20',
+    backgroundColor: colors.success + '20',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -381,12 +382,12 @@ const styles = StyleSheet.create({
   confidenceValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#22c55e',
+    color: colors.success,
   },
   healthScoreCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 20,
   },
@@ -394,7 +395,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#2d3561',
+    backgroundColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 20,
@@ -405,7 +406,7 @@ const styles = StyleSheet.create({
   },
   healthScoreMax: {
     fontSize: 12,
-    color: '#6b7280',
+    color: colors.faint,
   },
   healthScoreInfo: {
     flex: 1,
@@ -416,7 +417,7 @@ const styles = StyleSheet.create({
   },
   healthScoreDesc: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.muted,
     marginTop: 4,
   },
   nutritionGrid: {
@@ -426,48 +427,48 @@ const styles = StyleSheet.create({
   },
   nutritionCard: {
     width: '47%',
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   caloriesCard: {
     borderLeftWidth: 3,
-    borderLeftColor: '#f97316',
+    borderLeftColor: colors.accent,
   },
   proteinCard: {
     borderLeftWidth: 3,
-    borderLeftColor: '#22c55e',
+    borderLeftColor: colors.success,
   },
   carbsCard: {
     borderLeftWidth: 3,
-    borderLeftColor: '#eab308',
+    borderLeftColor: colors.warning,
   },
   fatCard: {
     borderLeftWidth: 3,
-    borderLeftColor: '#7c3aed',
+    borderLeftColor: colors.brand,
   },
   nutritionValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.ink,
     marginTop: 8,
   },
   nutritionLabel: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.muted,
     marginTop: 4,
   },
   micronutrients: {
     marginTop: 16,
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
   },
   microTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: colors.muted,
     marginBottom: 12,
   },
   microGrid: {
@@ -480,17 +481,17 @@ const styles = StyleSheet.create({
   microValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.ink,
   },
   microLabel: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.muted,
     marginTop: 4,
   },
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#eab30820',
+    backgroundColor: colors.warning + '20',
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -499,13 +500,13 @@ const styles = StyleSheet.create({
   suggestionText: {
     flex: 1,
     fontSize: 14,
-    color: '#fff',
+    color: colors.ink,
     lineHeight: 20,
   },
   alternativeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -516,17 +517,17 @@ const styles = StyleSheet.create({
   alternativeName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#22c55e',
+    color: colors.success,
   },
   alternativeReason: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.muted,
     marginTop: 2,
   },
   alternativeCalories: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.ink,
   },
   bottomBar: {
     position: 'absolute',
@@ -535,15 +536,15 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 16,
     paddingBottom: 32,
-    backgroundColor: '#0d0f1a',
+    backgroundColor: colors.bg,
     borderTopWidth: 1,
-    borderTopColor: '#161b2e',
+    borderTopColor: colors.surface,
   },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
     height: 56,
     borderRadius: 12,
     gap: 8,
@@ -551,6 +552,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.white,
   },
 });

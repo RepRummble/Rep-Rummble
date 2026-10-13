@@ -12,6 +12,7 @@ import {
   type HealthAvailability, type HealthDay, type HealthToday,
 } from '../services/healthService';
 
+import { colors } from '../theme/colors';
 const { width: SW } = Dimensions.get('window');
 
 // ════════════════════════════════════════════════════════════
@@ -65,17 +66,17 @@ const ENERGY_FORECAST = [
 
 const AI_INSIGHTS = [
   {
-    level: 'peak', icon: 'flash', color: '#22c55e',
+    level: 'peak', icon: 'flash', color: colors.success,
     title: 'Peak Window: 4–6 PM Today',
     body: 'Your HRV (+12% above baseline) and resting HR (56 bpm) indicate optimal neuromuscular readiness. Energy forecast hits 90/100 at 4 PM. Schedule high-intensity training now.',
   },
   {
-    level: 'insight', icon: 'moon', color: '#7c3aed',
+    level: 'insight', icon: 'moon', color: colors.brand,
     title: 'REM Surge Detected',
     body: '1.9h of REM last night — 18% above your 4-week average. Expect elevated focus, memory consolidation, and reaction time today. Ideal for skill-based training.',
   },
   {
-    level: 'bio', icon: 'leaf', color: '#3b82f6',
+    level: 'bio', icon: 'leaf', color: colors.info,
     title: 'Biological Age: 24 (You\'re 27)',
     body: 'VO₂ max (44 ml/kg/min), resting HR (56 bpm), and HRV patterns place your cardiovascular biological age 3 years below chronological. You\'re winning.',
   },
@@ -88,23 +89,23 @@ const CORRELATIONS = [
 ];
 
 const ANOMALIES = [
-  { icon: 'trending-up', color: '#22c55e', text: 'HRV 12% above your 30-day average — great recovery.' },
+  { icon: 'trending-up', color: colors.success, text: 'HRV 12% above your 30-day average — great recovery.' },
 ];
 
 const DEVICES = [
-  { name: 'Apple Watch',  icon: 'watch-outline',         color: '#f1f5f9', connected: false },
-  { name: 'Oura Ring',    icon: 'radio-button-on-outline',color: '#eab308', connected: false },
-  { name: 'WHOOP',        icon: 'pulse-outline',          color: '#ef4444', connected: false },
-  { name: 'Garmin',       icon: 'navigate-outline',       color: '#22c55e', connected: false },
-  { name: 'Fitbit',       icon: 'fitness-outline',        color: '#3b82f6', connected: false },
-  { name: 'Samsung',      icon: 'phone-portrait-outline', color: '#7c3aed', connected: false },
+  { name: 'Apple Watch',  icon: 'watch-outline',         color: colors.ink, connected: false },
+  { name: 'Oura Ring',    icon: 'radio-button-on-outline',color: colors.warning, connected: false },
+  { name: 'WHOOP',        icon: 'pulse-outline',          color: colors.danger, connected: false },
+  { name: 'Garmin',       icon: 'navigate-outline',       color: colors.success, connected: false },
+  { name: 'Fitbit',       icon: 'fitness-outline',        color: colors.info, connected: false },
+  { name: 'Samsung',      icon: 'phone-portrait-outline', color: colors.brand, connected: false },
 ];
 
 const sleepStages = (d: typeof SAMPLE) => [
-  { label: 'Deep',  hours: d.deepSleep,  color: '#3b82f6', desc: 'Physical repair, immune boost' },
-  { label: 'REM',   hours: d.remSleep,   color: '#7c3aed', desc: 'Memory consolidation, creativity' },
-  { label: 'Core',  hours: d.lightSleep, color: '#60a5fa', desc: 'Transition, recovery' },
-  { label: 'Awake', hours: d.awake,      color: '#2d3561', desc: 'Brief arousals' },
+  { label: 'Deep',  hours: d.deepSleep,  color: colors.info, desc: 'Physical repair, immune boost' },
+  { label: 'REM',   hours: d.remSleep,   color: colors.brand, desc: 'Memory consolidation, creativity' },
+  { label: 'Core',  hours: d.lightSleep, color: colors.info, desc: 'Transition, recovery' },
+  { label: 'Awake', hours: d.awake,      color: colors.border, desc: 'Brief arousals' },
 ];
 
 const MUSCLE_GROUPS = [
@@ -119,18 +120,18 @@ const MUSCLE_GROUPS = [
 // REUSABLE UI COMPONENTS
 // ════════════════════════════════════════════════════════════
 
-function SectionLabel({ label, icon, iconColor = '#7c3aed' }: { label: string; icon?: string; iconColor?: string }) {
+function SectionLabel({ label, icon, iconColor = colors.brand }: { label: string; icon?: string; iconColor?: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 22, marginBottom: 10 }}>
       {icon && <Ionicons name={icon as any} size={14} color={iconColor} />}
-      <Text style={{ fontSize: 11, fontWeight: '800', color: '#6b7280', letterSpacing: 1.2, textTransform: 'uppercase' }}>{label}</Text>
+      <Text style={{ fontSize: 11, fontWeight: '800', color: colors.faint, letterSpacing: 1.2, textTransform: 'uppercase' }}>{label}</Text>
     </View>
   );
 }
 
 function MiniCard({ children, style }: { children: React.ReactNode; style?: any }) {
   return (
-    <View style={[{ backgroundColor: '#161b2e', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#2d356150' }, style]}>
+    <View style={[{ backgroundColor: colors.surface, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: colors.border }, style]}>
       {children}
     </View>
   );
@@ -154,7 +155,7 @@ function BarChart({ data, color, barH = 80 }: {
               start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
               style={{ width: '100%', height: h, borderRadius: 5 }}
             />
-            <Text style={{ fontSize: 9, color: '#6b7280', marginTop: 5 }}>{d.label}</Text>
+            <Text style={{ fontSize: 9, color: colors.faint, marginTop: 5 }}>{d.label}</Text>
           </View>
         );
       })}
@@ -162,20 +163,20 @@ function BarChart({ data, color, barH = 80 }: {
   );
 }
 
-function ProgressRing({ score, size = 130, color = '#22c55e' }: { score: number; size?: number; color?: string }) {
+function ProgressRing({ score, size = 130, color = colors.success }: { score: number; size?: number; color?: string }) {
   const bw = Math.round(size * 0.075);
   const inner = size - bw * 2;
-  const lightColor = color === '#22c55e' ? '#86efac' : color === '#eab308' ? '#fde047' : '#fca5a5';
+  const lightColor = color === colors.success ? colors.successSoft : color === colors.warning ? colors.warning : colors.dangerSoft;
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ position: 'absolute', width: size * 1.4, height: size * 1.4, borderRadius: size * 0.7, backgroundColor: color, opacity: 0.07 }} />
+      <View style={{ position: 'absolute', width: size * 1.4, height: size * 1.4, borderRadius: size * 0.7, backgroundColor: color, opacity: 0 }} />
       <LinearGradient
         colors={[lightColor, color, color + '55']}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={{ width: size, height: size, borderRadius: size / 2, justifyContent: 'center', alignItems: 'center' }}
       >
-        <View style={{ width: inner, height: inner, borderRadius: inner / 2, backgroundColor: '#0d0f1a', justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: size * 0.3, fontWeight: '900', color: '#fff', lineHeight: size * 0.35 }}>{score}</Text>
+        <View style={{ width: inner, height: inner, borderRadius: inner / 2, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: size * 0.3, fontWeight: '900', color: colors.ink, lineHeight: size * 0.35 }}>{score}</Text>
           <Text style={{ fontSize: size * 0.085, color, fontWeight: '700', letterSpacing: 0.5 }}>/100</Text>
         </View>
       </LinearGradient>
@@ -196,7 +197,7 @@ function PulseHeart({ bpm }: { bpm: number }) {
   }, []);
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <Ionicons name="heart" size={36} color="#ef4444" />
+      <Ionicons name="heart" size={36} color={colors.danger} />
     </Animated.View>
   );
 }
@@ -208,10 +209,10 @@ function Gauge({ value, maxValue, color, label, unit }: {
   return (
     <View style={{ gap: 8 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={{ fontSize: 13, color: '#94a3b8', fontWeight: '500' }}>{label}</Text>
-        <Text style={{ fontSize: 13, color: '#fff', fontWeight: '700' }}>{value}<Text style={{ color, fontSize: 11 }}> {unit}</Text></Text>
+        <Text style={{ fontSize: 13, color: colors.muted, fontWeight: '500' }}>{label}</Text>
+        <Text style={{ fontSize: 13, color: colors.white, fontWeight: '700' }}>{value}<Text style={{ color, fontSize: 11 }}> {unit}</Text></Text>
       </View>
-      <View style={{ height: 6, backgroundColor: '#2d3561', borderRadius: 3, overflow: 'hidden' }}>
+      <View style={{ height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' }}>
         <LinearGradient
           colors={[color + 'cc', color]}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
@@ -336,7 +337,7 @@ export default function WearablesScreen() {
 
   return (
     <View style={s.root}>
-      <LinearGradient colors={['#120823', '#0d0f1a', '#080b14']} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         {/* ── Header ── */}
@@ -344,21 +345,21 @@ export default function WearablesScreen() {
           <View>
             <Text style={s.headerTitle}>Health Intelligence</Text>
             <View style={s.aiBadge}>
-              <Ionicons name="sparkles" size={10} color="#a78bfa" />
+              <Ionicons name="sparkles" size={10} color={colors.brand} />
               <Text style={s.aiBadgeText}>AI-Powered · Real-Time</Text>
             </View>
           </View>
           <TouchableOpacity onPress={handleSync} style={s.syncBtn} activeOpacity={0.8}>
-            <LinearGradient colors={['#7c3aed30', '#7c3aed10']} style={s.syncBtnGrad}>
-              <Ionicons name={syncing ? 'sync' : 'sync-outline'} size={18} color="#a78bfa" />
+            <LinearGradient colors={[colors.brand + '30', colors.brand + '10']} style={s.syncBtnGrad}>
+              <Ionicons name={syncing ? 'sync' : 'sync-outline'} size={18} color={colors.brand} />
               <Text style={s.syncBtnText}>{syncing ? 'Syncing…' : 'Sync'}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
 
         {/* ── Data source banner ── */}
-        <View style={[s.sourceBanner, { borderColor: isLive ? '#22c55e40' : '#eab30840' }]}>
-          <Ionicons name={isLive ? 'checkmark-circle' : 'information-circle'} size={16} color={isLive ? '#22c55e' : '#eab308'} />
+        <View style={[s.sourceBanner, { borderColor: isLive ? colors.success + '40' : colors.warning + '40' }]}>
+          <Ionicons name={isLive ? 'checkmark-circle' : 'information-circle'} size={16} color={isLive ? colors.success : colors.warning} />
           <Text style={s.sourceBannerText}>
             {isLive
               ? `Live from Apple Health${health.live!.sources.length ? ` · ${health.live!.sources.join(', ')}` : ''}${health.lastSync ? ` · ${fmtTime(health.lastSync)}` : ''}${health.serverSynced === false ? ' · server sync failed' : health.serverSynced === null ? ' · not saved (dev login)' : ' · saved'}. Scores and AI insights are samples.`
@@ -374,7 +375,7 @@ export default function WearablesScreen() {
             <TouchableOpacity key={i} onPress={() => setTab(i)} activeOpacity={0.8} style={[s.tabPill, { flex: 1 }, tab === i && s.tabPillActive]}>
               {tab === i && (
                 <View style={[StyleSheet.absoluteFill, { borderRadius: 20, overflow: 'hidden' }]}>
-                  <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={{ flex: 1 }} />
+                  <LinearGradient colors={[colors.brand, colors.tealMid]} style={{ flex: 1 }} />
                 </View>
               )}
               <Text style={[s.tabText, tab === i && s.tabTextActive]} numberOfLines={1}>{t}</Text>
@@ -391,19 +392,19 @@ export default function WearablesScreen() {
           {tab === 0 && (
             <>
               {/* Health Score Hero */}
-              <LinearGradient colors={['#2a0a4a', '#1a0533', '#0d0f1a']} style={s.scoreHero}>
+              <LinearGradient colors={[colors.surface, colors.surface]} style={s.scoreHero}>
                 <View style={s.glowOrb} />
                 <View style={s.scoreHeroRow}>
-                  <ProgressRing score={D.healthScore} size={140} color="#22c55e" />
+                  <ProgressRing score={D.healthScore} size={140} color={colors.success} />
                   <View style={s.scoreMetaCol}>
                     <Text style={s.scoreGreeting}>Good morning,</Text>
                     <Text style={s.scoreName}>{displayName} 👋</Text>
                     <View style={{ gap: 10, marginTop: 12 }}>
                       {[
-                        { icon: 'footsteps', color: '#22c55e', v: `${(D.steps / 1000).toFixed(1)}k`, l: 'Steps' },
-                        { icon: 'heart',     color: '#ef4444', v: `${D.heartRate}`,           l: 'BPM' },
-                        { icon: 'moon',      color: '#7c3aed', v: `${D.sleepTotal}h`,          l: 'Sleep' },
-                        { icon: 'pulse',     color: '#3b82f6', v: `${D.hrv}ms`,               l: 'HRV' },
+                        { icon: 'footsteps', color: colors.success, v: `${(D.steps / 1000).toFixed(1)}k`, l: 'Steps' },
+                        { icon: 'heart',     color: colors.danger, v: `${D.heartRate}`,           l: 'BPM' },
+                        { icon: 'moon',      color: colors.brand, v: `${D.sleepTotal}h`,          l: 'Sleep' },
+                        { icon: 'pulse',     color: colors.info, v: `${D.hrv}ms`,               l: 'HRV' },
                       ].map(m => (
                         <View key={m.l} style={s.scoreMeta}>
                           <Ionicons name={m.icon as any} size={13} color={m.color} />
@@ -416,11 +417,11 @@ export default function WearablesScreen() {
                 </View>
 
                 {/* Biological Age */}
-                <LinearGradient colors={['#3b82f620', '#3b82f605']} style={s.bioAge}>
-                  <Ionicons name="leaf" size={16} color="#3b82f6" />
+                <LinearGradient colors={[colors.info + '20', colors.info + '05']} style={s.bioAge}>
+                  <Ionicons name="leaf" size={16} color={colors.info} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.bioAgeTitle}>Biological Age</Text>
-                    <Text style={s.bioAgeBody}>Your body is functioning like a <Text style={{ color: '#22c55e', fontWeight: '800' }}>{D.biologicalAge}-year-old</Text> — {D.chronologicalAge - D.biologicalAge} years younger than your age.</Text>
+                    <Text style={s.bioAgeBody}>Your body is functioning like a <Text style={{ color: colors.success, fontWeight: '800' }}>{D.biologicalAge}-year-old</Text> — {D.chronologicalAge - D.biologicalAge} years younger than your age.</Text>
                   </View>
                   <View style={s.bioAgeBadge}>
                     <Text style={s.bioAgeBadgeText}>{D.biologicalAge}</Text>
@@ -440,9 +441,9 @@ export default function WearablesScreen() {
               ))}
 
               {/* AI Insights */}
-              <SectionLabel label="AI Health Insights" icon="sparkles" iconColor="#a78bfa" />
+              <SectionLabel label="AI Health Insights" icon="sparkles" iconColor={colors.brandBright} />
               {AI_INSIGHTS.map((ins, i) => (
-                <LinearGradient key={i} colors={[ins.color + '18', ins.color + '05', '#161b2e']} style={s.insightCard}>
+                <LinearGradient key={i} colors={[ins.color + '18', ins.color + '05', colors.surface]} style={s.insightCard}>
                   <View style={[s.insightIcon, { backgroundColor: ins.color + '25' }]}>
                     <Ionicons name={ins.icon as any} size={18} color={ins.color} />
                   </View>
@@ -454,24 +455,24 @@ export default function WearablesScreen() {
               ))}
 
               {/* Energy Forecast */}
-              <SectionLabel label="Energy Forecast — Today" icon="sunny-outline" iconColor="#eab308" />
+              <SectionLabel label="Energy Forecast — Today" icon="sunny-outline" iconColor={colors.warning} />
               <MiniCard>
                 <Text style={s.cardSubtitle}>Predicted energy levels based on sleep + circadian rhythm + HRV</Text>
                 <View style={{ marginTop: 12 }}>
                   <BarChart
                     data={ENERGY_FORECAST.map(e => ({ label: e.h, value: e.v }))}
-                    color="#eab308"
+                    color={colors.warning}
                     barH={70}
                   />
                 </View>
                 <View style={s.peakWindowRow}>
-                  <Ionicons name="flash" size={14} color="#22c55e" />
-                  <Text style={s.peakWindowText}>Peak window today: <Text style={{ color: '#22c55e', fontWeight: '700' }}>4 PM – 6 PM (90/100 energy)</Text></Text>
+                  <Ionicons name="flash" size={14} color={colors.success} />
+                  <Text style={s.peakWindowText}>Peak window today: <Text style={{ color: colors.success, fontWeight: '700' }}>4 PM – 6 PM (90/100 energy)</Text></Text>
                 </View>
               </MiniCard>
 
               {/* Smart Correlations */}
-              <SectionLabel label="Smart Correlations" icon="analytics-outline" iconColor="#3b82f6" />
+              <SectionLabel label="Smart Correlations" icon="analytics-outline" iconColor={colors.info} />
               <MiniCard>
                 <Text style={s.cardSubtitle}>Patterns detected from your last 90 days of data</Text>
                 {CORRELATIONS.map((c, i) => (
@@ -492,13 +493,13 @@ export default function WearablesScreen() {
               </MiniCard>
 
               {/* Circadian Window */}
-              <SectionLabel label="Circadian Optimizer" icon="time-outline" iconColor="#f97316" />
-              <LinearGradient colors={['#431407', '#1f0a03', '#161b2e']} style={s.circadian}>
+              <SectionLabel label="Circadian Optimizer" icon="time-outline" iconColor={colors.accent} />
+              <LinearGradient colors={[colors.dangerSoft, colors.dangerSoft, colors.surface]} style={s.circadian}>
                 {[
-                  { icon: 'barbell-outline', color: '#22c55e', time: '4:00 – 6:00 PM', label: 'Optimal Training Window' },
-                  { icon: 'restaurant-outline', color: '#eab308', time: '7am · 12pm · 6pm', label: 'Best Meal Times' },
-                  { icon: 'moon-outline', color: '#7c3aed', time: '10:30 PM', label: 'Ideal Sleep Time' },
-                  { icon: 'sunny-outline', color: '#f97316', time: '6:30 AM', label: 'Circadian Wake Time' },
+                  { icon: 'barbell-outline', color: colors.success, time: '4:00 – 6:00 PM', label: 'Optimal Training Window' },
+                  { icon: 'restaurant-outline', color: colors.warning, time: '7am · 12pm · 6pm', label: 'Best Meal Times' },
+                  { icon: 'moon-outline', color: colors.brand, time: '10:30 PM', label: 'Ideal Sleep Time' },
+                  { icon: 'sunny-outline', color: colors.accent, time: '6:30 AM', label: 'Circadian Wake Time' },
                 ].map((item, i) => (
                   <View key={i} style={s.circRow}>
                     <View style={[s.circIcon, { backgroundColor: item.color + '20' }]}>
@@ -513,7 +514,7 @@ export default function WearablesScreen() {
               </LinearGradient>
 
               {/* Connected Devices */}
-              <SectionLabel label="Connected Devices" icon="watch-outline" iconColor="#94a3b8" />
+              <SectionLabel label="Connected Devices" icon="watch-outline" iconColor={colors.muted} />
               <View style={s.devicesGrid}>
                 {DEVICES.map((d0) => ({ ...d0, connected: d0.name === 'Apple Watch' ? hasWatch : false })).map((dev, i) => (
                   <TouchableOpacity
@@ -529,10 +530,10 @@ export default function WearablesScreen() {
                     )}
                     activeOpacity={0.7}
                   >
-                    <LinearGradient colors={dev.connected ? [dev.color + '25', dev.color + '10'] : ['#161b2e', '#0d0f1a']} style={s.deviceCardInner}>
-                      <Ionicons name={dev.icon as any} size={24} color={dev.connected ? dev.color : '#4b5563'} />
-                      <Text style={[s.deviceName, { color: dev.connected ? '#f1f5f9' : '#4b5563' }]}>{dev.name}</Text>
-                      <View style={[s.deviceDot, { backgroundColor: dev.connected ? '#22c55e' : '#2d3561' }]} />
+                    <LinearGradient colors={dev.connected ? [dev.color + '25', dev.color + '10'] : [colors.surface, colors.bg]} style={s.deviceCardInner}>
+                      <Ionicons name={dev.icon as any} size={24} color={dev.connected ? dev.color : colors.borderStrong} />
+                      <Text style={[s.deviceName, { color: dev.connected ? colors.ink : colors.borderStrong }]}>{dev.name}</Text>
+                      <View style={[s.deviceDot, { backgroundColor: dev.connected ? colors.success : colors.border }]} />
                     </LinearGradient>
                   </TouchableOpacity>
                 ))}
@@ -546,7 +547,7 @@ export default function WearablesScreen() {
           {tab === 1 && (
             <>
               {/* Live Heart Rate Hero */}
-              <LinearGradient colors={['#450a0a', '#1f0a0a', '#0d0f1a']} style={s.hrHero}>
+              <LinearGradient colors={[colors.dangerSoft, colors.dangerSoft, colors.bg]} style={s.hrHero}>
                 <View style={s.hrHeroLeft}>
                   <PulseHeart bpm={D.heartRate} />
                   <Text style={s.hrLabel}>HEART RATE</Text>
@@ -559,33 +560,33 @@ export default function WearablesScreen() {
                 <View style={s.hrRange}>
                   <Text style={s.hrRangeText}>Daily range</Text>
                   <Text style={s.hrRangeVal}>
-                    <Text style={{ color: '#22c55e' }}>{D.minHR}</Text>
-                    <Text style={{ color: '#6b7280' }}> – </Text>
-                    <Text style={{ color: '#ef4444' }}>{D.maxHR}</Text>
-                    <Text style={{ color: '#6b7280' }}> bpm</Text>
+                    <Text style={{ color: colors.success }}>{D.minHR}</Text>
+                    <Text style={{ color: colors.faint }}> – </Text>
+                    <Text style={{ color: colors.danger }}>{D.maxHR}</Text>
+                    <Text style={{ color: colors.faint }}> bpm</Text>
                   </Text>
                 </View>
               </LinearGradient>
 
               {/* Hourly HR chart */}
-              <SectionLabel label="Hourly Heart Rate" icon="bar-chart-outline" iconColor="#ef4444" />
+              <SectionLabel label="Hourly Heart Rate" icon="bar-chart-outline" iconColor={colors.danger} />
               <MiniCard>
-                <BarChart data={HOURLY_HR.map(h => ({ label: h.h, value: h.v }))} color="#ef4444" barH={80} />
+                <BarChart data={HOURLY_HR.map(h => ({ label: h.h, value: h.v }))} color={colors.danger} barH={80} />
                 <Text style={s.cardSubtitle}>Dips during sleep (12a–6a), peaks during afternoon activity.</Text>
               </MiniCard>
 
               {/* HRV */}
-              <SectionLabel label="Heart Rate Variability" icon="pulse-outline" iconColor="#7c3aed" />
-              <LinearGradient colors={['#3b0d6b20', '#7c3aed05', '#161b2e']} style={s.hrvCard}>
+              <SectionLabel label="Heart Rate Variability" icon="pulse-outline" iconColor={colors.brand} />
+              <LinearGradient colors={[colors.tealMid + '20', colors.brand + '05', colors.surface]} style={s.hrvCard}>
                 <View style={s.hrvRow}>
-                  <ProgressRing score={D.hrv} size={90} color="#7c3aed" />
+                  <ProgressRing score={D.hrv} size={90} color={colors.brand} />
                   <View style={{ flex: 1, gap: 10 }}>
                     <View>
                       <Text style={s.hrvTitle}>HRV Score</Text>
-                      <Text style={s.hrvVal}>{D.hrv}<Text style={{ fontSize: 14, color: '#7c3aed' }}> ms</Text></Text>
+                      <Text style={s.hrvVal}>{D.hrv}<Text style={{ fontSize: 14, color: colors.brand }}> ms</Text></Text>
                     </View>
                     <View style={s.hrvBadge}>
-                      <Ionicons name="trending-up" size={12} color="#22c55e" />
+                      <Ionicons name="trending-up" size={12} color={colors.success} />
                       <Text style={s.hrvBadgeText}>+{D.hrv - D.hrvBaseline}ms above your 30-day avg</Text>
                     </View>
                     <Text style={s.cardSubtitle}>Higher HRV = better recovery capacity & stress tolerance.</Text>
@@ -594,23 +595,23 @@ export default function WearablesScreen() {
               </LinearGradient>
 
               {/* Vitals Grid */}
-              <SectionLabel label="Other Vitals" icon="body-outline" iconColor="#22c55e" />
+              <SectionLabel label="Other Vitals" icon="body-outline" iconColor={colors.success} />
               <View style={s.vitalsGrid}>
-                <VitalTile icon="water-outline"     color="#3b82f6" label="Blood Oxygen"    value={D.spo2}          unit="%"     sublabel="Normal 95–100%" />
-                <VitalTile icon="leaf-outline"      color="#22c55e" label="Breathing Rate"  value={D.breathingRate} unit="br/m"  sublabel="Resting range" />
-                <VitalTile icon="thermometer-outline" color="#f97316" label="Body Temp"     value={D.bodyTemp}      unit="°C"    sublabel="Normal 36.1–37.2" />
-                <VitalTile icon="cloudy-outline"    color="#eab308" label="Stress Index"    value={D.stressIndex}   unit="/100"  sublabel="Low stress" />
-                <VitalTile icon="fitness-outline"   color="#7c3aed" label="VO₂ Max"         value={D.vo2max}        unit="ml/kg" sublabel="Above average" />
-                <VitalTile icon="flame-outline"     color="#ef4444" label="Active Calories" value={D.activeCalories} unit="kcal" sublabel={`of ${D.caloriesGoal} goal`} />
+                <VitalTile icon="water-outline"     color={colors.info} label="Blood Oxygen"    value={D.spo2}          unit="%"     sublabel="Normal 95–100%" />
+                <VitalTile icon="leaf-outline"      color={colors.success} label="Breathing Rate"  value={D.breathingRate} unit="br/m"  sublabel="Resting range" />
+                <VitalTile icon="thermometer-outline" color={colors.accent} label="Body Temp"     value={D.bodyTemp}      unit="°C"    sublabel="Normal 36.1–37.2" />
+                <VitalTile icon="cloudy-outline"    color={colors.warning} label="Stress Index"    value={D.stressIndex}   unit="/100"  sublabel="Low stress" />
+                <VitalTile icon="fitness-outline"   color={colors.brand} label="VO₂ Max"         value={D.vo2max}        unit="ml/kg" sublabel="Above average" />
+                <VitalTile icon="flame-outline"     color={colors.danger} label="Active Calories" value={D.activeCalories} unit="kcal" sublabel={`of ${D.caloriesGoal} goal`} />
               </View>
 
               {/* Activity Gauges */}
-              <SectionLabel label="Activity Today" icon="barbell-outline" iconColor="#22c55e" />
+              <SectionLabel label="Activity Today" icon="barbell-outline" iconColor={colors.success} />
               <MiniCard style={{ gap: 16 }}>
-                <Gauge value={D.steps}          maxValue={D.stepsGoal}     color="#22c55e" label="Steps"              unit={`/ ${(D.stepsGoal/1000).toFixed(0)}k`} />
-                <Gauge value={D.exerciseMinutes} maxValue={60}             color="#7c3aed" label="Exercise Minutes"   unit="/ 60 min" />
-                <Gauge value={D.standHours}     maxValue={12}              color="#3b82f6" label="Stand Hours"        unit="/ 12 hrs" />
-                <Gauge value={Math.round(D.distance * 10) / 10} maxValue={10} color="#f97316" label="Distance"       unit={`/ 10 km`} />
+                <Gauge value={D.steps}          maxValue={D.stepsGoal}     color={colors.success} label="Steps"              unit={`/ ${(D.stepsGoal/1000).toFixed(0)}k`} />
+                <Gauge value={D.exerciseMinutes} maxValue={60}             color={colors.brand} label="Exercise Minutes"   unit="/ 60 min" />
+                <Gauge value={D.standHours}     maxValue={12}              color={colors.info} label="Stand Hours"        unit="/ 12 hrs" />
+                <Gauge value={Math.round(D.distance * 10) / 10} maxValue={10} color={colors.accent} label="Distance"       unit={`/ 10 km`} />
               </MiniCard>
             </>
           )}
@@ -621,21 +622,21 @@ export default function WearablesScreen() {
           {tab === 2 && (
             <>
               {/* Sleep Score Hero */}
-              <LinearGradient colors={['#1e0545', '#120823', '#0d0f1a']} style={s.sleepHero}>
+              <LinearGradient colors={[colors.surface, colors.surface]} style={s.sleepHero}>
                 <View style={s.glowOrb} />
-                <ProgressRing score={D.sleepScore} size={130} color="#7c3aed" />
+                <ProgressRing score={D.sleepScore} size={130} color={colors.brand} />
                 <View style={s.sleepHeroInfo}>
                   <Text style={s.sleepTotal}>{D.sleepTotal}<Text style={s.sleepTotalUnit}>h</Text></Text>
                   <Text style={s.sleepTotalLabel}>Total Sleep</Text>
                   <View style={s.sleepTimeRow}>
-                    <Ionicons name="bed-outline" size={14} color="#6b7280" />
+                    <Ionicons name="bed-outline" size={14} color={colors.faint} />
                     <Text style={s.sleepTimeText}>{D.sleepStart} → {D.sleepEnd}</Text>
                   </View>
                 </View>
               </LinearGradient>
 
               {/* Sleep Stages Architecture */}
-              <SectionLabel label="Sleep Architecture" icon="layers-outline" iconColor="#7c3aed" />
+              <SectionLabel label="Sleep Architecture" icon="layers-outline" iconColor={colors.brand} />
               <MiniCard>
                 <Text style={s.cardSubtitle}>Last night's sleep composition</Text>
                 {/* Segmented bar */}
@@ -659,25 +660,25 @@ export default function WearablesScreen() {
               </MiniCard>
 
               {/* 7-Day Sleep Trend */}
-              <SectionLabel label="7-Day Sleep Trend" icon="calendar-outline" iconColor="#7c3aed" />
+              <SectionLabel label="7-Day Sleep Trend" icon="calendar-outline" iconColor={colors.brand} />
               <MiniCard>
-                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.sleep }))} color="#7c3aed" barH={72} />
+                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.sleep }))} color={colors.brand} barH={72} />
                 <View style={s.weekAvgRow}>
                   <Text style={s.cardSubtitle}>Weekly avg:</Text>
-                  <Text style={{ color: '#7c3aed', fontWeight: '700', fontSize: 14 }}>
+                  <Text style={{ color: colors.brand, fontWeight: '700', fontSize: 14 }}>
                     {(WEEKLY.reduce((s, w) => s + w.sleep, 0) / WEEKLY.length).toFixed(1)}h
                   </Text>
                 </View>
               </MiniCard>
 
               {/* Sleep Quality Metrics */}
-              <SectionLabel label="Sleep Quality Metrics" icon="checkmark-circle-outline" iconColor="#22c55e" />
+              <SectionLabel label="Sleep Quality Metrics" icon="checkmark-circle-outline" iconColor={colors.success} />
               <View style={s.sleepMetricsGrid}>
                 {[
-                  { icon: 'moon', color: '#7c3aed', label: 'Sleep Latency', value: '8 min', note: 'Excellent (<20 min)' },
-                  { icon: 'sync', color: '#3b82f6', label: 'Sleep Cycles', value: '5 cycles', note: '90-min cycles' },
-                  { icon: 'checkmark-circle', color: '#22c55e', label: 'Consistency', value: '87%', note: 'vs last 7 days' },
-                  { icon: 'thermometer', color: '#f97316', label: 'Sleep Temp', value: '18.5°C', note: 'Optimal range' },
+                  { icon: 'moon', color: colors.brand, label: 'Sleep Latency', value: '8 min', note: 'Excellent (<20 min)' },
+                  { icon: 'sync', color: colors.info, label: 'Sleep Cycles', value: '5 cycles', note: '90-min cycles' },
+                  { icon: 'checkmark-circle', color: colors.success, label: 'Consistency', value: '87%', note: 'vs last 7 days' },
+                  { icon: 'thermometer', color: colors.accent, label: 'Sleep Temp', value: '18.5°C', note: 'Optimal range' },
                 ].map((m, i) => (
                   <LinearGradient key={i} colors={[m.color + '18', m.color + '05']} style={s.sleepMetricCard}>
                     <Ionicons name={m.icon as any} size={20} color={m.color} />
@@ -689,9 +690,9 @@ export default function WearablesScreen() {
               </View>
 
               {/* AI Sleep Tip */}
-              <LinearGradient colors={['#1e0545', '#120823']} style={s.sleepTip}>
+              <LinearGradient colors={[colors.surface, colors.surface]} style={s.sleepTip}>
                 <View style={s.sleepTipIcon}>
-                  <Ionicons name="sparkles" size={18} color="#a78bfa" />
+                  <Ionicons name="sparkles" size={18} color={colors.brand} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.sleepTipTitle}>AI Sleep Coach</Text>
@@ -708,10 +709,10 @@ export default function WearablesScreen() {
             <>
               {/* Recovery Hero */}
               {(() => {
-                const color = D.recoveryScore >= 75 ? '#22c55e' : D.recoveryScore >= 50 ? '#eab308' : '#ef4444';
+                const color = D.recoveryScore >= 75 ? colors.success : D.recoveryScore >= 50 ? colors.warning : colors.danger;
                 const label = D.recoveryScore >= 75 ? 'OPTIMAL' : D.recoveryScore >= 50 ? 'MODERATE' : 'LOW';
                 return (
-                  <LinearGradient colors={[color + '18', '#0d0f1a']} style={s.recoveryHero}>
+                  <LinearGradient colors={[color + '18', colors.bg]} style={s.recoveryHero}>
                     <View style={s.glowOrb} />
                     <ProgressRing score={D.recoveryScore} size={140} color={color} />
                     <View style={s.recoveryMeta}>
@@ -737,33 +738,33 @@ export default function WearablesScreen() {
               })()}
 
               {/* HRV vs Baseline */}
-              <SectionLabel label="HRV vs Baseline" icon="pulse-outline" iconColor="#7c3aed" />
+              <SectionLabel label="HRV vs Baseline" icon="pulse-outline" iconColor={colors.brand} />
               <MiniCard>
                 <View style={s.hrvCompareRow}>
                   <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 36, fontWeight: '900', color: '#7c3aed' }}>{D.hrv}</Text>
-                    <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>TODAY</Text>
+                    <Text style={{ fontSize: 36, fontWeight: '900', color: colors.brand }}>{D.hrv}</Text>
+                    <Text style={{ fontSize: 11, color: colors.faint, marginTop: 2 }}>TODAY</Text>
                   </View>
                   <View style={{ alignItems: 'center', gap: 4 }}>
                     <View style={s.hrvArrow}>
-                      <Ionicons name="trending-up" size={20} color="#22c55e" />
-                      <Text style={{ color: '#22c55e', fontWeight: '700', fontSize: 13 }}>+{D.hrv - D.hrvBaseline}ms</Text>
+                      <Ionicons name="trending-up" size={20} color={colors.success} />
+                      <Text style={{ color: colors.success, fontWeight: '700', fontSize: 13 }}>+{D.hrv - D.hrvBaseline}ms</Text>
                     </View>
-                    <Text style={{ fontSize: 11, color: '#6b7280' }}>vs baseline</Text>
+                    <Text style={{ fontSize: 11, color: colors.faint }}>vs baseline</Text>
                   </View>
                   <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 36, fontWeight: '900', color: '#94a3b8' }}>{D.hrvBaseline}</Text>
-                    <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>30-DAY AVG</Text>
+                    <Text style={{ fontSize: 36, fontWeight: '900', color: colors.muted }}>{D.hrvBaseline}</Text>
+                    <Text style={{ fontSize: 11, color: colors.faint, marginTop: 2 }}>30-DAY AVG</Text>
                   </View>
                 </View>
                 <Text style={[s.cardSubtitle, { marginTop: 10 }]}>HRV above baseline signals strong parasympathetic activity and recovery readiness.</Text>
               </MiniCard>
 
               {/* Muscle Recovery Map */}
-              <SectionLabel label="Muscle Recovery Map" icon="body-outline" iconColor="#f97316" />
+              <SectionLabel label="Muscle Recovery Map" icon="body-outline" iconColor={colors.accent} />
               <MiniCard style={{ gap: 12 }}>
                 {MUSCLE_GROUPS.map((m, i) => {
-                  const color = m.soreness <= 25 ? '#22c55e' : m.soreness <= 55 ? '#eab308' : '#ef4444';
+                  const color = m.soreness <= 25 ? colors.success : m.soreness <= 55 ? colors.warning : colors.danger;
                   const label = m.soreness <= 25 ? 'Ready' : m.soreness <= 55 ? 'Moderate' : 'Sore';
                   return (
                     <View key={i}>
@@ -786,26 +787,26 @@ export default function WearablesScreen() {
               </MiniCard>
 
               {/* Training Periodization */}
-              <SectionLabel label="This Week's Training Plan" icon="calendar-outline" iconColor="#eab308" />
+              <SectionLabel label="This Week's Training Plan" icon="calendar-outline" iconColor={colors.warning} />
               <MiniCard>
                 {[
-                  { day: 'Sun',  done: true,  type: 'Rest',         icon: 'bed-outline',    color: '#6b7280' },
-                  { day: 'Mon',  done: true,  type: 'Strength',     icon: 'barbell-outline', color: '#7c3aed' },
-                  { day: 'Tue',  done: true,  type: 'Cardio',       icon: 'bicycle-outline', color: '#22c55e' },
-                  { day: 'Wed',  done: true,  type: 'Strength',     icon: 'barbell-outline', color: '#7c3aed' },
-                  { day: 'Thu',  done: true,  type: 'HIIT',         icon: 'flame-outline',   color: '#ef4444' },
-                  { day: 'Fri',  done: true,  type: 'Active Rest',  icon: 'walk-outline',    color: '#94a3b8' },
-                  { day: 'Sat',  done: false, type: 'Peak Day 🔥',  icon: 'trophy-outline',  color: '#eab308' },
+                  { day: 'Sun',  done: true,  type: 'Rest',         icon: 'bed-outline',    color: colors.faint },
+                  { day: 'Mon',  done: true,  type: 'Strength',     icon: 'barbell-outline', color: colors.brand },
+                  { day: 'Tue',  done: true,  type: 'Cardio',       icon: 'bicycle-outline', color: colors.success },
+                  { day: 'Wed',  done: true,  type: 'Strength',     icon: 'barbell-outline', color: colors.brand },
+                  { day: 'Thu',  done: true,  type: 'HIIT',         icon: 'flame-outline',   color: colors.danger },
+                  { day: 'Fri',  done: true,  type: 'Active Rest',  icon: 'walk-outline',    color: colors.muted },
+                  { day: 'Sat',  done: false, type: 'Peak Day 🔥',  icon: 'trophy-outline',  color: colors.warning },
                 ].map((d, i) => (
-                  <View key={i} style={[s.planRow, i < 6 && { borderBottomWidth: 1, borderBottomColor: '#2d356120', paddingBottom: 10, marginBottom: 10 }]}>
-                    <Text style={[s.planDay, d.done && { color: '#4b5563' }]}>{d.day}</Text>
+                  <View key={i} style={[s.planRow, i < 6 && { borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 10, marginBottom: 10 }]}>
+                    <Text style={[s.planDay, d.done && { color: colors.faint }]}>{d.day}</Text>
                     <View style={[s.planIcon, { backgroundColor: d.color + '20', opacity: d.done ? 0.5 : 1 }]}>
                       <Ionicons name={d.icon as any} size={14} color={d.color} />
                     </View>
-                    <Text style={[s.planType, d.done && { color: '#4b5563' }]}>{d.type}</Text>
+                    <Text style={[s.planType, d.done && { color: colors.faint }]}>{d.type}</Text>
                     {d.done
-                      ? <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
-                      : <LinearGradient colors={['#eab308', '#92400e']} style={s.todayPill}><Text style={s.todayPillText}>TODAY</Text></LinearGradient>
+                      ? <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                      : <LinearGradient colors={[colors.warning, colors.warning]} style={s.todayPill}><Text style={s.todayPillText}>TODAY</Text></LinearGradient>
                     }
                   </View>
                 ))}
@@ -819,14 +820,14 @@ export default function WearablesScreen() {
           {tab === 4 && (
             <>
               {/* Week comparison */}
-              <LinearGradient colors={['#1e3a5f20', '#161b2e']} style={s.weekCompCard}>
+              <LinearGradient colors={[colors.infoSoft + '20', colors.surface]} style={s.weekCompCard}>
                 <Text style={s.weekCompTitle}>Week vs Last Week</Text>
                 <View style={s.weekCompGrid}>
                   {[
-                    { label: 'Avg Steps',   curr: 10234, prev: 8890,  color: '#22c55e', icon: 'footsteps-outline' },
-                    { label: 'Avg Sleep',   curr: 7.4,   prev: 7.1,   color: '#7c3aed', icon: 'moon-outline' },
-                    { label: 'Avg Calories',curr: 2190,  prev: 2050,  color: '#f97316', icon: 'flame-outline' },
-                    { label: 'Avg HR',      curr: 68,    prev: 71,    color: '#ef4444', icon: 'heart-outline' },
+                    { label: 'Avg Steps',   curr: 10234, prev: 8890,  color: colors.success, icon: 'footsteps-outline' },
+                    { label: 'Avg Sleep',   curr: 7.4,   prev: 7.1,   color: colors.brand, icon: 'moon-outline' },
+                    { label: 'Avg Calories',curr: 2190,  prev: 2050,  color: colors.accent, icon: 'flame-outline' },
+                    { label: 'Avg HR',      curr: 68,    prev: 71,    color: colors.danger, icon: 'heart-outline' },
                   ].map((item, i) => {
                     const delta = typeof item.curr === 'number' && typeof item.prev === 'number'
                       ? (((item.curr - item.prev) / item.prev) * 100).toFixed(1)
@@ -840,8 +841,8 @@ export default function WearablesScreen() {
                         <Text style={s.weekCompLabel}>{item.label}</Text>
                         <Text style={[s.weekCompVal, { color: item.color }]}>{item.curr}</Text>
                         <View style={s.weekCompDelta}>
-                          <Ionicons name={up ? 'trending-up' : 'trending-down'} size={12} color={good ? '#22c55e' : '#ef4444'} />
-                          <Text style={[s.weekCompDeltaText, { color: good ? '#22c55e' : '#ef4444' }]}>{up ? '+' : ''}{delta}%</Text>
+                          <Ionicons name={up ? 'trending-up' : 'trending-down'} size={12} color={good ? colors.success : colors.danger} />
+                          <Text style={[s.weekCompDeltaText, { color: good ? colors.success : colors.danger }]}>{up ? '+' : ''}{delta}%</Text>
                         </View>
                       </View>
                     );
@@ -849,43 +850,43 @@ export default function WearablesScreen() {
                 </View>
               </LinearGradient>
 
-              <SectionLabel label="Daily Steps — 7 Days" icon="footsteps-outline" iconColor="#22c55e" />
+              <SectionLabel label="Daily Steps — 7 Days" icon="footsteps-outline" iconColor={colors.success} />
               <MiniCard>
-                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.steps }))} color="#22c55e" barH={90} />
+                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.steps }))} color={colors.success} barH={90} />
                 <Text style={s.cardSubtitle}>Goal: {(D.stepsGoal / 1000).toFixed(0)}k steps/day · Best: {(() => { const b = WEEKLY.reduce((a, w) => (w.steps > a.steps ? w : a), WEEKLY[0]); return `${b.day} (${(b.steps / 1000).toFixed(1)}k)`; })()}</Text>
               </MiniCard>
 
-              <SectionLabel label="Calorie Burn — 7 Days" icon="flame-outline" iconColor="#f97316" />
+              <SectionLabel label="Calorie Burn — 7 Days" icon="flame-outline" iconColor={colors.accent} />
               <MiniCard>
-                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.cal }))} color="#f97316" barH={90} />
+                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.cal }))} color={colors.accent} barH={90} />
                 <Text style={s.cardSubtitle}>Avg: {Math.round(WEEKLY.reduce((s, w) => s + w.cal, 0) / WEEKLY.length)} kcal/day</Text>
               </MiniCard>
 
-              <SectionLabel label="Sleep Duration — 7 Days" icon="moon-outline" iconColor="#7c3aed" />
+              <SectionLabel label="Sleep Duration — 7 Days" icon="moon-outline" iconColor={colors.brand} />
               <MiniCard>
-                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.sleep }))} color="#7c3aed" barH={90} />
+                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.sleep }))} color={colors.brand} barH={90} />
                 <Text style={s.cardSubtitle}>Optimal target: 8h · Avg: {(WEEKLY.reduce((s, w) => s + w.sleep, 0) / WEEKLY.length).toFixed(1)}h</Text>
               </MiniCard>
 
-              <SectionLabel label="Resting Heart Rate — 7 Days" icon="heart-outline" iconColor="#ef4444" />
+              <SectionLabel label="Resting Heart Rate — 7 Days" icon="heart-outline" iconColor={colors.danger} />
               <MiniCard>
-                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.hr }))} color="#ef4444" barH={90} />
+                <BarChart data={WEEKLY.map(w => ({ label: w.day, value: w.hr }))} color={colors.danger} barH={90} />
                 <Text style={s.cardSubtitle}>Lower is better · Best: {Math.min(...WEEKLY.map(w => w.hr).filter(Boolean)) || '—'} bpm</Text>
               </MiniCard>
 
               {/* Monthly Health Score Trend */}
-              <SectionLabel label="Health Score Trajectory" icon="trending-up-outline" iconColor="#22c55e" />
+              <SectionLabel label="Health Score Trajectory" icon="trending-up-outline" iconColor={colors.success} />
               <MiniCard>
                 <BarChart
                   data={[
                     { label: 'Jan', value: 71 }, { label: 'Feb', value: 73 }, { label: 'Mar', value: 76 },
                     { label: 'Apr', value: 74 }, { label: 'May', value: 80 }, { label: 'Jun', value: 87 },
                   ]}
-                  color="#22c55e"
+                  color={colors.success}
                   barH={90}
                 />
                 <View style={s.peakWindowRow}>
-                  <Ionicons name="trending-up" size={14} color="#22c55e" />
+                  <Ionicons name="trending-up" size={14} color={colors.success} />
                   <Text style={s.peakWindowText}>+16 points in 6 months — You're trending toward your healthiest self.</Text>
                 </View>
               </MiniCard>
@@ -906,134 +907,134 @@ const s = StyleSheet.create({
   sourceBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginHorizontal: 16, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 8,
-    borderRadius: 12, borderWidth: 1, backgroundColor: '#0f1424',
+    borderRadius: 12, borderWidth: 1, backgroundColor: colors.infoSoft,
   },
-  sourceBannerText: { flex: 1, color: '#94a3b8', fontSize: 12, lineHeight: 16 },
+  sourceBannerText: { flex: 1, color: colors.muted, fontSize: 12, lineHeight: 16 },
   root: { flex: 1 },
   safe: { flex: 1 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+  headerTitle: { fontSize: 22, fontWeight: '900', color: colors.ink, letterSpacing: -0.5 },
   aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  aiBadgeText: { fontSize: 11, color: '#a78bfa', fontWeight: '600' },
-  syncBtn: { borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#7c3aed40' },
+  aiBadgeText: { fontSize: 11, color: colors.brand, fontWeight: '600' },
+  syncBtn: { borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: colors.brand + '40' },
   syncBtnGrad: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9 },
-  syncBtnText: { color: '#a78bfa', fontWeight: '700', fontSize: 13 },
+  syncBtnText: { color: colors.brand, fontWeight: '700', fontSize: 13 },
 
   tabRow: { marginBottom: 12, gap: 6 },
-  tabPill: { paddingHorizontal: 4, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: '#2d356150', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  tabPillActive: { borderColor: '#7c3aed' },
-  tabText: { fontSize: 12, color: '#6b7280', fontWeight: '600', textAlign: 'center' },
-  tabTextActive: { color: '#fff', fontWeight: '700' },
+  tabPill: { paddingHorizontal: 4, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  tabPillActive: { borderColor: colors.brand },
+  tabText: { fontSize: 12, color: colors.faint, fontWeight: '600', textAlign: 'center' },
+  tabTextActive: { color: colors.white, fontWeight: '700' },
 
   // Overview
-  scoreHero: { borderRadius: 22, padding: 20, marginBottom: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#3b1e6b50' },
-  glowOrb: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: '#7c3aed', opacity: 0.10, top: -60, right: -40 },
+  scoreHero: { borderRadius: 22, padding: 20, marginBottom: 12, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
+  glowOrb: { display: 'none', position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.brand, opacity: 0.10, top: -60, right: -40 },
   scoreHeroRow: { flexDirection: 'row', alignItems: 'center', gap: 20, marginBottom: 16 },
-  scoreGreeting: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
-  scoreName: { fontSize: 17, fontWeight: '800', color: '#fff', marginTop: 2 },
+  scoreGreeting: { fontSize: 13, color: colors.muted, fontWeight: '500' },
+  scoreName: { fontSize: 17, fontWeight: '800', color: colors.ink, marginTop: 2 },
   scoreMetaCol: { flex: 1 },
   scoreMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   scoreMetaV: { fontSize: 14, fontWeight: '800', minWidth: 46 },
-  scoreMetaL: { fontSize: 12, color: '#6b7280' },
-  bioAge: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#3b82f630' },
-  bioAgeTitle: { fontSize: 12, color: '#94a3b8', fontWeight: '600', marginBottom: 2 },
-  bioAgeBody: { fontSize: 13, color: '#cbd5e1', lineHeight: 18 },
-  bioAgeBadge: { alignItems: 'center', backgroundColor: '#3b82f625', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: '#3b82f640' },
-  bioAgeBadgeText: { fontSize: 22, fontWeight: '900', color: '#3b82f6' },
-  bioAgeBadgeSub: { fontSize: 9, color: '#6b7280', fontWeight: '700', letterSpacing: 0.5 },
+  scoreMetaL: { fontSize: 12, color: colors.faint },
+  bioAge: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.info + '30' },
+  bioAgeTitle: { fontSize: 12, color: colors.muted, fontWeight: '600', marginBottom: 2 },
+  bioAgeBody: { fontSize: 13, color: colors.inkSoft, lineHeight: 18 },
+  bioAgeBadge: { alignItems: 'center', backgroundColor: colors.info + '25', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.info + '40' },
+  bioAgeBadgeText: { fontSize: 22, fontWeight: '900', color: colors.info },
+  bioAgeBadgeSub: { fontSize: 9, color: colors.faint, fontWeight: '700', letterSpacing: 0.5 },
 
-  anomaly: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, padding: 13, marginBottom: 4, borderWidth: 1, borderColor: '#22c55e30' },
+  anomaly: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, padding: 13, marginBottom: 4, borderWidth: 1, borderColor: colors.success + '30' },
   anomalyIcon: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  anomalyText: { flex: 1, fontSize: 13, color: '#cbd5e1', lineHeight: 18 },
+  anomalyText: { flex: 1, fontSize: 13, color: colors.inkSoft, lineHeight: 18 },
 
-  insightCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 16, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#2d356140' },
+  insightCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 16, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
   insightIcon: { width: 38, height: 38, borderRadius: 11, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   insightTitle: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
-  insightBody: { fontSize: 13, color: '#94a3b8', lineHeight: 19 },
+  insightBody: { fontSize: 13, color: colors.muted, lineHeight: 19 },
 
-  peakWindowRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, backgroundColor: '#22c55e10', borderRadius: 10, padding: 10 },
-  peakWindowText: { flex: 1, fontSize: 12, color: '#94a3b8', lineHeight: 18 },
+  peakWindowRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, backgroundColor: colors.success + '10', borderRadius: 10, padding: 10 },
+  peakWindowText: { flex: 1, fontSize: 12, color: colors.muted, lineHeight: 18 },
 
   corrRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   corrEmoji: { fontSize: 24 },
-  corrPattern: { fontSize: 13, fontWeight: '700', color: '#f1f5f9', marginBottom: 2 },
-  corrResult: { fontSize: 12, color: '#94a3b8' },
-  confBadge: { backgroundColor: '#22c55e20', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#22c55e40' },
-  confText: { fontSize: 11, fontWeight: '800', color: '#22c55e' },
+  corrPattern: { fontSize: 13, fontWeight: '700', color: colors.ink, marginBottom: 2 },
+  corrResult: { fontSize: 12, color: colors.muted },
+  confBadge: { backgroundColor: colors.success + '20', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: colors.success + '40' },
+  confText: { fontSize: 11, fontWeight: '800', color: colors.success },
 
-  circadian: { borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#f9731630', gap: 0 },
-  circRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#ffffff08' },
+  circadian: { borderRadius: 18, padding: 16, borderWidth: 1, borderColor: colors.accent + '30', gap: 0 },
+  circRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.surfaceAlt },
   circIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  circLabel: { fontSize: 11, color: '#94a3b8', fontWeight: '500', marginBottom: 2 },
+  circLabel: { fontSize: 11, color: colors.muted, fontWeight: '500', marginBottom: 2 },
   circTime: { fontSize: 14, fontWeight: '700' },
 
   devicesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  deviceCard: { width: (SW - 52) / 3, height: 108, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#2d356150' },
+  deviceCard: { width: (SW - 52) / 3, height: 108, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
   deviceCardInner: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 7 },
   deviceName: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
   deviceDot: { width: 6, height: 6, borderRadius: 3 },
 
-  cardSubtitle: { fontSize: 12, color: '#6b7280', lineHeight: 18, marginTop: 2 },
-  divider: { height: 1, backgroundColor: '#2d356130' },
+  cardSubtitle: { fontSize: 12, color: colors.faint, lineHeight: 18, marginTop: 2 },
+  divider: { height: 1, backgroundColor: colors.border },
   weekAvgRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
 
   // Vitals
-  hrHero: { borderRadius: 22, padding: 20, marginBottom: 4, overflow: 'hidden', borderWidth: 1, borderColor: '#ef444430' },
+  hrHero: { borderRadius: 22, padding: 20, marginBottom: 4, overflow: 'hidden', borderWidth: 1, borderColor: colors.danger + '30' },
   hrHeroLeft: { alignItems: 'center', gap: 6, marginBottom: 8 },
-  hrLabel: { fontSize: 10, fontWeight: '800', color: '#ef4444', letterSpacing: 1.5 },
+  hrLabel: { fontSize: 10, fontWeight: '800', color: colors.danger, letterSpacing: 1.5 },
   hrHeroRight: { alignItems: 'center', marginBottom: 12 },
-  hrBig: { fontSize: 72, fontWeight: '900', color: '#fff', lineHeight: 80 },
-  hrUnit: { fontSize: 16, color: '#ef4444', fontWeight: '700', marginTop: -8 },
-  hrSub: { fontSize: 13, color: '#6b7280', marginTop: 4 },
-  hrRange: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#00000030', borderRadius: 10, padding: 10 },
-  hrRangeText: { fontSize: 12, color: '#6b7280' },
+  hrBig: { fontSize: 72, fontWeight: '900', color: colors.ink, lineHeight: 80 },
+  hrUnit: { fontSize: 16, color: colors.danger, fontWeight: '700', marginTop: -8 },
+  hrSub: { fontSize: 13, color: colors.faint, marginTop: 4 },
+  hrRange: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.black + '30', borderRadius: 10, padding: 10 },
+  hrRangeText: { fontSize: 12, color: colors.faint },
   hrRangeVal: { fontSize: 13, fontWeight: '600' },
 
-  hrvCard: { borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#7c3aed30' },
+  hrvCard: { borderRadius: 18, padding: 16, borderWidth: 1, borderColor: colors.brand + '30' },
   hrvRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  hrvTitle: { fontSize: 13, color: '#94a3b8', fontWeight: '600' },
-  hrvVal: { fontSize: 36, fontWeight: '900', color: '#7c3aed', marginTop: 2 },
-  hrvBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#22c55e15', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#22c55e30' },
-  hrvBadgeText: { fontSize: 12, color: '#22c55e', fontWeight: '600' },
+  hrvTitle: { fontSize: 13, color: colors.muted, fontWeight: '600' },
+  hrvVal: { fontSize: 36, fontWeight: '900', color: colors.brand, marginTop: 2 },
+  hrvBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.success + '15', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: colors.success + '30' },
+  hrvBadgeText: { fontSize: 12, color: colors.success, fontWeight: '600' },
 
   vitalsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 
   // Sleep
-  sleepHero: { borderRadius: 22, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 20, marginBottom: 4, overflow: 'hidden', borderWidth: 1, borderColor: '#7c3aed30' },
+  sleepHero: { borderRadius: 22, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 20, marginBottom: 4, overflow: 'hidden', borderWidth: 1, borderColor: colors.brand + '30' },
   sleepHeroInfo: { flex: 1 },
-  sleepTotal: { fontSize: 52, fontWeight: '900', color: '#fff', lineHeight: 60 },
-  sleepTotalUnit: { fontSize: 22, color: '#7c3aed' },
-  sleepTotalLabel: { fontSize: 13, color: '#94a3b8', marginTop: 4 },
+  sleepTotal: { fontSize: 52, fontWeight: '900', color: colors.ink, lineHeight: 60 },
+  sleepTotalUnit: { fontSize: 22, color: colors.brand },
+  sleepTotalLabel: { fontSize: 13, color: colors.muted, marginTop: 4 },
   sleepTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
-  sleepTimeText: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
+  sleepTimeText: { fontSize: 12, color: colors.faint, fontWeight: '500' },
 
   stagesBar: { flexDirection: 'row', height: 20, borderRadius: 10, overflow: 'hidden', marginVertical: 14 },
   stageSegment: { height: '100%' },
-  stageLegendRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#2d356120' },
+  stageLegendRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border },
   stageDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
-  stageLegendLabel: { fontSize: 13, fontWeight: '700', color: '#f1f5f9' },
-  stageLegendDesc: { fontSize: 11, color: '#6b7280', marginTop: 1 },
+  stageLegendLabel: { fontSize: 13, fontWeight: '700', color: colors.ink },
+  stageLegendDesc: { fontSize: 11, color: colors.faint, marginTop: 1 },
   stageLegendHours: { fontSize: 14, fontWeight: '800' },
-  stageLegendPct: { fontSize: 12, color: '#6b7280', width: 36, textAlign: 'right' },
+  stageLegendPct: { fontSize: 12, color: colors.faint, width: 36, textAlign: 'right' },
 
   sleepMetricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  sleepMetricCard: { width: (SW - 42) / 2, borderRadius: 16, padding: 14, gap: 6, borderWidth: 1, borderColor: '#2d356140' },
-  sleepMetricLabel: { fontSize: 11, color: '#94a3b8', fontWeight: '600' },
+  sleepMetricCard: { width: (SW - 42) / 2, borderRadius: 16, padding: 14, gap: 6, borderWidth: 1, borderColor: colors.border },
+  sleepMetricLabel: { fontSize: 11, color: colors.muted, fontWeight: '600' },
   sleepMetricValue: { fontSize: 20, fontWeight: '900' },
-  sleepMetricNote: { fontSize: 10, color: '#6b7280' },
+  sleepMetricNote: { fontSize: 10, color: colors.faint },
 
-  sleepTip: { borderRadius: 18, padding: 16, flexDirection: 'row', gap: 12, borderWidth: 1, borderColor: '#7c3aed30', marginTop: 4 },
-  sleepTipIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#7c3aed25', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  sleepTipTitle: { fontSize: 13, fontWeight: '700', color: '#a78bfa', marginBottom: 4 },
-  sleepTipBody: { fontSize: 13, color: '#94a3b8', lineHeight: 19 },
+  sleepTip: { borderRadius: 18, padding: 16, flexDirection: 'row', gap: 12, borderWidth: 1, borderColor: colors.brand + '30', marginTop: 4 },
+  sleepTipIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.brand + '25', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  sleepTipTitle: { fontSize: 13, fontWeight: '700', color: colors.brand, marginBottom: 4 },
+  sleepTipBody: { fontSize: 13, color: colors.muted, lineHeight: 19 },
 
   // Recovery
-  recoveryHero: { borderRadius: 22, padding: 20, alignItems: 'center', gap: 16, marginBottom: 4, overflow: 'hidden', borderWidth: 1, borderColor: '#22c55e20' },
+  recoveryHero: { borderRadius: 22, padding: 20, alignItems: 'center', gap: 16, marginBottom: 4, overflow: 'hidden', borderWidth: 1, borderColor: colors.success + '20' },
   recoveryMeta: { alignItems: 'center', gap: 8 },
   recoveryLabelBadge: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 6 },
   recoveryLabelText: { fontSize: 12, fontWeight: '800', letterSpacing: 1 },
-  recoveryDesc: { fontSize: 14, color: '#cbd5e1', textAlign: 'center', lineHeight: 20 },
+  recoveryDesc: { fontSize: 14, color: colors.inkSoft, textAlign: 'center', lineHeight: 20 },
   recoveryRecoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   recoveryReco: { fontSize: 13, fontWeight: '700' },
 
@@ -1041,27 +1042,27 @@ const s = StyleSheet.create({
   hrvArrow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
   muscleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  muscleGroup: { fontSize: 14, fontWeight: '700', color: '#f1f5f9', width: 46 },
-  muscleDate: { fontSize: 11, color: '#6b7280', width: 72 },
+  muscleGroup: { fontSize: 14, fontWeight: '700', color: colors.ink, width: 46 },
+  muscleDate: { fontSize: 11, color: colors.faint, width: 72 },
   muscleBarWrap: { flex: 1 },
-  muscleBarTrack: { height: 6, backgroundColor: '#2d3561', borderRadius: 3, overflow: 'hidden' },
+  muscleBarTrack: { height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
   muscleBarFill: { height: '100%', borderRadius: 3 },
   muscleBadge: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1 },
   muscleBadgeText: { fontSize: 11, fontWeight: '700' },
 
   planRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  planDay: { fontSize: 13, fontWeight: '700', color: '#f1f5f9', width: 30 },
+  planDay: { fontSize: 13, fontWeight: '700', color: colors.ink, width: 30 },
   planIcon: { width: 28, height: 28, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  planType: { flex: 1, fontSize: 14, fontWeight: '600', color: '#f1f5f9' },
+  planType: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.ink },
   todayPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  todayPillText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  todayPillText: { fontSize: 10, fontWeight: '800', color: colors.white },
 
   // Trends
-  weekCompCard: { borderRadius: 18, padding: 16, marginBottom: 4, borderWidth: 1, borderColor: '#3b82f630' },
-  weekCompTitle: { fontSize: 13, fontWeight: '800', color: '#94a3b8', marginBottom: 14, letterSpacing: 0.5 },
+  weekCompCard: { borderRadius: 18, padding: 16, marginBottom: 4, borderWidth: 1, borderColor: colors.info + '30' },
+  weekCompTitle: { fontSize: 13, fontWeight: '800', color: colors.muted, marginBottom: 14, letterSpacing: 0.5 },
   weekCompGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   weekCompItem: { width: (SW - 64) / 2, gap: 4 },
-  weekCompLabel: { fontSize: 11, color: '#6b7280' },
+  weekCompLabel: { fontSize: 11, color: colors.faint },
   weekCompVal: { fontSize: 22, fontWeight: '900' },
   weekCompDelta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   weekCompDeltaText: { fontSize: 12, fontWeight: '700' },
@@ -1069,10 +1070,10 @@ const s = StyleSheet.create({
 
 // Vital tile style (separate to keep organized)
 const vitS = StyleSheet.create({
-  tile: { width: (SW - 42) / 2, borderRadius: 16, padding: 14, gap: 6, borderWidth: 1, borderColor: '#2d356140' },
+  tile: { width: (SW - 42) / 2, borderRadius: 16, padding: 14, gap: 6, borderWidth: 1, borderColor: colors.border },
   tileIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  tileLabel: { fontSize: 11, color: '#94a3b8', fontWeight: '600' },
+  tileLabel: { fontSize: 11, color: colors.muted, fontWeight: '600' },
   tileValue: { fontSize: 22, fontWeight: '900' },
-  tileUnit: { fontSize: 12, color: '#94a3b8', fontWeight: '400' },
-  tileSub: { fontSize: 10, color: '#6b7280' },
+  tileUnit: { fontSize: 12, color: colors.muted, fontWeight: '400' },
+  tileSub: { fontSize: 10, color: colors.faint },
 });

@@ -19,6 +19,7 @@ import { RootStackParamList, FoodAnalysisResponse } from '../types';
 import { useSubscription } from '../context/SubscriptionContext';
 import { PaywallModal } from './SubscriptionScreen';
 
+import { colors } from '../theme/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodScanner'>;
 
 export default function FoodScannerScreen() {
@@ -138,7 +139,7 @@ export default function FoodScannerScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.permissionContainer}>
-          <Ionicons name="camera-outline" size={64} color="#6b7280" />
+          <Ionicons name="camera-outline" size={64} color={colors.faint} />
           <Text style={styles.permissionTitle}>Camera Access Required</Text>
           <Text style={styles.permissionText}>
             We need camera access to scan your meals and analyze nutrition.
@@ -165,7 +166,7 @@ export default function FoodScannerScreen() {
           <Image source={{ uri: capturedImage }} style={styles.previewImage} />
           <View style={styles.analyzingOverlay}>
             <View style={styles.analyzingContent}>
-              <ActivityIndicator size="large" color="#22c55e" />
+              <ActivityIndicator size="large" color={colors.brand} />
               <Text style={styles.analyzingTitle}>Analyzing Your Meal</Text>
               <Text style={styles.analyzingText}>
                 AI is identifying foods and calculating nutrition...
@@ -202,11 +203,11 @@ export default function FoodScannerScreen() {
         {/* Top Controls */}
         <View style={styles.topControls}>
           <TouchableOpacity style={styles.controlButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="close" size={28} color="#fff" />
+            <Ionicons name="close" size={28} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Scan Meal</Text>
           <TouchableOpacity style={styles.controlButton} onPress={toggleFlash}>
-            <Ionicons name={flashMode === 'on' ? 'flash' : 'flash-off'} size={24} color="#fff" />
+            <Ionicons name={flashMode === 'on' ? 'flash' : 'flash-off'} size={24} color={colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -222,18 +223,18 @@ export default function FoodScannerScreen() {
         {/* Bottom Controls */}
         <View style={styles.bottomControls}>
           <TouchableOpacity style={styles.sideButton} onPress={handlePickImage}>
-            <Ionicons name="images" size={28} color="#fff" />
+            <Ionicons name="images" size={28} color={colors.white} />
             <Text style={styles.sideButtonText}>Gallery</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.captureButton} onPress={handleCapture} disabled={isCapturing}>
             <View style={styles.captureButtonInner}>
               {isCapturing
-                ? <ActivityIndicator size="small" color="#22c55e" />
-                : <Ionicons name="scan" size={32} color="#22c55e" />}
+                ? <ActivityIndicator size="small" color={colors.brand} />
+                : <Ionicons name="scan" size={32} color={colors.success} />}
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.sideButton} onPress={toggleCamera}>
-            <Ionicons name="camera-reverse" size={28} color="#fff" />
+            <Ionicons name="camera-reverse" size={28} color={colors.white} />
             <Text style={styles.sideButtonText}>Flip</Text>
           </TouchableOpacity>
         </View>
@@ -241,11 +242,11 @@ export default function FoodScannerScreen() {
         {/* Tips */}
         <View style={styles.tips}>
           <View style={styles.tip}>
-            <Ionicons name="sunny-outline" size={16} color="#94a3b8" />
+            <Ionicons name="sunny-outline" size={16} color={colors.muted} />
             <Text style={styles.tipText}>Good lighting helps</Text>
           </View>
           <View style={styles.tip}>
-            <Ionicons name="resize-outline" size={16} color="#94a3b8" />
+            <Ionicons name="resize-outline" size={16} color={colors.muted} />
             <Text style={styles.tipText}>Show all items clearly</Text>
           </View>
         </View>
@@ -257,7 +258,7 @@ export default function FoodScannerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
   },
   camera: {
     flex: 1,
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.white,
   },
   scanFrame: {
     flex: 1,
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: '#22c55e',
+    borderColor: colors.brand,
     borderWidth: 3,
     top: 0,
     left: 0,
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
   },
   frameHint: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 14,
     textAlign: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -350,7 +351,7 @@ const styles = StyleSheet.create({
     width: 70,
   },
   sideButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 12,
     marginTop: 4,
   },
@@ -358,12 +359,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     padding: 4,
   },
   captureButtonInner: {
     flex: 1,
-    backgroundColor: '#0d0f1a',
+    backgroundColor: colors.brand,
     borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tipText: {
-    color: '#94a3b8',
+    color: 'rgba(255,255,255,0.8)',
     fontSize: 12,
   },
   // Permission styles
@@ -389,30 +390,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
-    backgroundColor: '#0d0f1a',
+    backgroundColor: colors.bg,
   },
   permissionTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.ink,
     marginTop: 24,
     marginBottom: 12,
   },
   permissionText: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: colors.muted,
     textAlign: 'center',
     marginBottom: 32,
   },
   permissionButton: {
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
     marginBottom: 16,
   },
   permissionButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -420,13 +421,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backButtonAltText: {
-    color: '#94a3b8',
+    color: colors.muted,
     fontSize: 16,
   },
   // Analyzing styles
   analyzingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
   },
   previewImage: {
     flex: 1,
@@ -445,19 +446,19 @@ const styles = StyleSheet.create({
   analyzingTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.white,
     marginTop: 24,
     marginBottom: 8,
   },
   analyzingText: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
   },
   scanningIndicator: {
     width: 200,
     height: 4,
-    backgroundColor: '#2d3561',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     borderRadius: 2,
     marginTop: 32,
     overflow: 'hidden',
@@ -465,7 +466,7 @@ const styles = StyleSheet.create({
   scanLine: {
     width: '30%',
     height: '100%',
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
     borderRadius: 2,
   },
 });

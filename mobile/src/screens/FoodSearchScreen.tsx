@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { searchNutrition, saveMeal } from '../services/foodService';
 import { NutritionSearchItem } from '../types';
 
+import { colors } from '../theme/colors';
 const scaleNutrients = (nutrients: NutritionSearchItem['nutrientsPer100g'], grams: number) => {
   const factor = grams / 100;
   const round = (value: number) => Math.round(value * 10) / 10;
@@ -119,7 +120,7 @@ export default function FoodSearchScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Food Search</Text>
       </View>
@@ -127,7 +128,7 @@ export default function FoodSearchScreen() {
       <View style={styles.searchRow}>
         <TextInput
           placeholder="Search foods (e.g. chicken, rice)"
-          placeholderTextColor="#6b7280"
+          placeholderTextColor={colors.faint}
           value={query}
           onChangeText={setQuery}
           style={styles.searchInput}
@@ -135,13 +136,13 @@ export default function FoodSearchScreen() {
           returnKeyType="search"
         />
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Ionicons name="search" size={20} color="#080b14" />
+          <Ionicons name="search" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#22c55e" />
+          <ActivityIndicator size="large" color={colors.brand} />
           <Text style={styles.loadingText}>Searching USDA database...</Text>
         </View>
       ) : (
@@ -206,10 +207,10 @@ export default function FoodSearchScreen() {
           )}
           <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
             {isSaving ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.white} />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Ionicons name="checkmark-circle" size={20} color={colors.white} />
                 <Text style={styles.saveButtonText}>Log Meal</Text>
               </>
             )}
@@ -223,7 +224,7 @@ export default function FoodSearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0f1a',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#161b2e',
+    borderBottomColor: colors.surface,
   },
   backButton: {
     padding: 8,
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.ink,
   },
   searchRow: {
     flexDirection: 'row',
@@ -250,17 +251,17 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    color: '#fff',
+    color: colors.ink,
   },
   searchButton: {
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -271,37 +272,37 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    color: '#94a3b8',
+    color: colors.muted,
   },
   list: {
     paddingHorizontal: 16,
     paddingBottom: 220,
   },
   emptyText: {
-    color: '#6b7280',
+    color: colors.faint,
     textAlign: 'center',
     marginTop: 20,
   },
   resultCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#22c55e',
+    borderLeftColor: colors.success,
   },
   resultInfo: {
     flex: 1,
   },
   resultName: {
-    color: '#fff',
+    color: colors.ink,
     fontSize: 16,
     fontWeight: '600',
   },
   resultBrand: {
-    color: '#94a3b8',
+    color: colors.muted,
     fontSize: 12,
     marginTop: 4,
   },
@@ -309,12 +310,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   macroText: {
-    color: '#fff',
+    color: colors.ink,
     fontSize: 14,
     fontWeight: '600',
   },
   macroSub: {
-    color: '#94a3b8',
+    color: colors.muted,
     fontSize: 11,
     marginTop: 2,
   },
@@ -323,23 +324,23 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#080b14',
+    backgroundColor: colors.bg,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#161b2e',
+    borderTopColor: colors.surface,
   },
   detailHeader: {
     marginBottom: 12,
   },
   detailTitle: {
-    color: '#fff',
+    color: colors.ink,
     fontSize: 18,
     fontWeight: '600',
   },
   detailSub: {
-    color: '#94a3b8',
+    color: colors.muted,
     marginTop: 4,
   },
   quantityRow: {
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   label: {
-    color: '#94a3b8',
+    color: colors.muted,
     fontSize: 13,
   },
   quantityInput: {
@@ -357,8 +358,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 10,
-    backgroundColor: '#161b2e',
-    color: '#fff',
+    backgroundColor: colors.surface,
+    color: colors.ink,
     textAlign: 'center',
   },
   mealTypeRow: {
@@ -371,18 +372,18 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
   },
   mealTypeActive: {
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
   },
   mealTypeText: {
-    color: '#94a3b8',
+    color: colors.muted,
     fontSize: 12,
     textTransform: 'capitalize',
   },
   mealTypeTextActive: {
-    color: '#080b14',
+    color: colors.white,
     fontWeight: '600',
   },
   nutritionGrid: {
@@ -393,18 +394,18 @@ const styles = StyleSheet.create({
   },
   nutritionItem: {
     width: '47%',
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
   },
   nutritionValue: {
-    color: '#fff',
+    color: colors.ink,
     fontSize: 18,
     fontWeight: '600',
   },
   nutritionLabel: {
-    color: '#94a3b8',
+    color: colors.muted,
     fontSize: 12,
     marginTop: 4,
   },
@@ -412,13 +413,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
     borderRadius: 12,
     paddingVertical: 12,
     gap: 8,
   },
   saveButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
   },

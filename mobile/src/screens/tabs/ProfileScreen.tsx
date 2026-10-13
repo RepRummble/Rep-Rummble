@@ -21,6 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
 
+import { colors, heroGradient } from '../../theme/colors';
 const SW = Dimensions.get('window').width;
 
 type ModalKey = 'editProfile' | 'notifications' | 'fitnessGoals' | 'privacy' | 'help' | 'about' | null;
@@ -31,7 +32,7 @@ function SheetHeader({ title, onClose }: { title: string; onClose: () => void })
   return (
     <View style={sh.header}>
       <TouchableOpacity onPress={onClose} style={sh.closeBtn}>
-        <Ionicons name="chevron-down" size={22} color="#94a3b8" />
+        <Ionicons name="chevron-down" size={22} color={colors.muted} />
       </TouchableOpacity>
       <Text style={sh.title}>{title}</Text>
       <View style={{ width: 40 }} />
@@ -44,7 +45,7 @@ function SectionLabel({ label }: { label: string }) {
 }
 
 function SettingRow({
-  icon, iconColor = '#7c3aed', label, sublabel, onPress, right,
+  icon, iconColor = colors.brand, label, sublabel, onPress, right,
 }: {
   icon: string; iconColor?: string; label: string; sublabel?: string;
   onPress?: () => void; right?: React.ReactNode;
@@ -58,7 +59,7 @@ function SettingRow({
         <Text style={sh.rowLabel}>{label}</Text>
         {sublabel ? <Text style={sh.rowSub}>{sublabel}</Text> : null}
       </View>
-      {right ?? <Ionicons name="chevron-forward" size={16} color="#2d3561" />}
+      {right ?? <Ionicons name="chevron-forward" size={16} color={colors.border} />}
     </TouchableOpacity>
   );
 }
@@ -69,11 +70,11 @@ function Stepper({ value, onChange, min = 0, max = 99999, step = 1 }: {
   return (
     <View style={sh.stepper}>
       <TouchableOpacity style={sh.stepBtn} onPress={() => onChange(Math.max(min, value - step))}>
-        <Ionicons name="remove" size={18} color="#fff" />
+        <Ionicons name="remove" size={18} color={colors.white} />
       </TouchableOpacity>
       <Text style={sh.stepValue}>{value}</Text>
       <TouchableOpacity style={sh.stepBtn} onPress={() => onChange(Math.min(max, value + step))}>
-        <Ionicons name="add" size={18} color="#fff" />
+        <Ionicons name="add" size={18} color={colors.white} />
       </TouchableOpacity>
     </View>
   );
@@ -85,7 +86,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
     <TouchableOpacity style={sh.faqItem} onPress={() => setOpen(o => !o)} activeOpacity={0.8}>
       <View style={sh.faqRow}>
         <Text style={sh.faqQ}>{q}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color="#6b7280" />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.faint} />
       </View>
       {open && <Text style={sh.faqA}>{a}</Text>}
     </TouchableOpacity>
@@ -95,20 +96,20 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 // ─── Main ProfileScreen ──────────────────────────────────────────────────────
 
 const MENU: { icon: string; label: string; color: string; key: ModalKey }[] = [
-  { icon: 'person-outline',           label: 'Edit Profile',       color: '#7c3aed', key: 'editProfile'   },
-  { icon: 'notifications-outline',    label: 'Notifications',      color: '#f97316', key: 'notifications' },
-  { icon: 'fitness-outline',          label: 'Fitness Goals',      color: '#22c55e', key: 'fitnessGoals'  },
-  { icon: 'shield-checkmark-outline', label: 'Privacy & Security', color: '#3b82f6', key: 'privacy'       },
-  { icon: 'help-circle-outline',      label: 'Help & Support',     color: '#eab308', key: 'help'          },
-  { icon: 'information-circle-outline', label: 'About',            color: '#94a3b8', key: 'about'         },
+  { icon: 'person-outline',           label: 'Edit Profile',       color: colors.brand, key: 'editProfile'   },
+  { icon: 'notifications-outline',    label: 'Notifications',      color: colors.accent, key: 'notifications' },
+  { icon: 'fitness-outline',          label: 'Fitness Goals',      color: colors.success, key: 'fitnessGoals'  },
+  { icon: 'shield-checkmark-outline', label: 'Privacy & Security', color: colors.info, key: 'privacy'       },
+  { icon: 'help-circle-outline',      label: 'Help & Support',     color: colors.warning, key: 'help'          },
+  { icon: 'information-circle-outline', label: 'About',            color: colors.muted, key: 'about'         },
 ];
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const PLAN_META = {
-  free:    { label: 'Free',    color: '#94a3b8', icon: 'person-outline',   gradient: ['#161b2e', '#0d0f1a'] as const },
-  pro:     { label: 'Pro',     color: '#a78bfa', icon: 'sparkles',         gradient: ['#3b0d6b', '#1e0545'] as const },
-  premium: { label: 'Premium', color: '#fbbf24', icon: 'ribbon',           gradient: ['#3a2000', '#1a0e00'] as const },
+  free:    { label: 'Free',    color: colors.muted, icon: 'person-outline',   gradient: [colors.surface, colors.surface] as const },
+  pro:     { label: 'Pro',     color: colors.brand, icon: 'sparkles',         gradient: [colors.brandSoft, colors.brandSoft] as const },
+  premium: { label: 'Premium', color: colors.warning, icon: 'ribbon',           gradient: [colors.warningSoft, colors.warningSoft] as const },
 };
 
 export default function ProfileScreen() {
@@ -177,7 +178,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#0d0518', '#0d0f1a', '#080b14']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -186,23 +187,23 @@ export default function ProfileScreen() {
           <View style={styles.topBar}>
             <Text style={styles.screenTitle}>Profile</Text>
             <TouchableOpacity onPress={() => open('editProfile')} style={styles.editBtn} activeOpacity={0.8}>
-              <Ionicons name="pencil-outline" size={15} color="#a78bfa" />
+              <Ionicons name="pencil-outline" size={15} color={colors.brand} />
             </TouchableOpacity>
           </View>
 
           {/* ── Hero card ── */}
-          <LinearGradient colors={['#2a0954', '#1a0533', '#0f0a1e']} style={styles.heroCard}>
+          <LinearGradient colors={heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCard}>
             <View style={styles.heroGlow} />
 
             {/* Avatar + Name side by side */}
             <View style={styles.heroTop}>
-              <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={styles.avatar}>
+              <LinearGradient colors={[colors.white + '30', colors.white + '18']} style={styles.avatar}>
                 <Text style={styles.avatarText}>{initial}</Text>
               </LinearGradient>
               <View style={styles.heroInfo}>
                 <View style={styles.nameRow}>
                   <Text style={styles.displayName}>{displayName}</Text>
-                  <LinearGradient colors={['#eab308', '#b45309']} style={styles.levelPill}>
+                  <LinearGradient colors={[colors.warning, colors.warning]} style={styles.levelPill}>
                     <Text style={styles.levelPillText}>Lvl {user?.level || 1}</Text>
                   </LinearGradient>
                 </View>
@@ -221,7 +222,7 @@ export default function ProfileScreen() {
                 <Text style={styles.xpCount}>{currentLevelXp} / {xpPerLevel} XP</Text>
               </View>
               <View style={styles.xpTrack}>
-                <LinearGradient colors={['#7c3aed', '#a78bfa']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.xpFill, { width: `${Math.max(levelProgress, 4)}%` }]} />
+                <LinearGradient colors={['#5eead4', colors.white]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.xpFill, { width: `${Math.max(levelProgress, 4)}%` }]} />
               </View>
               <Text style={styles.xpHint}>{xpPerLevel - currentLevelXp} XP to Level {(user?.level || 1) + 1}</Text>
             </View>
@@ -229,13 +230,13 @@ export default function ProfileScreen() {
             {/* 4-stat row inside hero */}
             <View style={styles.heroStats}>
               {[
-                { icon: 'star',    color: '#eab308', value: user?.xp || 0,    label: 'Total XP'  },
-                { icon: 'flame',   color: '#f97316', value: user?.streak || 0, label: 'Streak'    },
-                { icon: 'barbell', color: '#a78bfa', value: 47,                label: 'Workouts'  },
-                { icon: 'trophy',  color: '#22c55e', value: user?.level || 1,  label: 'Level'     },
+                { icon: 'star',    color: colors.warning, value: user?.xp || 0,    label: 'Total XP'  },
+                { icon: 'flame',   color: colors.accent, value: user?.streak || 0, label: 'Streak'    },
+                { icon: 'barbell', color: colors.brand, value: 47,                label: 'Workouts'  },
+                { icon: 'trophy',  color: colors.success, value: user?.level || 1,  label: 'Level'     },
               ].map((st, i) => (
                 <View key={i} style={styles.heroStat}>
-                  <Text style={[styles.heroStatVal, { color: st.color }]}>{st.value}</Text>
+                  <Text style={styles.heroStatVal}>{st.value}</Text>
                   <Text style={styles.heroStatLabel}>{st.label}</Text>
                 </View>
               ))}
@@ -285,7 +286,7 @@ export default function ProfileScreen() {
                     <Ionicons name={item.icon as any} size={18} color={item.color} />
                   </View>
                   <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#3d4a6b" />
+                  <Ionicons name="chevron-forward" size={16} color={colors.faint} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -302,7 +303,7 @@ export default function ProfileScreen() {
                     <Ionicons name={item.icon as any} size={18} color={item.color} />
                   </View>
                   <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#3d4a6b" />
+                  <Ionicons name="chevron-forward" size={16} color={colors.faint} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -310,7 +311,7 @@ export default function ProfileScreen() {
 
           {/* ── Logout ── */}
           <TouchableOpacity onPress={handleLogout} activeOpacity={0.8} style={styles.logoutBtn}>
-            <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+            <Ionicons name="log-out-outline" size={18} color={colors.danger} />
             <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
 
@@ -322,13 +323,13 @@ export default function ProfileScreen() {
           MODAL: Edit Profile
       ════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'editProfile'} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-        <LinearGradient colors={['#1a0533', '#0d0f1a']} style={sh.sheet}>
+        <LinearGradient colors={[colors.surface, colors.surface]} style={sh.sheet}>
           <SheetHeader title="Edit Profile" onClose={close} />
           <ScrollView contentContainerStyle={sh.body}>
 
             {/* Avatar preview */}
             <View style={sh.avatarCenter}>
-              <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={sh.bigAvatar}>
+              <LinearGradient colors={[colors.brand, colors.tealMid]} style={sh.bigAvatar}>
                 <Text style={sh.bigAvatarText}>{(editName || displayName)[0].toUpperCase()}</Text>
               </LinearGradient>
             </View>
@@ -339,7 +340,7 @@ export default function ProfileScreen() {
               value={editName}
               onChangeText={setEditName}
               placeholder="Your name"
-              placeholderTextColor="#6b7280"
+              placeholderTextColor={colors.faint}
               maxLength={30}
             />
 
@@ -357,12 +358,12 @@ export default function ProfileScreen() {
               </View>
               <View style={sh.infoRow}>
                 <Text style={sh.infoLabel}>User ID</Text>
-                <Text style={[sh.infoValue, { fontSize: 11, color: '#6b7280' }]}>{user?._id}</Text>
+                <Text style={[sh.infoValue, { fontSize: 11, color: colors.faint }]}>{user?._id}</Text>
               </View>
             </View>
 
             <TouchableOpacity onPress={saveProfile} activeOpacity={0.85}>
-              <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={sh.saveBtn}>
+              <LinearGradient colors={[colors.brand, colors.tealMid]} style={sh.saveBtn}>
                 <Text style={sh.saveBtnText}>Save Changes</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -374,51 +375,51 @@ export default function ProfileScreen() {
           MODAL: Notifications
       ════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'notifications'} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-        <LinearGradient colors={['#1a0533', '#0d0f1a']} style={sh.sheet}>
+        <LinearGradient colors={[colors.surface, colors.surface]} style={sh.sheet}>
           <SheetHeader title="Notifications" onClose={close} />
           <ScrollView contentContainerStyle={sh.body}>
 
             <SectionLabel label="GENERAL" />
             <View style={sh.card}>
               <SettingRow
-                icon="notifications" iconColor="#f97316" label="Push Notifications" sublabel="Allow all app notifications"
-                right={<Switch value={notif.push} onValueChange={v => setNotif(n => ({ ...n, push: v }))} trackColor={{ false: '#2d3561', true: '#f97316' }} thumbColor="#fff" />}
+                icon="notifications" iconColor={colors.accent} label="Push Notifications" sublabel="Allow all app notifications"
+                right={<Switch value={notif.push} onValueChange={v => setNotif(n => ({ ...n, push: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
             </View>
 
             <SectionLabel label="ACTIVITY" />
             <View style={sh.card}>
               <SettingRow
-                icon="barbell-outline" iconColor="#22c55e" label="Workout Reminders" sublabel="Daily nudge to stay on track"
-                right={<Switch value={notif.workoutReminders} onValueChange={v => setNotif(n => ({ ...n, workoutReminders: v }))} trackColor={{ false: '#2d3561', true: '#22c55e' }} thumbColor="#fff" />}
+                icon="barbell-outline" iconColor={colors.success} label="Workout Reminders" sublabel="Daily nudge to stay on track"
+                right={<Switch value={notif.workoutReminders} onValueChange={v => setNotif(n => ({ ...n, workoutReminders: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="trophy-outline" iconColor="#eab308" label="Challenge Updates" sublabel="Progress and leaderboard changes"
-                right={<Switch value={notif.challenges} onValueChange={v => setNotif(n => ({ ...n, challenges: v }))} trackColor={{ false: '#2d3561', true: '#eab308' }} thumbColor="#fff" />}
+                icon="trophy-outline" iconColor={colors.warning} label="Challenge Updates" sublabel="Progress and leaderboard changes"
+                right={<Switch value={notif.challenges} onValueChange={v => setNotif(n => ({ ...n, challenges: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="people-outline" iconColor="#7c3aed" label="Friend Activity" sublabel="When friends post or achieve"
-                right={<Switch value={notif.friendActivity} onValueChange={v => setNotif(n => ({ ...n, friendActivity: v }))} trackColor={{ false: '#2d3561', true: '#7c3aed' }} thumbColor="#fff" />}
+                icon="people-outline" iconColor={colors.brand} label="Friend Activity" sublabel="When friends post or achieve"
+                right={<Switch value={notif.friendActivity} onValueChange={v => setNotif(n => ({ ...n, friendActivity: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
             </View>
 
             <SectionLabel label="REPORTS" />
             <View style={sh.card}>
               <SettingRow
-                icon="stats-chart-outline" iconColor="#3b82f6" label="Weekly Summary" sublabel="Every Monday morning"
-                right={<Switch value={notif.weeklySummary} onValueChange={v => setNotif(n => ({ ...n, weeklySummary: v }))} trackColor={{ false: '#2d3561', true: '#3b82f6' }} thumbColor="#fff" />}
+                icon="stats-chart-outline" iconColor={colors.info} label="Weekly Summary" sublabel="Every Monday morning"
+                right={<Switch value={notif.weeklySummary} onValueChange={v => setNotif(n => ({ ...n, weeklySummary: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="sparkles-outline" iconColor="#a78bfa" label="New Features" sublabel="Product updates and announcements"
-                right={<Switch value={notif.newFeatures} onValueChange={v => setNotif(n => ({ ...n, newFeatures: v }))} trackColor={{ false: '#2d3561', true: '#a78bfa' }} thumbColor="#fff" />}
+                icon="sparkles-outline" iconColor={colors.brandBright} label="New Features" sublabel="Product updates and announcements"
+                right={<Switch value={notif.newFeatures} onValueChange={v => setNotif(n => ({ ...n, newFeatures: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
             </View>
 
             <TouchableOpacity onPress={() => { Alert.alert('Saved!', 'Notification preferences updated.'); close(); }} activeOpacity={0.85}>
-              <LinearGradient colors={['#f97316', '#c2410c']} style={sh.saveBtn}>
+              <LinearGradient colors={[colors.brand, colors.tealMid]} style={sh.saveBtn}>
                 <Text style={sh.saveBtnText}>Save Preferences</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -430,15 +431,15 @@ export default function ProfileScreen() {
           MODAL: Fitness Goals
       ════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'fitnessGoals'} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-        <LinearGradient colors={['#1a0533', '#0d0f1a']} style={sh.sheet}>
+        <LinearGradient colors={[colors.surface, colors.surface]} style={sh.sheet}>
           <SheetHeader title="Fitness Goals" onClose={close} />
           <ScrollView contentContainerStyle={sh.body}>
 
             {[
-              { icon: 'flame-outline',    iconColor: '#f97316', label: 'Daily Calories',  sublabel: 'kcal target', key: 'calories' as const, step: 50,   min: 500,  max: 6000  },
-              { icon: 'barbell-outline',  iconColor: '#7c3aed', label: 'Weekly Workouts', sublabel: 'sessions/week', key: 'workouts' as const, step: 1,  min: 1,    max: 14    },
-              { icon: 'footsteps-outline',iconColor: '#22c55e', label: 'Daily Steps',     sublabel: 'steps/day',   key: 'steps'    as const, step: 500, min: 1000, max: 50000 },
-              { icon: 'water-outline',    iconColor: '#3b82f6', label: 'Daily Water',     sublabel: 'glasses/day', key: 'water'    as const, step: 1,   min: 1,    max: 20    },
+              { icon: 'flame-outline',    iconColor: colors.accent, label: 'Daily Calories',  sublabel: 'kcal target', key: 'calories' as const, step: 50,   min: 500,  max: 6000  },
+              { icon: 'barbell-outline',  iconColor: colors.brand, label: 'Weekly Workouts', sublabel: 'sessions/week', key: 'workouts' as const, step: 1,  min: 1,    max: 14    },
+              { icon: 'footsteps-outline',iconColor: colors.success, label: 'Daily Steps',     sublabel: 'steps/day',   key: 'steps'    as const, step: 500, min: 1000, max: 50000 },
+              { icon: 'water-outline',    iconColor: colors.info, label: 'Daily Water',     sublabel: 'glasses/day', key: 'water'    as const, step: 1,   min: 1,    max: 20    },
             ].map(g => (
               <View key={g.key}>
                 <SectionLabel label={g.label.toUpperCase()} />
@@ -458,12 +459,12 @@ export default function ProfileScreen() {
             ))}
 
             <View style={sh.goalsNote}>
-              <Ionicons name="information-circle-outline" size={16} color="#6b7280" />
+              <Ionicons name="information-circle-outline" size={16} color={colors.faint} />
               <Text style={sh.goalsNoteText}>Goals help personalize your daily dashboard and progress tracking.</Text>
             </View>
 
             <TouchableOpacity onPress={saveGoals} activeOpacity={0.85}>
-              <LinearGradient colors={['#22c55e', '#15803d']} style={sh.saveBtn}>
+              <LinearGradient colors={[colors.brand, colors.tealMid]} style={sh.saveBtn}>
                 <Text style={sh.saveBtnText}>Save Goals</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -475,35 +476,35 @@ export default function ProfileScreen() {
           MODAL: Privacy & Security
       ════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'privacy'} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-        <LinearGradient colors={['#1a0533', '#0d0f1a']} style={sh.sheet}>
+        <LinearGradient colors={[colors.surface, colors.surface]} style={sh.sheet}>
           <SheetHeader title="Privacy & Security" onClose={close} />
           <ScrollView contentContainerStyle={sh.body}>
 
             <SectionLabel label="PROFILE VISIBILITY" />
             <View style={sh.card}>
               <SettingRow
-                icon="globe-outline" iconColor="#3b82f6" label="Public Profile" sublabel="Anyone can see your profile"
-                right={<Switch value={privacy.publicProfile} onValueChange={v => setPrivacy(p => ({ ...p, publicProfile: v }))} trackColor={{ false: '#2d3561', true: '#3b82f6' }} thumbColor="#fff" />}
+                icon="globe-outline" iconColor={colors.info} label="Public Profile" sublabel="Anyone can see your profile"
+                right={<Switch value={privacy.publicProfile} onValueChange={v => setPrivacy(p => ({ ...p, publicProfile: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="trophy-outline" iconColor="#eab308" label="Show on Leaderboard" sublabel="Appear in public rankings"
-                right={<Switch value={privacy.showLeaderboard} onValueChange={v => setPrivacy(p => ({ ...p, showLeaderboard: v }))} trackColor={{ false: '#2d3561', true: '#eab308' }} thumbColor="#fff" />}
+                icon="trophy-outline" iconColor={colors.warning} label="Show on Leaderboard" sublabel="Appear in public rankings"
+                right={<Switch value={privacy.showLeaderboard} onValueChange={v => setPrivacy(p => ({ ...p, showLeaderboard: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="eye-outline" iconColor="#22c55e" label="Activity Visible to Friends" sublabel="Friends can see your workouts"
-                right={<Switch value={privacy.activityVisible} onValueChange={v => setPrivacy(p => ({ ...p, activityVisible: v }))} trackColor={{ false: '#2d3561', true: '#22c55e' }} thumbColor="#fff" />}
+                icon="eye-outline" iconColor={colors.success} label="Activity Visible to Friends" sublabel="Friends can see your workouts"
+                right={<Switch value={privacy.activityVisible} onValueChange={v => setPrivacy(p => ({ ...p, activityVisible: v }))} trackColor={{ false: colors.border, true: colors.brand }} thumbColor={colors.white} />}
               />
             </View>
 
             <SectionLabel label="CHANGE PASSWORD" />
             <View style={sh.card}>
-              <TextInput style={sh.inputInCard} placeholder="Current password" placeholderTextColor="#6b7280" secureTextEntry value={passwords.current} onChangeText={v => setPasswords(p => ({ ...p, current: v }))} />
+              <TextInput style={sh.inputInCard} placeholder="Current password" placeholderTextColor={colors.faint} secureTextEntry value={passwords.current} onChangeText={v => setPasswords(p => ({ ...p, current: v }))} />
               <View style={sh.rowDivider} />
-              <TextInput style={sh.inputInCard} placeholder="New password" placeholderTextColor="#6b7280" secureTextEntry value={passwords.newPw} onChangeText={v => setPasswords(p => ({ ...p, newPw: v }))} />
+              <TextInput style={sh.inputInCard} placeholder="New password" placeholderTextColor={colors.faint} secureTextEntry value={passwords.newPw} onChangeText={v => setPasswords(p => ({ ...p, newPw: v }))} />
               <View style={sh.rowDivider} />
-              <TextInput style={sh.inputInCard} placeholder="Confirm new password" placeholderTextColor="#6b7280" secureTextEntry value={passwords.confirm} onChangeText={v => setPasswords(p => ({ ...p, confirm: v }))} />
+              <TextInput style={sh.inputInCard} placeholder="Confirm new password" placeholderTextColor={colors.faint} secureTextEntry value={passwords.confirm} onChangeText={v => setPasswords(p => ({ ...p, confirm: v }))} />
             </View>
             <TouchableOpacity onPress={changePassword} style={sh.secondaryBtn} activeOpacity={0.8}>
               <Text style={sh.secondaryBtnText}>Update Password</Text>
@@ -518,7 +519,7 @@ export default function ProfileScreen() {
               ])}
               activeOpacity={0.8}
             >
-              <Ionicons name="trash-outline" size={18} color="#ef4444" />
+              <Ionicons name="trash-outline" size={18} color={colors.danger} />
               <Text style={sh.dangerBtnText}>Delete My Account</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -529,7 +530,7 @@ export default function ProfileScreen() {
           MODAL: Help & Support
       ════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'help'} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-        <LinearGradient colors={['#1a0533', '#0d0f1a']} style={sh.sheet}>
+        <LinearGradient colors={[colors.surface, colors.surface]} style={sh.sheet}>
           <SheetHeader title="Help & Support" onClose={close} />
           <ScrollView contentContainerStyle={sh.body}>
 
@@ -549,17 +550,17 @@ export default function ProfileScreen() {
             <SectionLabel label="CONTACT US" />
             <View style={sh.card}>
               <SettingRow
-                icon="mail-outline" iconColor="#7c3aed" label="Email Support" sublabel="support@reprummble.com"
+                icon="mail-outline" iconColor={colors.brand} label="Email Support" sublabel="support@reprummble.com"
                 onPress={() => Linking.openURL('mailto:support@reprummble.com')}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="bug-outline" iconColor="#ef4444" label="Report a Bug" sublabel="Help us improve the app"
+                icon="bug-outline" iconColor={colors.danger} label="Report a Bug" sublabel="Help us improve the app"
                 onPress={() => Alert.alert('Report Bug', 'Thanks! Bug report sent to our team.')}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="star-outline" iconColor="#eab308" label="Rate the App" sublabel="Enjoying Rep Rummble?"
+                icon="star-outline" iconColor={colors.warning} label="Rate the App" sublabel="Enjoying Rep Rummble?"
                 onPress={() => Alert.alert('Rate Us', 'Opening App Store…')}
               />
             </View>
@@ -571,14 +572,14 @@ export default function ProfileScreen() {
           MODAL: About
       ════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'about'} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-        <LinearGradient colors={['#1a0533', '#0d0f1a']} style={sh.sheet}>
+        <LinearGradient colors={[colors.surface, colors.surface]} style={sh.sheet}>
           <SheetHeader title="About" onClose={close} />
           <ScrollView contentContainerStyle={sh.body}>
 
             {/* App branding */}
-            <LinearGradient colors={['#3b0d6b', '#1e0545']} style={sh.aboutHero}>
-              <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={sh.aboutLogo}>
-                <Ionicons name="barbell" size={36} color="#fff" />
+            <LinearGradient colors={[colors.brandSoft, colors.brandSoft]} style={sh.aboutHero}>
+              <LinearGradient colors={[colors.brand, colors.tealMid]} style={sh.aboutLogo}>
+                <Ionicons name="barbell" size={36} color={colors.white} />
               </LinearGradient>
               <Text style={sh.aboutAppName}>Rep Rummble</Text>
               <Text style={sh.aboutTagline}>Compete. Track. Dominate.</Text>
@@ -590,11 +591,11 @@ export default function ProfileScreen() {
             <SectionLabel label="WHAT'S NEW IN 1.0" />
             <View style={sh.card}>
               {[
-                { icon: 'sparkles',  color: '#7c3aed', text: 'AI-powered meal recognition' },
-                { icon: 'people',    color: '#22c55e', text: 'Social feed with stories & comments' },
-                { icon: 'trophy',    color: '#eab308', text: 'Live challenges and leaderboards' },
-                { icon: 'watch',     color: '#3b82f6', text: 'Wearable device integration' },
-                { icon: 'chatbubble',color: '#f97316', text: 'AI fitness coach chat' },
+                { icon: 'sparkles',  color: colors.brand, text: 'AI-powered meal recognition' },
+                { icon: 'people',    color: colors.success, text: 'Social feed with stories & comments' },
+                { icon: 'trophy',    color: colors.warning, text: 'Live challenges and leaderboards' },
+                { icon: 'watch',     color: colors.info, text: 'Wearable device integration' },
+                { icon: 'chatbubble',color: colors.accent, text: 'AI fitness coach chat' },
               ].map((item, i) => (
                 <View key={i}>
                   {i > 0 && <View style={sh.rowDivider} />}
@@ -611,17 +612,17 @@ export default function ProfileScreen() {
             <SectionLabel label="LEGAL" />
             <View style={sh.card}>
               <SettingRow
-                icon="document-text-outline" iconColor="#94a3b8" label="Terms of Service"
+                icon="document-text-outline" iconColor={colors.muted} label="Terms of Service"
                 onPress={() => Alert.alert('Terms', 'Opening Terms of Service…')}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="lock-closed-outline" iconColor="#94a3b8" label="Privacy Policy"
+                icon="lock-closed-outline" iconColor={colors.muted} label="Privacy Policy"
                 onPress={() => Alert.alert('Privacy', 'Opening Privacy Policy…')}
               />
               <View style={sh.rowDivider} />
               <SettingRow
-                icon="code-slash-outline" iconColor="#94a3b8" label="Open Source Licenses"
+                icon="code-slash-outline" iconColor={colors.muted} label="Open Source Licenses"
                 onPress={() => Alert.alert('Licenses', 'Opening licenses…')}
               />
             </View>
@@ -642,127 +643,127 @@ const styles = StyleSheet.create({
 
   // Top bar
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, paddingBottom: 14 },
-  screenTitle: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.4 },
-  editBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#7c3aed20', borderWidth: 1, borderColor: '#7c3aed40', justifyContent: 'center', alignItems: 'center' },
+  screenTitle: { fontSize: 22, fontWeight: '900', color: colors.ink, letterSpacing: -0.4 },
+  editBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.brand + '20', borderWidth: 1, borderColor: colors.brand + '40', justifyContent: 'center', alignItems: 'center' },
 
   // Hero
-  heroCard: { borderRadius: 24, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#3b1e6b60', overflow: 'hidden' },
-  heroGlow: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: '#7c3aed', opacity: 0.1, top: -60, right: -40 },
+  heroCard: { borderRadius: 24, padding: 20, marginBottom: 20, overflow: 'hidden' },
+  heroGlow: { display: 'none', position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: colors.brand, opacity: 0.1, top: -60, right: -40 },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
   avatar: { width: 76, height: 76, borderRadius: 38, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  avatarText: { fontSize: 30, fontWeight: '900', color: '#fff' },
+  avatarText: { fontSize: 30, fontWeight: '900', color: colors.white },
   heroInfo: { flex: 1, gap: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  displayName: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -0.3 },
+  displayName: { fontSize: 20, fontWeight: '900', color: colors.white, letterSpacing: -0.3 },
   levelPill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20 },
-  levelPillText: { fontSize: 11, fontWeight: '800', color: '#fff' },
-  email: { fontSize: 12, color: '#6b7280' },
+  levelPillText: { fontSize: 11, fontWeight: '800', color: colors.white },
+  email: { fontSize: 12, color: 'rgba(255,255,255,0.78)' },
   activeBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#22c55e' },
-  activeText: { fontSize: 11, color: '#22c55e', fontWeight: '600' },
+  activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#5eead4' },
+  activeText: { fontSize: 11, color: '#99f6e4', fontWeight: '600' },
 
   // XP
   xpSection: { marginBottom: 18 },
   xpLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 7 },
-  xpLabel: { fontSize: 11, fontWeight: '700', color: '#94a3b8' },
-  xpCount: { fontSize: 11, fontWeight: '700', color: '#7c3aed' },
-  xpTrack: { height: 7, backgroundColor: '#2d3561', borderRadius: 4, overflow: 'hidden', marginBottom: 6 },
+  xpLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+  xpCount: { fontSize: 11, fontWeight: '700', color: colors.white },
+  xpTrack: { height: 7, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 4, overflow: 'hidden', marginBottom: 6 },
   xpFill: { height: '100%', borderRadius: 4 },
-  xpHint: { fontSize: 11, color: '#4b5563' },
+  xpHint: { fontSize: 11, color: 'rgba(255,255,255,0.7)' },
 
   // Hero stats
-  heroStats: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#ffffff10', paddingTop: 16 },
+  heroStats: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.18)', paddingTop: 16 },
   heroStat: { flex: 1, alignItems: 'center', gap: 3 },
-  heroStatVal: { fontSize: 20, fontWeight: '900' },
-  heroStatLabel: { fontSize: 10, color: '#6b7280', fontWeight: '600' },
+  heroStatVal: { fontSize: 20, fontWeight: '900', color: colors.white },
+  heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
 
   // Menu
-  groupLabel: { fontSize: 11, fontWeight: '700', color: '#4b5563', letterSpacing: 1.2, marginBottom: 8 },
-  menuCard: { backgroundColor: '#161b2e', borderRadius: 18, borderWidth: 1, borderColor: '#2d356140', overflow: 'hidden', marginBottom: 0 },
+  groupLabel: { fontSize: 11, fontWeight: '700', color: colors.faint, letterSpacing: 1.2, marginBottom: 8 },
+  menuCard: { backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 0 },
   menuRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15, gap: 14 },
   menuIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  menuLabel: { flex: 1, fontSize: 15, color: '#e2e8f0', fontWeight: '500' },
-  divider: { height: 1, backgroundColor: '#2d356135', marginHorizontal: 16 },
+  menuLabel: { flex: 1, fontSize: 15, color: colors.ink, fontWeight: '500' },
+  divider: { height: 1, backgroundColor: colors.border, marginHorizontal: 16 },
 
   // Logout
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ef444412', borderRadius: 16, paddingVertical: 15, marginTop: 20, borderWidth: 1, borderColor: '#ef444430' },
-  logoutText: { fontSize: 15, fontWeight: '700', color: '#ef4444' },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.danger + '12', borderRadius: 16, paddingVertical: 15, marginTop: 20, borderWidth: 1, borderColor: colors.danger + '30' },
+  logoutText: { fontSize: 15, fontWeight: '700', color: colors.danger },
 
-  version: { textAlign: 'center', color: '#2d3561', fontSize: 12, marginTop: 16 },
+  version: { textAlign: 'center', color: colors.border, fontSize: 12, marginTop: 16 },
 
   // Subscription card
-  subCard: { borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#2d356150' },
+  subCard: { borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.border },
   subCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
   subIcon: { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
   subPlanName: { fontSize: 16, fontWeight: '800' },
-  subMeta: { fontSize: 11, color: '#6b7280', marginTop: 3 },
-  upgradeTag: { backgroundColor: '#22c55e20', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#22c55e40' },
-  upgradeTagText: { fontSize: 9, fontWeight: '800', color: '#22c55e' },
+  subMeta: { fontSize: 11, color: colors.faint, marginTop: 3 },
+  upgradeTag: { backgroundColor: colors.success + '20', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: colors.success + '40' },
+  upgradeTagText: { fontSize: 9, fontWeight: '800', color: colors.success },
   subArrow: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
 });
 
 // ─── Sheet / modal styles (shared across all modals) ─────────────────────────
 const sh = StyleSheet.create({
   sheet: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#2d356140' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   closeBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 17, fontWeight: '800', color: '#fff' },
+  title: { fontSize: 17, fontWeight: '800', color: colors.ink },
   body: { padding: 16, paddingBottom: 60 },
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#6b7280', letterSpacing: 1, marginTop: 20, marginBottom: 8, marginLeft: 4 },
-  card: { backgroundColor: '#161b2e', borderRadius: 16, borderWidth: 1, borderColor: '#2d356150', overflow: 'hidden', marginBottom: 4 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: colors.faint, letterSpacing: 1, marginTop: 20, marginBottom: 8, marginLeft: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 4 },
   row: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   rowIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   rowText: { flex: 1 },
-  rowLabel: { fontSize: 15, color: '#f1f5f9', fontWeight: '500' },
-  rowSub: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  rowDivider: { height: 1, backgroundColor: '#2d356130', marginHorizontal: 14 },
+  rowLabel: { fontSize: 15, color: colors.ink, fontWeight: '500' },
+  rowSub: { fontSize: 12, color: colors.faint, marginTop: 2 },
+  rowDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: 14 },
 
   // Edit Profile
   avatarCenter: { alignItems: 'center', marginBottom: 24, marginTop: 8 },
   bigAvatar: { width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center' },
-  bigAvatarText: { fontSize: 38, fontWeight: '900', color: '#fff' },
-  input: { backgroundColor: '#161b2e', borderRadius: 12, borderWidth: 1, borderColor: '#2d3561', paddingHorizontal: 14, paddingVertical: 13, color: '#fff', fontSize: 15, marginBottom: 4 },
+  bigAvatarText: { fontSize: 38, fontWeight: '900', color: colors.white },
+  input: { backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 13, color: colors.ink, fontSize: 15, marginBottom: 4 },
   inputDisabled: { justifyContent: 'center' },
-  inputDisabledText: { color: '#6b7280', fontSize: 15 },
-  hint: { fontSize: 12, color: '#6b7280', marginBottom: 4, marginLeft: 4 },
-  infoCard: { backgroundColor: '#161b2e', borderRadius: 12, borderWidth: 1, borderColor: '#2d356150', marginBottom: 4 },
+  inputDisabledText: { color: colors.faint, fontSize: 15 },
+  hint: { fontSize: 12, color: colors.faint, marginBottom: 4, marginLeft: 4 },
+  infoCard: { backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 4 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
-  infoLabel: { fontSize: 14, color: '#94a3b8' },
-  infoValue: { fontSize: 14, color: '#f1f5f9', fontWeight: '500' },
+  infoLabel: { fontSize: 14, color: colors.muted },
+  infoValue: { fontSize: 14, color: colors.ink, fontWeight: '500' },
 
   // Fitness Goals
   goalRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  stepBtn: { width: 30, height: 30, borderRadius: 8, backgroundColor: '#2d3561', justifyContent: 'center', alignItems: 'center' },
-  stepValue: { fontSize: 16, fontWeight: '700', color: '#fff', minWidth: 50, textAlign: 'center' },
-  goalsNote: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: '#161b2e', borderRadius: 12, padding: 12, marginTop: 8, marginBottom: 4, borderWidth: 1, borderColor: '#2d356140' },
-  goalsNoteText: { flex: 1, fontSize: 12, color: '#6b7280', lineHeight: 18 },
+  stepBtn: { width: 30, height: 30, borderRadius: 8, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' },
+  stepValue: { fontSize: 16, fontWeight: '700', color: colors.white, minWidth: 50, textAlign: 'center' },
+  goalsNote: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.surface, borderRadius: 12, padding: 12, marginTop: 8, marginBottom: 4, borderWidth: 1, borderColor: colors.border },
+  goalsNoteText: { flex: 1, fontSize: 12, color: colors.faint, lineHeight: 18 },
 
   // Privacy
-  inputInCard: { paddingHorizontal: 14, paddingVertical: 13, color: '#fff', fontSize: 15 },
-  secondaryBtn: { backgroundColor: '#2d3561', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8 },
-  secondaryBtnText: { color: '#a78bfa', fontWeight: '700', fontSize: 15 },
-  dangerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ef444415', borderRadius: 12, padding: 14, marginTop: 4, borderWidth: 1, borderColor: '#ef444440' },
-  dangerBtnText: { color: '#ef4444', fontWeight: '700', fontSize: 15 },
+  inputInCard: { paddingHorizontal: 14, paddingVertical: 13, color: colors.ink, fontSize: 15 },
+  secondaryBtn: { backgroundColor: colors.border, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8 },
+  secondaryBtnText: { color: colors.brand, fontWeight: '700', fontSize: 15 },
+  dangerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.danger + '15', borderRadius: 12, padding: 14, marginTop: 4, borderWidth: 1, borderColor: colors.danger + '40' },
+  dangerBtnText: { color: colors.danger, fontWeight: '700', fontSize: 15 },
 
   // Help FAQ
   faqItem: { padding: 14 },
   faqRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  faqQ: { fontSize: 14, fontWeight: '600', color: '#f1f5f9', flex: 1, paddingRight: 8 },
-  faqA: { fontSize: 13, color: '#94a3b8', lineHeight: 20, marginTop: 8 },
+  faqQ: { fontSize: 14, fontWeight: '600', color: colors.ink, flex: 1, paddingRight: 8 },
+  faqA: { fontSize: 13, color: colors.muted, lineHeight: 20, marginTop: 8 },
 
   // About
   aboutHero: { borderRadius: 20, padding: 28, alignItems: 'center', marginBottom: 4 },
   aboutLogo: { width: 72, height: 72, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 14 },
-  aboutAppName: { fontSize: 24, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-  aboutTagline: { fontSize: 14, color: '#94a3b8', marginTop: 4, marginBottom: 12 },
-  aboutVersionBadge: { backgroundColor: '#7c3aed30', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: '#7c3aed50' },
-  aboutVersionText: { color: '#a78bfa', fontSize: 12, fontWeight: '700' },
+  aboutAppName: { fontSize: 24, fontWeight: '900', color: colors.ink, letterSpacing: -0.5 },
+  aboutTagline: { fontSize: 14, color: colors.muted, marginTop: 4, marginBottom: 12 },
+  aboutVersionBadge: { backgroundColor: colors.brand + '30', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: colors.brand + '50' },
+  aboutVersionText: { color: colors.brand, fontSize: 12, fontWeight: '700' },
   changelogRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
-  changelogText: { fontSize: 14, color: '#e2e8f0', flex: 1 },
-  aboutFooter: { textAlign: 'center', color: '#6b7280', fontSize: 13, marginTop: 28 },
+  changelogText: { fontSize: 14, color: colors.ink, flex: 1 },
+  aboutFooter: { textAlign: 'center', color: colors.faint, fontSize: 13, marginTop: 28 },
 
   // Shared save button
   saveBtn: { borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 12 },
-  saveBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  saveBtnText: { color: colors.white, fontWeight: '800', fontSize: 16 },
 });

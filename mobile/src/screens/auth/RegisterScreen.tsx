@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../types';
 
+import { colors } from '../../theme/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
 export default function RegisterScreen() {
@@ -84,7 +85,7 @@ export default function RegisterScreen() {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Ionicons name="arrow-back" size={24} color="#fff" />
+              <Ionicons name="arrow-back" size={24} color={colors.ink} />
             </TouchableOpacity>
 
             {/* Header */}
@@ -96,11 +97,11 @@ export default function RegisterScreen() {
             {/* Register Form */}
             <View style={styles.form}>
               <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                <Ionicons name="person-outline" size={20} color={colors.muted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Display Name (optional)"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.muted}
                   value={displayName}
                   onChangeText={setDisplayName}
                   autoCapitalize="words"
@@ -108,11 +109,11 @@ export default function RegisterScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={20} color={colors.muted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Email"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.muted}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -122,11 +123,11 @@ export default function RegisterScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={colors.muted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Password"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.muted}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -138,17 +139,17 @@ export default function RegisterScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={20}
-                    color="#94a3b8"
+                    color={colors.muted}
                   />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={colors.muted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Confirm Password"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.muted}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showPassword}
@@ -161,7 +162,7 @@ export default function RegisterScreen() {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.white} />
                 ) : (
                   <Text style={styles.registerButtonText}>Create Account</Text>
                 )}
@@ -185,7 +186,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0f1a',
+    backgroundColor: colors.bg,
   },
   keyboardView: {
     flex: 1,
@@ -213,12 +214,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.ink,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: colors.muted,
   },
   form: {
     gap: 16,
@@ -226,26 +227,26 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
     borderWidth: 1,
-    borderColor: '#2d3561',
+    borderColor: colors.border,
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: colors.ink,
     fontSize: 16,
   },
   eyeIcon: {
     padding: 4,
   },
   registerButton: {
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
     height: 56,
     borderRadius: 12,
     justifyContent: 'center',
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   registerButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -266,11 +267,11 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   loginText: {
-    color: '#94a3b8',
+    color: colors.muted,
     fontSize: 16,
   },
   loginLink: {
-    color: '#22c55e',
+    color: colors.brand,
     fontSize: 16,
     fontWeight: '600',
   },

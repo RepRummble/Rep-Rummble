@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../types';
 
+import { colors } from '../../theme/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 export default function LoginScreen() {
@@ -53,7 +54,7 @@ export default function LoginScreen() {
         <View style={styles.content}>
           {/* Logo & Title */}
           <View style={styles.header}>
-            <Text style={styles.logo}>💪</Text>
+            <View style={styles.logoMark}><Text style={styles.logoMarkText}>RR</Text></View>
             <Text style={styles.title}>Reprummble</Text>
             <Text style={styles.subtitle}>Train. Track. Triumph.</Text>
           </View>
@@ -61,11 +62,11 @@ export default function LoginScreen() {
           {/* Login Form */}
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={20} color={colors.muted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Email"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.muted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -75,11 +76,11 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color={colors.muted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Password"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.muted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -91,7 +92,7 @@ export default function LoginScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                   size={20}
-                  color="#94a3b8"
+                  color={colors.muted}
                 />
               </TouchableOpacity>
             </View>
@@ -102,7 +103,7 @@ export default function LoginScreen() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.white} />
               ) : (
                 <Text style={styles.loginButtonText}>Login</Text>
               )}
@@ -125,7 +126,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0f1a',
+    backgroundColor: colors.bg,
   },
   keyboardView: {
     flex: 1,
@@ -139,6 +140,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
+  logoMark: { width: 72, height: 72, borderRadius: 22, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  logoMarkText: { color: colors.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
   logo: {
     fontSize: 64,
     marginBottom: 16,
@@ -146,12 +149,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.ink,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: colors.muted,
   },
   form: {
     gap: 16,
@@ -159,26 +162,26 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161b2e',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
     borderWidth: 1,
-    borderColor: '#2d3561',
+    borderColor: colors.border,
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: colors.ink,
     fontSize: 16,
   },
   eyeIcon: {
     padding: 4,
   },
   loginButton: {
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
     height: 56,
     borderRadius: 12,
     justifyContent: 'center',
@@ -189,7 +192,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   loginButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -199,11 +202,11 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   registerText: {
-    color: '#94a3b8',
+    color: colors.muted,
     fontSize: 16,
   },
   registerLink: {
-    color: '#22c55e',
+    color: colors.brand,
     fontSize: 16,
     fontWeight: '600',
   },

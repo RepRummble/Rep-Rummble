@@ -13,6 +13,7 @@ import api from '../../config/api';
 import { Meal, Workout, RootStackParamList } from '../../types';
 import ChatFAB from '../../components/chat/ChatFAB';
 
+import { colors } from '../../theme/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const { width: SW } = Dimensions.get('window');
 
@@ -29,10 +30,10 @@ const AI_TIPS = [
 ];
 
 const QUICK_ACTIONS = [
-  { label: 'Scan Meal',    icon: 'camera',        color: '#22c55e', bg: ['#052e16', '#15803d'] as const, route: 'FoodScanner' },
-  { label: 'Log Workout',  icon: 'barbell',       color: '#7c3aed', bg: ['#2e1065', '#4c1d95'] as const, route: 'Streak' },
-  { label: 'Challenges',   icon: 'trophy',        color: '#eab308', bg: ['#422006', '#713f12'] as const, route: 'Challenges' },
-  { label: 'Food Search',  icon: 'search',        color: '#3b82f6', bg: ['#0c1f3a', '#1e3a5f'] as const, route: 'FoodSearch' },
+  { label: 'Scan Meal',    icon: 'camera',        color: colors.success, bg: [colors.successSoft, colors.successSoft] as const, route: 'FoodScanner' },
+  { label: 'Log Workout',  icon: 'barbell',       color: colors.brand, bg: [colors.brandSoft, colors.brandSoft] as const, route: 'Streak' },
+  { label: 'Challenges',   icon: 'trophy',        color: colors.warning, bg: [colors.warningSoft, colors.warningSoft] as const, route: 'Challenges' },
+  { label: 'Food Search',  icon: 'search',        color: colors.info, bg: [colors.infoSoft, colors.infoSoft] as const, route: 'FoodSearch' },
 ];
 
 function Ring({ pct, size, color, icon, label }: { pct: number; size: number; color: string; icon: string; label: string }) {
@@ -57,16 +58,16 @@ function Ring({ pct, size, color, icon, label }: { pct: number; size: number; co
         <View style={{
           position: 'absolute', width: size - 14, height: size - 14,
           top: 7, left: 7, borderRadius: (size - 14) / 2,
-          backgroundColor: '#080b14', justifyContent: 'center', alignItems: 'center',
+          backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center',
         }}>
           <Ionicons name={icon as any} size={size * 0.28} color={color} />
           <Text style={{ fontSize: size * 0.2, fontWeight: '900', color, lineHeight: size * 0.25 }}>
             {Math.min(Math.round(pct), 100)}
           </Text>
-          <Text style={{ fontSize: size * 0.12, color: '#6b7280' }}>%</Text>
+          <Text style={{ fontSize: size * 0.12, color: colors.faint }}>%</Text>
         </View>
       </View>
-      <Text style={{ fontSize: 10, color: '#94a3b8', fontWeight: '600' }}>{label}</Text>
+      <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600' }}>{label}</Text>
     </View>
   );
 }
@@ -128,18 +129,18 @@ export default function HomeScreen() {
   const xpPct = (xpInLevel / xpPerLevel) * 100;
 
   const recentActivity = [
-    ...todayMeals.slice(0, 2).map(m => ({ type: 'meal' as const, label: m.foodName, meta: `${m.calories} kcal`, emoji: '🍽️', color: '#22c55e' })),
-    ...todayWorkouts.slice(0, 2).map(w => ({ type: 'workout' as const, label: w.exercise, meta: `${w.duration} min`, emoji: '💪', color: '#7c3aed' })),
+    ...todayMeals.slice(0, 2).map(m => ({ type: 'meal' as const, label: m.foodName, meta: `${m.calories} kcal`, emoji: '🍽️', color: colors.success })),
+    ...todayWorkouts.slice(0, 2).map(w => ({ type: 'workout' as const, label: w.exercise, meta: `${w.duration} min`, emoji: '💪', color: colors.brand })),
   ];
 
   return (
     <View style={s.root}>
-      <LinearGradient colors={['#1a0533', '#0d0f1a', '#080b14']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
 
@@ -151,13 +152,13 @@ export default function HomeScreen() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <LinearGradient colors={['#f9731625', '#f9731610']} style={s.streakBadge}>
+                <LinearGradient colors={[colors.accent + '25', colors.accent + '10']} style={s.streakBadge}>
                   <Text style={{ fontSize: 16 }}>🔥</Text>
                   <Text style={s.streakBadgeText}>{user?.streak || 0}d</Text>
                 </LinearGradient>
               </Animated.View>
-              <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={s.levelBadge}>
-                <Ionicons name="trophy" size={12} color="#ffd700" />
+              <LinearGradient colors={[colors.brand, colors.tealMid]} style={s.levelBadge}>
+                <Ionicons name="trophy" size={12} color={colors.gold} />
                 <Text style={s.levelText}>Lvl {user?.level || 1}</Text>
               </LinearGradient>
             </View>
@@ -169,23 +170,23 @@ export default function HomeScreen() {
             <Text style={s.xpTotal}>{currentXP} total</Text>
           </View>
           <View style={s.xpTrack}>
-            <LinearGradient colors={['#7c3aed', '#a78bfa', '#22c55e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.xpFill, { width: `${xpPct}%` }]} />
+            <LinearGradient colors={[colors.brand, colors.brandBright, colors.success]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.xpFill, { width: `${xpPct}%` }]} />
           </View>
 
           {/* ── Daily Goals Rings ── */}
-          <LinearGradient colors={['#1e0545', '#0d0f1a']} style={s.ringsCard}>
+          <LinearGradient colors={[colors.surface, colors.surface]} style={s.ringsCard}>
             <View style={s.glowOrb} />
             <Text style={s.ringsTitle}>Daily Goals</Text>
             <View style={s.ringsRow}>
-              <Ring pct={calPct}  size={100} color="#22c55e" icon="restaurant"  label="Calories" />
-              <Ring pct={protPct} size={100} color="#7c3aed" icon="fitness"     label="Protein" />
-              <Ring pct={workPct} size={100} color="#f97316" icon="barbell"     label="Workouts" />
+              <Ring pct={calPct}  size={100} color={colors.success} icon="restaurant"  label="Calories" />
+              <Ring pct={protPct} size={100} color={colors.brand} icon="fitness"     label="Protein" />
+              <Ring pct={workPct} size={100} color={colors.accent} icon="barbell"     label="Workouts" />
             </View>
             <View style={s.ringsLegend}>
               {[
-                { label: `${totalCalories} / ${CAL_GOAL} kcal`, color: '#22c55e' },
-                { label: `${totalProtein} / ${PROTEIN_GOAL}g`,   color: '#7c3aed' },
-                { label: `${todayWorkouts.length} / ${WORKOUT_GOAL} session`, color: '#f97316' },
+                { label: `${totalCalories} / ${CAL_GOAL} kcal`, color: colors.success },
+                { label: `${totalProtein} / ${PROTEIN_GOAL}g`,   color: colors.brand },
+                { label: `${todayWorkouts.length} / ${WORKOUT_GOAL} session`, color: colors.accent },
               ].map((r, i) => (
                 <View key={i} style={{ alignItems: 'center' }}>
                   <Text style={[s.ringsLegendText, { color: r.color }]}>{r.label}</Text>
@@ -216,7 +217,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── AI Coach Tip ── */}
-          <LinearGradient colors={['#2a0a4a', '#1a0533', '#0d0f1a']} style={s.tipCard}>
+          <LinearGradient colors={[colors.surface, colors.surface]} style={s.tipCard}>
             <View style={s.glowOrbRight} />
             <View style={s.tipHeader}>
               <View style={s.tipIconWrap}>
@@ -224,7 +225,7 @@ export default function HomeScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={s.tipBadgeRow}>
-                  <Ionicons name="sparkles" size={10} color="#a78bfa" />
+                  <Ionicons name="sparkles" size={10} color={colors.brand} />
                   <Text style={s.tipBadge}>AI COACH</Text>
                 </View>
                 <Text style={s.tipTitle}>{tip.title}</Text>
@@ -233,7 +234,7 @@ export default function HomeScreen() {
             <Text style={s.tipBody}>{tip.body}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Chat')} style={s.tipCta}>
               <Text style={s.tipCtaText}>Ask AI Coach</Text>
-              <Ionicons name="arrow-forward" size={13} color="#a78bfa" />
+              <Ionicons name="arrow-forward" size={13} color={colors.brand} />
             </TouchableOpacity>
           </LinearGradient>
 
@@ -264,13 +265,13 @@ export default function HomeScreen() {
               </View>
             ))
           ) : (
-            <LinearGradient colors={['#161b2e', '#0d0f1a']} style={s.emptyCard}>
+            <LinearGradient colors={[colors.surface, colors.surface]} style={s.emptyCard}>
               <Text style={{ fontSize: 32, marginBottom: 8 }}>🚀</Text>
               <Text style={s.emptyTitle}>Start your day strong!</Text>
               <Text style={s.emptyHint}>Scan a meal or log a workout to get started</Text>
               <TouchableOpacity onPress={() => navigation.navigate('FoodScanner' as any)} style={s.emptyCta}>
-                <LinearGradient colors={['#22c55e', '#15803d']} style={s.emptyCtaGrad}>
-                  <Ionicons name="camera" size={16} color="#fff" />
+                <LinearGradient colors={[colors.brand, colors.tealMid]} style={s.emptyCtaGrad}>
+                  <Ionicons name="camera" size={16} color={colors.white} />
                   <Text style={s.emptyCtaText}>Scan First Meal</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -279,12 +280,12 @@ export default function HomeScreen() {
 
           {/* ── Macro Breakdown ── */}
           <Text style={[s.sectionLabel, { marginTop: 24 }]}>Today's Macros</Text>
-          <LinearGradient colors={['#161b2e', '#0d0f1a']} style={s.macroCard}>
+          <LinearGradient colors={[colors.surface, colors.surface]} style={s.macroCard}>
             {[
-              { label: 'Calories', value: totalCalories, goal: CAL_GOAL,     unit: 'kcal', color: '#22c55e' },
-              { label: 'Protein',  value: totalProtein,  goal: PROTEIN_GOAL, unit: 'g',    color: '#7c3aed' },
-              { label: 'Carbs',    value: todayMeals.reduce((s, m) => s + (m.carbs || 0), 0),  goal: 250, unit: 'g', color: '#eab308' },
-              { label: 'Fat',      value: todayMeals.reduce((s, m) => s + (m.fat || 0), 0),    goal: 70,  unit: 'g', color: '#f97316' },
+              { label: 'Calories', value: totalCalories, goal: CAL_GOAL,     unit: 'kcal', color: colors.success },
+              { label: 'Protein',  value: totalProtein,  goal: PROTEIN_GOAL, unit: 'g',    color: colors.brand },
+              { label: 'Carbs',    value: todayMeals.reduce((s, m) => s + (m.carbs || 0), 0),  goal: 250, unit: 'g', color: colors.warning },
+              { label: 'Fat',      value: todayMeals.reduce((s, m) => s + (m.fat || 0), 0),    goal: 70,  unit: 'g', color: colors.accent },
             ].map((m, i) => (
               <View key={i} style={[s.macroRow, i > 0 && { marginTop: 14 }]}>
                 <Text style={s.macroRowLabel}>{m.label}</Text>
@@ -315,68 +316,68 @@ const s = StyleSheet.create({
   safe: { flex: 1 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 },
-  greeting: { fontSize: 13, color: '#94a3b8' },
-  name: { fontSize: 24, fontWeight: '800', color: '#fff', letterSpacing: -0.5, marginTop: 1 },
-  streakBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: '#f9731630' },
-  streakBadgeText: { color: '#f97316', fontWeight: '800', fontSize: 13 },
+  greeting: { fontSize: 13, color: colors.muted },
+  name: { fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.5, marginTop: 1 },
+  streakBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: colors.accent + '30' },
+  streakBadgeText: { color: colors.accent, fontWeight: '800', fontSize: 13 },
   levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 },
-  levelText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  levelText: { color: colors.white, fontWeight: '700', fontSize: 12 },
 
   xpRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 6, marginTop: 4 },
-  xpLabel: { fontSize: 11, color: '#94a3b8' },
-  xpTotal: { fontSize: 11, color: '#a78bfa', fontWeight: '700' },
-  xpTrack: { marginHorizontal: 20, height: 5, backgroundColor: '#2d3561', borderRadius: 3, overflow: 'hidden', marginBottom: 20 },
+  xpLabel: { fontSize: 11, color: colors.muted },
+  xpTotal: { fontSize: 11, color: colors.brand, fontWeight: '700' },
+  xpTrack: { marginHorizontal: 20, height: 5, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden', marginBottom: 20 },
   xpFill: { height: '100%', borderRadius: 3 },
 
-  ringsCard: { marginHorizontal: 20, borderRadius: 24, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#3b1e6b50', overflow: 'hidden' },
-  glowOrb: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: '#7c3aed', opacity: 0.08, top: -50, right: -30 },
-  glowOrbRight: { position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: '#a78bfa', opacity: 0.07, top: -30, right: -20 },
-  ringsTitle: { fontSize: 13, fontWeight: '800', color: '#e2e8f0', letterSpacing: 0.5, marginBottom: 18 },
+  ringsCard: { marginHorizontal: 20, borderRadius: 24, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  glowOrb: { display: 'none', position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: colors.brand, opacity: 0.08, top: -50, right: -30 },
+  glowOrbRight: { display: 'none', position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: colors.brandBright, opacity: 0.07, top: -30, right: -20 },
+  ringsTitle: { fontSize: 13, fontWeight: '800', color: colors.ink, letterSpacing: 0.5, marginBottom: 18 },
   ringsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14 },
   ringsLegend: { flexDirection: 'row', justifyContent: 'space-around' },
   ringsLegendText: { fontSize: 10, fontWeight: '700' },
 
-  sectionLabel: { fontSize: 14, fontWeight: '800', color: '#e2e8f0', paddingHorizontal: 20, marginBottom: 12, letterSpacing: 0.3 },
+  sectionLabel: { fontSize: 14, fontWeight: '800', color: colors.ink, paddingHorizontal: 20, marginBottom: 12, letterSpacing: 0.3 },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12, marginTop: 8 },
-  sectionCount: { fontSize: 12, color: '#6b7280' },
+  sectionCount: { fontSize: 12, color: colors.faint },
 
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 10, marginBottom: 20 },
-  quickCard: { width: (SW - 50) / 2, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#2d356140' },
+  quickCard: { width: (SW - 50) / 2, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
   quickCardInner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
   quickIconWrap: { width: 38, height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  quickLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: '#f1f5f9' },
+  quickLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.ink },
 
-  tipCard: { marginHorizontal: 20, borderRadius: 22, padding: 18, marginBottom: 8, borderWidth: 1, borderColor: '#3b1e6b50', overflow: 'hidden' },
+  tipCard: { marginHorizontal: 20, borderRadius: 22, padding: 18, marginBottom: 8, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   tipHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
-  tipIconWrap: { width: 46, height: 46, borderRadius: 14, backgroundColor: '#ffffff10', justifyContent: 'center', alignItems: 'center' },
+  tipIconWrap: { width: 46, height: 46, borderRadius: 14, backgroundColor: colors.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   tipBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3 },
-  tipBadge: { fontSize: 9, fontWeight: '800', color: '#a78bfa', letterSpacing: 1 },
-  tipTitle: { fontSize: 15, fontWeight: '800', color: '#fff' },
-  tipBody: { fontSize: 13, color: '#94a3b8', lineHeight: 19, marginBottom: 14 },
-  tipCta: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#7c3aed20', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#7c3aed40' },
-  tipCtaText: { fontSize: 12, fontWeight: '700', color: '#a78bfa' },
+  tipBadge: { fontSize: 9, fontWeight: '800', color: colors.brand, letterSpacing: 1 },
+  tipTitle: { fontSize: 15, fontWeight: '800', color: colors.ink },
+  tipBody: { fontSize: 13, color: colors.muted, lineHeight: 19, marginBottom: 14 },
+  tipCta: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.brand + '20', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.brand + '40' },
+  tipCtaText: { fontSize: 12, fontWeight: '700', color: colors.brand },
 
-  activityItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#161b2e', borderRadius: 16, padding: 14, marginHorizontal: 20, marginBottom: 8, borderWidth: 1, borderColor: '#2d356150', overflow: 'hidden' },
+  activityItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 16, padding: 14, marginHorizontal: 20, marginBottom: 8, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   activityBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
   activityIconWrap: { width: 42, height: 42, borderRadius: 13, justifyContent: 'center', alignItems: 'center' },
-  activityLabel: { fontSize: 14, fontWeight: '600', color: '#f1f5f9' },
-  activityMeta: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+  activityLabel: { fontSize: 14, fontWeight: '600', color: colors.ink },
+  activityMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
   activityTypePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1 },
   activityTypeText: { fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
 
-  emptyCard: { marginHorizontal: 20, borderRadius: 20, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: '#2d356140', marginBottom: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#f1f5f9', marginBottom: 6 },
-  emptyHint: { fontSize: 12, color: '#6b7280', marginBottom: 16, textAlign: 'center' },
+  emptyCard: { marginHorizontal: 20, borderRadius: 20, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.ink, marginBottom: 6 },
+  emptyHint: { fontSize: 12, color: colors.faint, marginBottom: 16, textAlign: 'center' },
   emptyCta: { borderRadius: 14, overflow: 'hidden' },
   emptyCtaGrad: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
-  emptyCtaText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  emptyCtaText: { fontSize: 14, fontWeight: '700', color: colors.white },
 
-  macroCard: { marginHorizontal: 20, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: '#2d356150' },
+  macroCard: { marginHorizontal: 20, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: colors.border },
   macroRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  macroRowLabel: { fontSize: 12, color: '#94a3b8', width: 60 },
+  macroRowLabel: { fontSize: 12, color: colors.muted, width: 60 },
   macroTrackWrap: { flex: 1 },
-  macroTrack: { height: 7, backgroundColor: '#2d3561', borderRadius: 4, overflow: 'hidden' },
+  macroTrack: { height: 7, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
   macroFill: { height: '100%', borderRadius: 4 },
   macroValue: { fontSize: 13, fontWeight: '800', width: 56, textAlign: 'right' },
-  macroUnit: { fontSize: 10, fontWeight: '400', color: '#6b7280' },
+  macroUnit: { fontSize: 10, fontWeight: '400', color: colors.faint },
 });

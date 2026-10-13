@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSubscription, PLAN_PRICES } from '../context/SubscriptionContext';
 import { PlanId } from '../types';
 
+import { colors } from '../theme/colors';
 const { width: SW } = Dimensions.get('window');
 
 // ── Feature table data ────────────────────────────────────────────────────────
@@ -48,31 +49,31 @@ const PLANS: PlanCard[] = [
     id: 'free',
     name: 'Free',
     tag: 'Get started — no card needed',
-    colors: ['#161b2e', '#0d0f1a'],
-    border: '#2d3561',
-    textColor: '#94a3b8',
+    colors: [colors.surface, colors.surface],
+    border: colors.border,
+    textColor: colors.muted,
     highlights: ['3 AI scans/day', '5 AI chat messages/day', 'Basic workout log', 'Top-10 leaderboard'],
   },
   {
     id: 'pro',
     name: 'Pro',
     tag: 'Best for serious athletes',
-    colors: ['#3b0d6b', '#1e0545'],
-    border: '#7c3aed',
-    textColor: '#a78bfa',
+    colors: [colors.brandSoft, colors.brandSoft],
+    border: colors.brand,
+    textColor: colors.brand,
     badge: 'MOST POPULAR',
-    badgeColor: '#7c3aed',
+    badgeColor: colors.brand,
     highlights: ['Unlimited AI meal scans', 'Unlimited AI coach chat', 'Full leaderboard access', 'Connect 1 wearable device', 'Create & join challenges', 'Micronutrient tracking'],
   },
   {
     id: 'premium',
     name: 'Premium',
     tag: 'Everything, unlocked',
-    colors: ['#3a2000', '#1a0e00'],
-    border: '#d97706',
-    textColor: '#fbbf24',
+    colors: [colors.warningSoft, colors.warningSoft],
+    border: colors.warning,
+    textColor: colors.warning,
     badge: 'ALL-IN',
-    badgeColor: '#d97706',
+    badgeColor: colors.warning,
     highlights: ['Everything in Pro', 'Personalised AI training plans', 'Advanced analytics dashboard', 'Sync unlimited wearables', 'Priority 24/7 support', 'Premium profile badge'],
   },
 ];
@@ -80,8 +81,8 @@ const PLANS: PlanCard[] = [
 // ── Cell renderer ─────────────────────────────────────────────────────────────
 
 function Cell({ val }: { val: string | boolean }) {
-  if (val === true) return <Ionicons name="checkmark-circle" size={18} color="#22c55e" />;
-  if (val === false) return <Ionicons name="close-circle" size={18} color="#374151" />;
+  if (val === true) return <Ionicons name="checkmark-circle" size={18} color={colors.success} />;
+  if (val === false) return <Ionicons name="close-circle" size={18} color={colors.faint} />;
   return <Text style={st.cellText}>{val as string}</Text>;
 }
 
@@ -97,10 +98,10 @@ export function PaywallModal({
 }) {
   const navigation = useNavigation();
   const planName = requiredPlan === 'pro' ? 'Pro' : 'Premium';
-  const planColor = requiredPlan === 'pro' ? '#7c3aed' : '#d97706';
+  const planColor = requiredPlan === 'pro' ? colors.brand : colors.warning;
   const planColors: readonly [string, string] = requiredPlan === 'pro'
-    ? ['#3b0d6b', '#1e0545']
-    : ['#3a2000', '#1a0e00'];
+    ? [colors.brandSoft, colors.brandSoft]
+    : [colors.warningSoft, colors.warningSoft];
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -115,7 +116,7 @@ export function PaywallModal({
 
             <Text style={st.modalTitle}>{planName} Feature</Text>
             <Text style={st.modalBody}>
-              <Text style={{ color: '#f1f5f9', fontWeight: '700' }}>{feature}</Text>
+              <Text style={{ color: colors.ink, fontWeight: '700' }}>{feature}</Text>
               {' '}is available on the {planName} plan.{'\n'}Upgrade to unlock this and much more.
             </Text>
 
@@ -190,13 +191,13 @@ export default function SubscriptionScreen() {
 
   return (
     <View style={st.root}>
-      <LinearGradient colors={['#1a0533', '#0d0f1a', '#080b14']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         {/* Header */}
         <View style={st.header}>
           <TouchableOpacity onPress={() => (navigation as any).goBack()} style={st.backBtn}>
-            <Ionicons name="chevron-down" size={24} color="#94a3b8" />
+            <Ionicons name="chevron-down" size={24} color={colors.muted} />
           </TouchableOpacity>
           <Text style={st.headerTitle}>Plans & Pricing</Text>
           <View style={{ width: 40 }} />
@@ -206,8 +207,8 @@ export default function SubscriptionScreen() {
 
           {/* Hero */}
           <View style={st.hero}>
-            <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.heroIcon}>
-              <Ionicons name="barbell" size={28} color="#fff" />
+            <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.heroIcon}>
+              <Ionicons name="barbell" size={28} color={colors.white} />
             </LinearGradient>
             <Text style={st.heroTitle}>Level Up Your Fitness</Text>
             <Text style={st.heroSub}>Choose the plan that fits your grind</Text>
@@ -270,7 +271,7 @@ export default function SubscriptionScreen() {
                         )}
                         {isCurrent && (
                           <View style={st.currentPill}>
-                            <Ionicons name="checkmark-circle" size={12} color="#22c55e" />
+                            <Ionicons name="checkmark-circle" size={12} color={colors.success} />
                             <Text style={st.currentPillText}>Active</Text>
                           </View>
                         )}
@@ -321,8 +322,8 @@ export default function SubscriptionScreen() {
                         <Text style={[st.ctaOutlineText, { color: plan.textColor }]}>Current Plan</Text>
                       </View>
                     ) : plan.id === 'free' ? (
-                      <View style={[st.ctaOutline, { borderColor: '#374151' }]}>
-                        <Text style={[st.ctaOutlineText, { color: '#6b7280' }]}>Downgrade to Free</Text>
+                      <View style={[st.ctaOutline, { borderColor: colors.borderStrong }]}>
+                        <Text style={[st.ctaOutlineText, { color: colors.faint }]}>Downgrade to Free</Text>
                       </View>
                     ) : (
                       <LinearGradient
@@ -331,7 +332,7 @@ export default function SubscriptionScreen() {
                         style={st.ctaBtn}
                       >
                         <Text style={st.ctaBtnText}>Get {plan.name}</Text>
-                        <Ionicons name="arrow-forward" size={16} color="#fff" />
+                        <Ionicons name="arrow-forward" size={16} color={colors.white} />
                       </LinearGradient>
                     )}
                   </TouchableOpacity>
@@ -347,14 +348,14 @@ export default function SubscriptionScreen() {
             <View style={[st.tableRow, st.tableHeader]}>
               <Text style={[st.tableCell, st.tableCellFeature, st.tableHeaderText]}>Feature</Text>
               <Text style={[st.tableCell, st.tableCellPlan, st.tableHeaderText]}>Free</Text>
-              <Text style={[st.tableCell, st.tableCellPlan, st.tableHeaderText, { color: '#a78bfa' }]}>Pro</Text>
-              <Text style={[st.tableCell, st.tableCellPlan, st.tableHeaderText, { color: '#fbbf24' }]}>Premium</Text>
+              <Text style={[st.tableCell, st.tableCellPlan, st.tableHeaderText, { color: colors.brand }]}>Pro</Text>
+              <Text style={[st.tableCell, st.tableCellPlan, st.tableHeaderText, { color: colors.warning }]}>Premium</Text>
             </View>
 
             {FEATURES.map((f, i) => (
               <View key={i} style={[st.tableRow, i % 2 === 0 && st.tableRowAlt]}>
                 <View style={[st.tableCell, st.tableCellFeature, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
-                  <Ionicons name={f.icon as any} size={13} color="#6b7280" />
+                  <Ionicons name={f.icon as any} size={13} color={colors.faint} />
                   <Text style={st.tableCellText}>{f.label}</Text>
                 </View>
                 <View style={[st.tableCell, st.tableCellPlan, { alignItems: 'center' }]}><Cell val={f.free} /></View>
@@ -392,41 +393,41 @@ const st = StyleSheet.create({
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: colors.ink },
 
   hero: { alignItems: 'center', paddingVertical: 20, gap: 10 },
   heroIcon: { width: 60, height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  heroTitle: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-  heroSub: { fontSize: 13, color: '#94a3b8' },
+  heroTitle: { fontSize: 22, fontWeight: "900", color: colors.ink, letterSpacing: -0.5 },
+  heroSub: { fontSize: 13, color: colors.muted },
 
   currentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 },
-  currentLabel: { fontSize: 13, color: '#6b7280' },
-  currentBadge: { backgroundColor: '#22c55e20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: '#22c55e40' },
-  currentBadgeText: { fontSize: 11, fontWeight: '800', color: '#22c55e', letterSpacing: 1 },
+  currentLabel: { fontSize: 13, color: colors.faint },
+  currentBadge: { backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: colors.success + '40' },
+  currentBadgeText: { fontSize: 11, fontWeight: '800', color: colors.success, letterSpacing: 1 },
 
-  billingToggle: { flexDirection: 'row', backgroundColor: '#161b2e', borderRadius: 14, marginHorizontal: 20, marginBottom: 20, padding: 4, gap: 4 },
+  billingToggle: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 14, marginHorizontal: 20, marginBottom: 20, padding: 4, gap: 4 },
   billingBtn: { flex: 1, paddingVertical: 10, borderRadius: 11, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  billingBtnActive: { backgroundColor: '#7c3aed' },
-  billingBtnText: { fontSize: 13, fontWeight: '700', color: '#6b7280' },
-  billingBtnTextActive: { color: '#fff' },
-  savingsBadge: { backgroundColor: '#22c55e30', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  savingsBadgeText: { fontSize: 9, fontWeight: '800', color: '#22c55e' },
+  billingBtnActive: { backgroundColor: colors.brand },
+  billingBtnText: { fontSize: 13, fontWeight: '700', color: colors.faint },
+  billingBtnTextActive: { color: colors.white },
+  savingsBadge: { backgroundColor: colors.success + '30', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  savingsBadgeText: { fontSize: 9, fontWeight: '800', color: colors.success },
 
-  planCard: { marginHorizontal: 16, marginBottom: 14, borderRadius: 22, overflow: 'hidden', borderWidth: 1, borderColor: '#2d356140' },
+  planCard: { marginHorizontal: 16, marginBottom: 14, borderRadius: 22, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
   planCardInner: { padding: 20 },
   planTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
   planNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
   planName: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
   planBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
   planBadgeText: { fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  currentPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#22c55e20', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  currentPillText: { fontSize: 10, fontWeight: '700', color: '#22c55e' },
-  planTag: { fontSize: 12, color: '#6b7280' },
+  currentPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.success + '20', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  currentPillText: { fontSize: 10, fontWeight: '700', color: colors.success },
+  planTag: { fontSize: 12, color: colors.faint },
 
   priceRow: { flexDirection: 'row', alignItems: 'flex-start' },
   planPriceDollar: { fontSize: 16, fontWeight: '800', marginTop: 4 },
   planPrice: { fontSize: 36, fontWeight: '900', letterSpacing: -1 },
-  planPricePer: { fontSize: 12, color: '#6b7280', textAlign: 'right' },
+  planPricePer: { fontSize: 12, color: colors.faint, textAlign: 'right' },
   saveTag: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, marginTop: 4 },
   saveTagText: { fontSize: 10, fontWeight: '800' },
 
@@ -435,39 +436,39 @@ const st = StyleSheet.create({
   highlightText: { fontSize: 13, fontWeight: '500' },
 
   ctaBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, paddingVertical: 14 },
-  ctaBtnText: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  ctaBtnText: { fontSize: 15, fontWeight: '800', color: colors.white },
   ctaOutline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, paddingVertical: 13, borderWidth: 1 },
   ctaOutlineText: { fontSize: 14, fontWeight: '700' },
 
-  tableTitle: { fontSize: 14, fontWeight: '800', color: '#e2e8f0', paddingHorizontal: 20, marginTop: 12, marginBottom: 12, letterSpacing: 0.3 },
-  table: { marginHorizontal: 16, backgroundColor: '#161b2e', borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#2d356150', marginBottom: 12 },
+  tableTitle: { fontSize: 14, fontWeight: '800', color: colors.ink, paddingHorizontal: 20, marginTop: 12, marginBottom: 12, letterSpacing: 0.3 },
+  table: { marginHorizontal: 16, backgroundColor: colors.surface, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, marginBottom: 12 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 12 },
-  tableRowAlt: { backgroundColor: '#0d0f1a40' },
-  tableHeader: { borderBottomWidth: 1, borderBottomColor: '#2d3561', paddingVertical: 12 },
-  tableHeaderText: { fontSize: 12, fontWeight: '800', color: '#6b7280' },
+  tableRowAlt: { backgroundColor: colors.bg + '40' },
+  tableHeader: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 12 },
+  tableHeaderText: { fontSize: 12, fontWeight: '800', color: colors.faint },
   tableCell: { paddingHorizontal: 2 },
   tableCellFeature: { flex: 2 },
   tableCellPlan: { flex: 1, justifyContent: 'center' },
-  tableCellText: { fontSize: 11, color: '#94a3b8' },
-  cellText: { fontSize: 10, color: '#94a3b8', textAlign: 'center' },
+  tableCellText: { fontSize: 11, color: colors.muted },
+  cellText: { fontSize: 10, color: colors.muted, textAlign: 'center' },
 
-  faqItem: { marginHorizontal: 16, backgroundColor: '#161b2e', borderRadius: 14, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: '#2d356150' },
-  faqQ: { fontSize: 14, fontWeight: '700', color: '#f1f5f9', marginBottom: 6 },
-  faqA: { fontSize: 13, color: '#94a3b8', lineHeight: 20 },
+  faqItem: { marginHorizontal: 16, backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
+  faqQ: { fontSize: 14, fontWeight: '700', color: colors.ink, marginBottom: 6 },
+  faqA: { fontSize: 13, color: colors.muted, lineHeight: 20 },
 
-  legalNote: { fontSize: 11, color: '#4b5563', textAlign: 'center', paddingHorizontal: 24, marginTop: 16 },
+  legalNote: { fontSize: 11, color: colors.faint, textAlign: 'center', paddingHorizontal: 24, marginTop: 16 },
 
   // Paywall modal
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000080' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.black + '80' },
   modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
   modalGrad: { padding: 28, paddingBottom: 40, alignItems: 'center' },
-  modalHandle: { width: 40, height: 4, backgroundColor: '#ffffff30', borderRadius: 2, marginBottom: 24 },
+  modalHandle: { width: 40, height: 4, backgroundColor: colors.white + '30', borderRadius: 2, marginBottom: 24 },
   modalIconWrap: { width: 68, height: 68, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1 },
-  modalTitle: { fontSize: 22, fontWeight: '900', color: '#fff', marginBottom: 10, textAlign: 'center' },
-  modalBody: { fontSize: 15, color: '#94a3b8', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  modalTitle: { fontSize: 22, fontWeight: '900', color: colors.ink, marginBottom: 10, textAlign: 'center' },
+  modalBody: { fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   modalCta: { width: '100%', borderRadius: 16, overflow: 'hidden', marginBottom: 12 },
   modalCtaGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15, borderRadius: 16 },
   modalCtaText: { fontSize: 16, fontWeight: '800' },
   modalSkip: { paddingVertical: 10 },
-  modalSkipText: { fontSize: 14, color: '#6b7280' },
+  modalSkipText: { fontSize: 14, color: colors.faint },
 });

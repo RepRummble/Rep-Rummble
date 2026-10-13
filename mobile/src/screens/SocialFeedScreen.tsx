@@ -27,38 +27,39 @@ import * as Location from "expo-location";
 import { socialService, SocialPost } from "../services/socialService";
 import { useAuth } from "../context/AuthContext";
 
+import { colors } from '../theme/colors';
 const { width: SW } = Dimensions.get("window");
 
 const POST_TYPES = [
-  { key: "all", label: "All", icon: "apps", color: "#7c3aed" },
-  { key: "workout", label: "Workout", icon: "barbell", color: "#22c55e" },
-  { key: "meal", label: "Meal", icon: "restaurant", color: "#f97316" },
-  { key: "achievement", label: "Win", icon: "trophy", color: "#eab308" },
-  { key: "challenge", label: "Challenge", icon: "flash", color: "#ef4444" },
+  { key: "all", label: "All", icon: "apps", color: colors.brand },
+  { key: "workout", label: "Workout", icon: "barbell", color: colors.success },
+  { key: "meal", label: "Meal", icon: "restaurant", color: colors.accent },
+  { key: "achievement", label: "Win", icon: "trophy", color: colors.warning },
+  { key: "challenge", label: "Challenge", icon: "flash", color: colors.danger },
 ];
 
 const TYPE_META: Record<string, { color: string; icon: string; label: string }> = {
-  workout:     { color: "#22c55e", icon: "barbell",    label: "Workout" },
-  meal:        { color: "#f97316", icon: "restaurant", label: "Meal" },
-  achievement: { color: "#eab308", icon: "trophy",     label: "Achievement" },
-  challenge:   { color: "#ef4444", icon: "flash",      label: "Challenge" },
-  milestone:   { color: "#a78bfa", icon: "star",       label: "Milestone" },
-  general:     { color: "#94a3b8", icon: "chatbubble", label: "Post" },
+  workout:     { color: colors.success, icon: "barbell",    label: "Workout" },
+  meal:        { color: colors.accent, icon: "restaurant", label: "Meal" },
+  achievement: { color: colors.warning, icon: "trophy",     label: "Achievement" },
+  challenge:   { color: colors.danger, icon: "flash",      label: "Challenge" },
+  milestone:   { color: colors.brand, icon: "star",       label: "Milestone" },
+  general:     { color: colors.muted, icon: "chatbubble", label: "Post" },
 };
 
 const MOCK_STORIES = [
-  { id: "s1", name: "Alex K",  initial: "A", color: ["#7c3aed", "#4f1d9a"] as const, hasStory: true,  streak: 7  },
-  { id: "s2", name: "Jordan",  initial: "J", color: ["#22c55e", "#15803d"] as const, hasStory: true,  streak: 14 },
-  { id: "s3", name: "Sam R",   initial: "S", color: ["#f97316", "#c2410c"] as const, hasStory: true,  streak: 3  },
-  { id: "s4", name: "Taylor",  initial: "T", color: ["#eab308", "#92400e"] as const, hasStory: false, streak: 0  },
-  { id: "s5", name: "Morgan",  initial: "M", color: ["#ef4444", "#b91c1c"] as const, hasStory: true,  streak: 21 },
+  { id: "s1", name: "Alex K",  initial: "A", color: [colors.brand, colors.tealMid] as const, hasStory: true,  streak: 7  },
+  { id: "s2", name: "Jordan",  initial: "J", color: [colors.brand, colors.tealMid] as const, hasStory: true,  streak: 14 },
+  { id: "s3", name: "Sam R",   initial: "S", color: [colors.accent, colors.accent] as const, hasStory: true,  streak: 3  },
+  { id: "s4", name: "Taylor",  initial: "T", color: [colors.warning, colors.warning] as const, hasStory: false, streak: 0  },
+  { id: "s5", name: "Morgan",  initial: "M", color: [colors.danger, colors.danger] as const, hasStory: true,  streak: 21 },
 ];
 
 const DISCOVER = [
-  { id: "d1", title: "Push Up Challenge", desc: "100 reps today",   emoji: "💪", color: "#7c3aed", joined: 847,  left: "18h" },
-  { id: "d2", title: "Morning Run Club",  desc: "5km sunrise run",  emoji: "🏃", color: "#22c55e", joined: 234,  left: "6h"  },
-  { id: "d3", title: "Protein Goal",      desc: "Hit 150g protein", emoji: "🥩", color: "#f97316", joined: 512,  left: "12h" },
-  { id: "d4", title: "Squat PR Day",      desc: "Beat your squat",  emoji: "🏋️", color: "#eab308", joined: 183,  left: "20h" },
+  { id: "d1", title: "Push Up Challenge", desc: "100 reps today",   emoji: "💪", color: colors.brand, joined: 847,  left: "18h" },
+  { id: "d2", title: "Morning Run Club",  desc: "5km sunrise run",  emoji: "🏃", color: colors.success, joined: 234,  left: "6h"  },
+  { id: "d3", title: "Protein Goal",      desc: "Hit 150g protein", emoji: "🥩", color: colors.accent, joined: 512,  left: "12h" },
+  { id: "d4", title: "Squat PR Day",      desc: "Beat your squat",  emoji: "🏋️", color: colors.warning, joined: 183,  left: "20h" },
 ];
 
 const SNAP_STICKERS = [
@@ -99,10 +100,10 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function Avatar({ name, size = 40, colors = ["#7c3aed", "#4f1d9a"] as const }: { name: string; size?: number; colors?: readonly [string, string] }) {
+function Avatar({ name, size = 40, gradient = [colors.brand, colors.tealMid] as const }: { name: string; size?: number; gradient?: readonly [string, string] }) {
   return (
-    <LinearGradient colors={colors} style={{ width: size, height: size, borderRadius: size / 2, justifyContent: "center", alignItems: "center" }}>
-      <Text style={{ color: "#fff", fontWeight: "800", fontSize: size * 0.38 }}>{name[0].toUpperCase()}</Text>
+    <LinearGradient colors={gradient} style={{ width: size, height: size, borderRadius: size / 2, justifyContent: "center", alignItems: "center" }}>
+      <Text style={{ color: colors.white, fontWeight: "800", fontSize: size * 0.38 }}>{name[0].toUpperCase()}</Text>
     </LinearGradient>
   );
 }
@@ -123,9 +124,9 @@ function LikeButton({ count, onPress }: { count: number; onPress: () => void }) 
   return (
     <TouchableOpacity onPress={handlePress} style={styles.actionBtn} activeOpacity={0.7}>
       <Animated.View style={{ transform: [{ scale }] }}>
-        <Ionicons name={liked ? "heart" : "heart-outline"} size={22} color={liked ? "#ef4444" : "#94a3b8"} />
+        <Ionicons name={liked ? "heart" : "heart-outline"} size={22} color={liked ? colors.danger : colors.muted} />
       </Animated.View>
-      <Text style={[styles.actionCount, liked && { color: "#ef4444" }]}>{count + (liked ? 1 : 0)}</Text>
+      <Text style={[styles.actionCount, liked && { color: colors.danger }]}>{count + (liked ? 1 : 0)}</Text>
     </TouchableOpacity>
   );
 }
@@ -487,7 +488,7 @@ export default function SocialFeedScreen() {
             </View>
           </View>
           <TouchableOpacity style={styles.moreBtn} onPress={() => handlePostMenu(item)}>
-            <Ionicons name="ellipsis-horizontal" size={18} color="#6b7280" />
+            <Ionicons name="ellipsis-horizontal" size={18} color={colors.faint} />
           </TouchableOpacity>
         </View>
 
@@ -504,7 +505,7 @@ export default function SocialFeedScreen() {
             />
             {item.mediaUrls.length > 1 && (
               <View style={styles.moreImagesOverlay}>
-                <Ionicons name="images" size={18} color="#fff" />
+                <Ionicons name="images" size={18} color={colors.white} />
                 <Text style={styles.moreImagesText}>+{item.mediaUrls.length - 1}</Text>
               </View>
             )}
@@ -530,16 +531,16 @@ export default function SocialFeedScreen() {
           <LikeButton count={item.likes.length} onPress={() => handleLike(item._id)} />
 
           <TouchableOpacity style={styles.actionBtn} onPress={() => toggleComments(item._id)} activeOpacity={0.7}>
-            <Ionicons name={commentsOpen ? "chatbubble" : "chatbubble-outline"} size={21} color={commentsOpen ? "#7c3aed" : "#94a3b8"} />
-            <Text style={[styles.actionCount, commentsOpen && { color: "#7c3aed" }]}>{item.comments.length}</Text>
+            <Ionicons name={commentsOpen ? "chatbubble" : "chatbubble-outline"} size={21} color={commentsOpen ? colors.brand : colors.muted} />
+            <Text style={[styles.actionCount, commentsOpen && { color: colors.brand }]}>{item.comments.length}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-            <Ionicons name="paper-plane-outline" size={21} color="#94a3b8" />
+            <Ionicons name="paper-plane-outline" size={21} color={colors.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.actionBtn, { marginLeft: "auto" }]} activeOpacity={0.7}>
-            <Ionicons name="bookmark-outline" size={21} color="#94a3b8" />
+            <Ionicons name="bookmark-outline" size={21} color={colors.muted} />
           </TouchableOpacity>
         </View>
 
@@ -564,14 +565,14 @@ export default function SocialFeedScreen() {
                 <TextInput
                   style={styles.inlineInputField}
                   placeholder="Add a comment..."
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={colors.faint}
                   value={newComment}
                   onChangeText={setNewComment}
                   autoFocus
                 />
                 <TouchableOpacity onPress={() => handleComment(item._id)} style={styles.sendBtn}>
-                  <LinearGradient colors={["#7c3aed", "#4f1d9a"]} style={styles.sendBtnGrad}>
-                    <Ionicons name="paper-plane" size={14} color="#fff" />
+                  <LinearGradient colors={[colors.brand, colors.tealMid]} style={styles.sendBtnGrad}>
+                    <Ionicons name="paper-plane" size={14} color={colors.white} />
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -589,7 +590,7 @@ export default function SocialFeedScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={["#1a0533", "#0d0f1a", "#080b14"]} locations={[0, 0.3, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.3, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
         {/* Header */}
@@ -599,26 +600,26 @@ export default function SocialFeedScreen() {
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Text style={{ fontSize: 13 }}>🏆</Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#a78bfa" }}>{repScore.toLocaleString()}</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.brand }}>{repScore.toLocaleString()}</Text>
               </View>
               {(user?.streak || 0) > 0 && (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
                   <Text style={{ fontSize: 13 }}>🔥</Text>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#f97316" }}>{user?.streak}d</Text>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.accent }}>{user?.streak}d</Text>
                 </View>
               )}
             </View>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity onPress={() => navigation.navigate("Friends" as never)} style={styles.headerIcon}>
-              <Ionicons name="people-outline" size={24} color="#f1f5f9" />
+              <Ionicons name="people-outline" size={24} color={colors.ink} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate("Challenges" as never)} style={styles.headerIcon}>
-              <Ionicons name="trophy-outline" size={24} color="#f1f5f9" />
+              <Ionicons name="trophy-outline" size={24} color={colors.ink} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowCreate(true)} style={styles.createBtn}>
-              <LinearGradient colors={["#7c3aed", "#4f1d9a"]} style={styles.createBtnGrad}>
-                <Ionicons name="add" size={22} color="#fff" />
+              <LinearGradient colors={[colors.brand, colors.tealMid]} style={styles.createBtnGrad}>
+                <Ionicons name="add" size={22} color={colors.white} />
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -630,7 +631,7 @@ export default function SocialFeedScreen() {
           keyExtractor={item => item._id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadFeed(1); }} tintColor="#7c3aed" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadFeed(1); }} tintColor={colors.brand} />}
           ListHeaderComponent={
             <>
               {/* Stories Bar */}
@@ -642,7 +643,7 @@ export default function SocialFeedScreen() {
                   activeOpacity={0.8}
                 >
                   {myStatus ? (
-                    <LinearGradient colors={["#7c3aed", "#f97316"]} style={styles.storyRingGrad}>
+                    <LinearGradient colors={[colors.brand, colors.accent]} style={styles.storyRingGrad}>
                       <View style={styles.storyAvatarInner}>
                         <Avatar name={user?.displayName || user?.email || "Y"} size={52} />
                       </View>
@@ -651,7 +652,7 @@ export default function SocialFeedScreen() {
                     <View style={styles.addStoryWrap}>
                       <Avatar name={user?.displayName || user?.email || "Y"} size={56} />
                       <View style={styles.addStoryPlus}>
-                        <Ionicons name="add" size={14} color="#fff" />
+                        <Ionicons name="add" size={14} color={colors.white} />
                       </View>
                     </View>
                   )}
@@ -663,11 +664,11 @@ export default function SocialFeedScreen() {
                   <TouchableOpacity key={s.id} style={styles.storyItem} onPress={() => s.hasStory && setViewingStory(s)} activeOpacity={0.8}>
                     <View style={{ position: "relative" }}>
                       <LinearGradient
-                        colors={s.hasStory ? ["#7c3aed", "#f97316"] : ["#2d3561", "#1e2a4a"]}
+                        colors={s.hasStory ? [colors.brand, colors.accent] : [colors.border, colors.border]}
                         style={styles.storyRingGrad}
                       >
                         <View style={styles.storyAvatarInner}>
-                          <Avatar name={s.name} size={52} colors={s.color} />
+                          <Avatar name={s.name} size={52} gradient={s.color} />
                         </View>
                       </LinearGradient>
                       {/* Streak badge */}
@@ -719,7 +720,7 @@ export default function SocialFeedScreen() {
                     {filter === t.key && (
                       <LinearGradient colors={[t.color + "30", t.color + "10"]} style={[StyleSheet.absoluteFill, { borderRadius: 20 }]} />
                     )}
-                    <Ionicons name={t.icon as any} size={14} color={filter === t.key ? t.color : "#6b7280"} />
+                    <Ionicons name={t.icon as any} size={14} color={filter === t.key ? t.color : colors.faint} />
                     <Text style={[styles.filterTabText, filter === t.key && { color: t.color, fontWeight: "700" }]}>{t.label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -728,7 +729,7 @@ export default function SocialFeedScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={56} color="#2d3561" />
+              <Ionicons name="people-outline" size={56} color={colors.border} />
               <Text style={styles.emptyTitle}>Nothing here yet</Text>
               <Text style={styles.emptyHint}>Share your fitness journey!</Text>
             </View>
@@ -744,8 +745,8 @@ export default function SocialFeedScreen() {
           onPressOut={() => Animated.spring(snapFabScale, { toValue: 1, useNativeDriver: true, speed: 30 }).start()}
           activeOpacity={1}
         >
-          <LinearGradient colors={["#7c3aed", "#c026d3", "#f97316"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.snapFabGrad}>
-            <Ionicons name="camera" size={26} color="#fff" />
+          <LinearGradient colors={[colors.brand, colors.tealMid]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.snapFabGrad}>
+            <Ionicons name="camera" size={26} color={colors.white} />
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
@@ -759,7 +760,7 @@ export default function SocialFeedScreen() {
             <LinearGradient colors={["#120030", "#0a0015", "#050508"]} style={StyleSheet.absoluteFill} />
           )}
           {/* Dark overlay when image present */}
-          {snapImage && <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: '#00000055' }} />}
+          {snapImage && <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: colors.black + '55' }} />}
 
           {/* Top: sticker row */}
           <View style={{ position: "absolute", top: 60, left: 0, right: 0, zIndex: 10 }}>
@@ -773,15 +774,15 @@ export default function SocialFeedScreen() {
                   <View style={[styles.snapSticker, snapSticker === st.emoji && styles.snapStickerActive]}>
                     <Text style={{ fontSize: 22 }}>{st.emoji}</Text>
                   </View>
-                  <Text style={{ fontSize: 9, color: snapSticker === st.emoji ? "#fff" : "#ffffff60", fontWeight: "600" }}>{st.label}</Text>
+                  <Text style={{ fontSize: 9, color: snapSticker === st.emoji ? colors.white : colors.white + '60', fontWeight: "600" }}>{st.label}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
 
           {/* Close */}
-          <TouchableOpacity onPress={() => setShowQuickSnap(false)} style={{ position: "absolute", top: 58, right: 16, zIndex: 20, padding: 8, backgroundColor: "#00000060", borderRadius: 20 }}>
-            <Ionicons name="close" size={24} color="#fff" />
+          <TouchableOpacity onPress={() => setShowQuickSnap(false)} style={{ position: "absolute", top: 58, right: 16, zIndex: 20, padding: 8, backgroundColor: colors.black + '60', borderRadius: 20 }}>
+            <Ionicons name="close" size={24} color={colors.white} />
           </TouchableOpacity>
 
           {/* Center text input area */}
@@ -790,7 +791,7 @@ export default function SocialFeedScreen() {
             <TextInput
               style={styles.snapTextInput}
               placeholder="What's your vibe? ✍️"
-              placeholderTextColor="#ffffff50"
+              placeholderTextColor={colors.white + '50'}
               multiline
               maxLength={120}
               value={snapText}
@@ -802,8 +803,8 @@ export default function SocialFeedScreen() {
           {/* Bottom bar */}
           <View style={styles.snapBottomBar}>
             <TouchableOpacity onPress={openSnapGallery} style={styles.snapBottomBtn} activeOpacity={0.8}>
-              <LinearGradient colors={["#ffffff15", "#ffffff05"]} style={styles.snapBottomBtnGrad}>
-                <Ionicons name="images" size={22} color="#fff" />
+              <LinearGradient colors={[colors.surfaceAlt, colors.surfaceAlt]} style={styles.snapBottomBtnGrad}>
+                <Ionicons name="images" size={22} color={colors.white} />
               </LinearGradient>
               <Text style={styles.snapBottomLabel}>Gallery</Text>
             </TouchableOpacity>
@@ -811,18 +812,18 @@ export default function SocialFeedScreen() {
             {/* Main post button */}
             <TouchableOpacity onPress={handleQuickSnapPost} activeOpacity={0.85} disabled={!snapText.trim() && !snapSticker && !snapImage}>
               <LinearGradient
-                colors={(snapText.trim() || snapSticker || snapImage) ? ["#7c3aed", "#c026d3", "#f97316"] : ["#2d3561", "#1e2a4a"]}
+                colors={(snapText.trim() || snapSticker || snapImage) ? [colors.brand, colors.tealMid] : [colors.border, colors.border]}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={styles.snapPostBtn}
               >
-                <Ionicons name="paper-plane" size={26} color="#fff" />
+                <Ionicons name="paper-plane" size={26} color={colors.white} />
               </LinearGradient>
               <Text style={[styles.snapBottomLabel, { textAlign: "center", marginTop: 6 }]}>Share</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={openSnapCamera} style={styles.snapBottomBtn} activeOpacity={0.8}>
-              <LinearGradient colors={["#ffffff15", "#ffffff05"]} style={styles.snapBottomBtnGrad}>
-                <Ionicons name="camera" size={22} color="#fff" />
+              <LinearGradient colors={[colors.surfaceAlt, colors.surfaceAlt]} style={styles.snapBottomBtnGrad}>
+                <Ionicons name="camera" size={22} color={colors.white} />
               </LinearGradient>
               <Text style={styles.snapBottomLabel}>Camera</Text>
             </TouchableOpacity>
@@ -833,29 +834,29 @@ export default function SocialFeedScreen() {
       {/* ── My Status Viewer ── */}
       <Modal visible={viewingMyStatus} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => setViewingMyStatus(false)}>
         {myStatus && (
-          <View style={{ flex: 1, backgroundColor: '#000' }}>
-            <LinearGradient colors={['#2a0954', '#0d0f1a', '#000']} style={StyleSheet.absoluteFill} />
+          <View style={{ flex: 1, backgroundColor: colors.black }}>
+            <LinearGradient colors={['#2a0954', colors.bg, colors.black]} style={StyleSheet.absoluteFill} />
             {/* Progress bar */}
-            <View style={{ position: 'absolute', top: 54, left: 16, right: 16, height: 3, backgroundColor: '#ffffff30', borderRadius: 2, zIndex: 10 }}>
-              <Animated.View style={{ height: '100%', borderRadius: 2, backgroundColor: '#fff', width: storyProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+            <View style={{ position: 'absolute', top: 54, left: 16, right: 16, height: 3, backgroundColor: colors.white + '30', borderRadius: 2, zIndex: 10 }}>
+              <Animated.View style={{ height: '100%', borderRadius: 2, backgroundColor: colors.white, width: storyProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
             </View>
             {/* Close + Delete */}
             <View style={{ position: 'absolute', top: 60, right: 16, zIndex: 20, flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity
                 onPress={() => { setMyStatus(null); setViewingMyStatus(false); }}
-                style={{ padding: 8, backgroundColor: '#ef444430', borderRadius: 10 }}
+                style={{ padding: 8, backgroundColor: colors.danger + '30', borderRadius: 10 }}
               >
-                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                <Ionicons name="trash-outline" size={20} color={colors.danger} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setViewingMyStatus(false)} style={{ padding: 8 }}>
-                <Ionicons name="close" size={26} color="#fff" />
+                <Ionicons name="close" size={26} color={colors.white} />
               </TouchableOpacity>
             </View>
             {/* Content */}
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
               <Avatar name={user?.displayName || user?.email || "Y"} size={80} />
-              <Text style={{ fontSize: 18, fontWeight: '800', color: '#fff', marginTop: 16, marginBottom: 4 }}>{user?.displayName || user?.email?.split('@')[0] || 'You'}</Text>
-              <Text style={{ fontSize: 12, color: '#94a3b880', marginBottom: 32 }}>Just now · visible for 24h</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.white, marginTop: 16, marginBottom: 4 }}>{user?.displayName || user?.email?.split('@')[0] || 'You'}</Text>
+              <Text style={{ fontSize: 12, color: colors.muted + '80', marginBottom: 32 }}>Just now · visible for 24h</Text>
 
               {/* Photo */}
               {myStatus.image && (
@@ -866,8 +867,8 @@ export default function SocialFeedScreen() {
 
               {/* Mood pill */}
               {myStatus.mood ? (
-                <View style={{ backgroundColor: '#7c3aed25', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 9, borderWidth: 1, borderColor: '#7c3aed50', marginBottom: 14 }}>
-                  <Text style={{ fontSize: 14, color: '#a78bfa', fontWeight: '700' }}>
+                <View style={{ backgroundColor: colors.brand + '25', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 9, borderWidth: 1, borderColor: colors.brand + '50', marginBottom: 14 }}>
+                  <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '700' }}>
                     {[
                       { mood: 'workout', label: '💪 Just worked out' },
                       { mood: 'meal',    label: '🥗 Eating healthy'  },
@@ -882,8 +883,8 @@ export default function SocialFeedScreen() {
 
               {/* Text */}
               {myStatus.text ? (
-                <LinearGradient colors={['#ffffff15', '#ffffff08']} style={{ borderRadius: 20, padding: 22, borderWidth: 1, borderColor: '#ffffff20', width: '100%' }}>
-                  <Text style={{ fontSize: 16, color: '#fff', textAlign: 'center', lineHeight: 24 }}>{myStatus.text}</Text>
+                <LinearGradient colors={[colors.surfaceAlt, colors.surfaceAlt]} style={{ borderRadius: 20, padding: 22, borderWidth: 1, borderColor: colors.surfaceAlt, width: '100%' }}>
+                  <Text style={{ fontSize: 16, color: colors.white, textAlign: 'center', lineHeight: 24 }}>{myStatus.text}</Text>
                 </LinearGradient>
               ) : null}
             </View>
@@ -894,27 +895,27 @@ export default function SocialFeedScreen() {
       {/* ── Story Viewer Modal ── */}
       <Modal visible={!!viewingStory} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => { setViewingStory(null); setStoryReaction(null); }}>
         {viewingStory && (
-          <View style={{ flex: 1, backgroundColor: '#000' }}>
-            <LinearGradient colors={['#2a0954', '#0d0f1a', '#000']} style={StyleSheet.absoluteFill} />
+          <View style={{ flex: 1, backgroundColor: colors.black }}>
+            <LinearGradient colors={['#2a0954', colors.bg, colors.black]} style={StyleSheet.absoluteFill} />
             {/* Progress bar */}
-            <View style={{ position: 'absolute', top: 54, left: 16, right: 16, height: 3, backgroundColor: '#ffffff30', borderRadius: 2, zIndex: 10 }}>
-              <Animated.View style={{ height: '100%', borderRadius: 2, backgroundColor: '#fff', width: storyProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+            <View style={{ position: 'absolute', top: 54, left: 16, right: 16, height: 3, backgroundColor: colors.white + '30', borderRadius: 2, zIndex: 10 }}>
+              <Animated.View style={{ height: '100%', borderRadius: 2, backgroundColor: colors.white, width: storyProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
             </View>
             {/* Close */}
             <TouchableOpacity onPress={() => { setViewingStory(null); setStoryReaction(null); }} style={{ position: 'absolute', top: 60, right: 16, zIndex: 20, padding: 8 }}>
-              <Ionicons name="close" size={26} color="#fff" />
+              <Ionicons name="close" size={26} color={colors.white} />
             </TouchableOpacity>
             {/* Story content */}
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
-              <LinearGradient colors={viewingStory.color} style={{ width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 3, borderColor: '#fff' }}>
-                <Text style={{ fontSize: 36, fontWeight: '900', color: '#fff' }}>{viewingStory.initial}</Text>
+              <LinearGradient colors={viewingStory.color} style={{ width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 3, borderColor: colors.white }}>
+                <Text style={{ fontSize: 36, fontWeight: '900', color: colors.white }}>{viewingStory.initial}</Text>
               </LinearGradient>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 6 }}>{viewingStory.name}</Text>
-              <Text style={{ fontSize: 13, color: '#94a3b880', marginBottom: 40 }}>2h ago</Text>
-              <LinearGradient colors={['#ffffff15', '#ffffff08']} style={{ borderRadius: 20, padding: 24, borderWidth: 1, borderColor: '#ffffff20', width: '100%', alignItems: 'center' }}>
-                <Ionicons name="barbell" size={32} color="#22c55e" style={{ marginBottom: 14 }} />
-                <Text style={{ fontSize: 18, fontWeight: '800', color: '#fff', textAlign: 'center', marginBottom: 8 }}>Just crushed leg day 💪</Text>
-                <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', lineHeight: 22 }}>4 sets of squats, RDLs, and lunges. New PR on squats — 140kg!</Text>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.white, marginBottom: 6 }}>{viewingStory.name}</Text>
+              <Text style={{ fontSize: 13, color: colors.muted + '80', marginBottom: 40 }}>2h ago</Text>
+              <LinearGradient colors={[colors.surfaceAlt, colors.surfaceAlt]} style={{ borderRadius: 20, padding: 24, borderWidth: 1, borderColor: colors.surfaceAlt, width: '100%', alignItems: 'center' }}>
+                <Ionicons name="barbell" size={32} color={colors.success} style={{ marginBottom: 14 }} />
+                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.white, textAlign: 'center', marginBottom: 8 }}>Just crushed leg day 💪</Text>
+                <Text style={{ fontSize: 14, color: colors.muted, textAlign: 'center', lineHeight: 22 }}>4 sets of squats, RDLs, and lunges. New PR on squats — 140kg!</Text>
               </LinearGradient>
             </View>
             {/* Reaction bottom bar */}
@@ -937,9 +938,9 @@ export default function SocialFeedScreen() {
                 ))}
               </View>
               {/* Reply input */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff15', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: '#ffffff25' }}>
-                <Text style={{ flex: 1, color: '#94a3b870', fontSize: 15 }}>Reply to {viewingStory?.name}…</Text>
-                <Ionicons name="paper-plane-outline" size={22} color="#7c3aed" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceAlt, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: colors.white + '25' }}>
+                <Text style={{ flex: 1, color: colors.muted + '70', fontSize: 15 }}>Reply to {viewingStory?.name}…</Text>
+                <Ionicons name="paper-plane-outline" size={22} color={colors.brand} />
               </View>
             </View>
           </View>
@@ -954,23 +955,23 @@ export default function SocialFeedScreen() {
         onRequestClose={closeAddStatus}
       >
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-          <LinearGradient colors={['#1a0533', '#0d0f1a']} style={{ flex: 1 }}>
+          <LinearGradient colors={[colors.surface, colors.surface]} style={{ flex: 1 }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#2d3561' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <TouchableOpacity onPress={closeAddStatus}>
-                <Text style={{ color: '#94a3b8', fontSize: 16 }}>Cancel</Text>
+                <Text style={{ color: colors.muted, fontSize: 16 }}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: '#fff' }}>Add Status</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.white }}>Add Status</Text>
               <TouchableOpacity onPress={handleShareStatus} disabled={!statusText.trim() && !statusMood && !statusImage}>
-                <LinearGradient colors={(statusText.trim() || statusMood || statusImage) ? ['#7c3aed', '#4f1d9a'] : ['#2d3561', '#1e2a4a']} style={{ paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20 }}>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Share</Text>
+                <LinearGradient colors={(statusText.trim() || statusMood || statusImage) ? [colors.brand, colors.tealMid] : [colors.border, colors.border]} style={{ paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20 }}>
+                  <Text style={{ color: colors.white, fontWeight: '700', fontSize: 14 }}>Share</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
 
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
               {/* Quick mood pills */}
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', letterSpacing: 1, marginBottom: 10 }}>QUICK STATUS</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.faint, letterSpacing: 1, marginBottom: 10 }}>QUICK STATUS</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                 {[
                   { label: '💪 Just worked out', mood: 'workout' },
@@ -983,31 +984,31 @@ export default function SocialFeedScreen() {
                   <TouchableOpacity
                     key={item.mood}
                     onPress={() => setStatusMood(statusMood === item.mood ? '' : item.mood)}
-                    style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: statusMood === item.mood ? '#7c3aed' : '#2d3561', backgroundColor: statusMood === item.mood ? '#7c3aed25' : '#161b2e' }}
+                    style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: statusMood === item.mood ? colors.brand : colors.border, backgroundColor: statusMood === item.mood ? colors.brand + '25' : colors.surface }}
                   >
-                    <Text style={{ fontSize: 13, color: statusMood === item.mood ? '#a78bfa' : '#94a3b8', fontWeight: '600' }}>{item.label}</Text>
+                    <Text style={{ fontSize: 13, color: statusMood === item.mood ? colors.brandBright : colors.muted, fontWeight: '600' }}>{item.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* Text input */}
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', letterSpacing: 1, marginBottom: 10 }}>YOUR MESSAGE</Text>
-              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: '#161b2e', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#2d3561' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.faint, letterSpacing: 1, marginBottom: 10 }}>YOUR MESSAGE</Text>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: colors.surface, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: colors.border }}>
                 <Avatar name={user?.displayName || user?.email || "Y"} size={40} />
                 <TextInput
-                  style={{ flex: 1, color: '#fff', fontSize: 16, lineHeight: 24, minHeight: 80, textAlignVertical: 'top' }}
+                  style={{ flex: 1, color: colors.white, fontSize: 16, lineHeight: 24, minHeight: 80, textAlignVertical: 'top' }}
                   placeholder="What's your fitness vibe today?"
-                  placeholderTextColor="#6b7280"
+                  placeholderTextColor={colors.faint}
                   multiline
                   maxLength={300}
                   value={statusText}
                   onChangeText={setStatusText}
                 />
               </View>
-              <Text style={{ textAlign: 'right', color: '#6b7280', fontSize: 12, marginTop: 6, marginBottom: 20 }}>{statusText.length}/300</Text>
+              <Text style={{ textAlign: 'right', color: colors.faint, fontSize: 12, marginTop: 6, marginBottom: 20 }}>{statusText.length}/300</Text>
 
               {/* Photo section */}
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', letterSpacing: 1, marginBottom: 10 }}>ADD PHOTO</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.faint, letterSpacing: 1, marginBottom: 10 }}>ADD PHOTO</Text>
 
               {/* Image preview */}
               {statusImage ? (
@@ -1015,9 +1016,9 @@ export default function SocialFeedScreen() {
                   <Image source={{ uri: statusImage }} style={{ width: '100%', height: 220 }} resizeMode="cover" />
                   <TouchableOpacity
                     onPress={() => setStatusImage(null)}
-                    style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: '#00000099', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#ffffff30' }}
+                    style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.black + '99', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.white + '30' }}
                   >
-                    <Ionicons name="close" size={16} color="#fff" />
+                    <Ionicons name="close" size={16} color={colors.white} />
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -1025,30 +1026,30 @@ export default function SocialFeedScreen() {
                   <TouchableOpacity
                     onPress={openStatusCamera}
                     activeOpacity={0.8}
-                    style={{ flex: 1, backgroundColor: '#161b2e', borderRadius: 16, borderWidth: 1, borderColor: '#2d3561', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', paddingVertical: 26, gap: 8 }}
+                    style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', paddingVertical: 26, gap: 8 }}
                   >
-                    <LinearGradient colors={['#7c3aed30', '#7c3aed10']} style={{ width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' }}>
-                      <Ionicons name="camera" size={22} color="#a78bfa" />
+                    <LinearGradient colors={[colors.brand + '30', colors.brand + '10']} style={{ width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' }}>
+                      <Ionicons name="camera" size={22} color={colors.brand} />
                     </LinearGradient>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#a78bfa' }}>Camera</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.brand }}>Camera</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={openStatusGallery}
                     activeOpacity={0.8}
-                    style={{ flex: 1, backgroundColor: '#161b2e', borderRadius: 16, borderWidth: 1, borderColor: '#2d3561', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', paddingVertical: 26, gap: 8 }}
+                    style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', paddingVertical: 26, gap: 8 }}
                   >
-                    <LinearGradient colors={['#22c55e30', '#22c55e10']} style={{ width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' }}>
-                      <Ionicons name="images" size={22} color="#22c55e" />
+                    <LinearGradient colors={[colors.success + '30', colors.success + '10']} style={{ width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' }}>
+                      <Ionicons name="images" size={22} color={colors.success} />
                     </LinearGradient>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#22c55e' }}>Gallery</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.success }}>Gallery</Text>
                   </TouchableOpacity>
                 </View>
               )}
 
               {/* Visibility note */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#7c3aed15', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#7c3aed30' }}>
-                <Ionicons name="people-outline" size={18} color="#a78bfa" />
-                <Text style={{ flex: 1, fontSize: 13, color: '#94a3b8', lineHeight: 19 }}>Your status is visible to your friends for <Text style={{ color: '#a78bfa', fontWeight: '700' }}>24 hours</Text>.</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.brand + '15', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.brand + '30' }}>
+                <Ionicons name="people-outline" size={18} color={colors.brand} />
+                <Text style={{ flex: 1, fontSize: 13, color: colors.muted, lineHeight: 19 }}>Your status is visible to your friends for <Text style={{ color: colors.brand, fontWeight: '700' }}>24 hours</Text>.</Text>
               </View>
             </ScrollView>
           </LinearGradient>
@@ -1058,7 +1059,7 @@ export default function SocialFeedScreen() {
       {/* Create Post Modal */}
       <Modal visible={showCreate} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeCreate}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-          <LinearGradient colors={["#1a0533", "#0d0f1a"]} style={styles.createModal}>
+          <LinearGradient colors={[colors.surface, colors.surface]} style={styles.createModal}>
 
             {/* ── Header ── */}
             <View style={styles.createHeader}>
@@ -1068,7 +1069,7 @@ export default function SocialFeedScreen() {
               <Text style={styles.createTitle}>New Post</Text>
               <TouchableOpacity onPress={handleCreatePost} disabled={!createContent.trim() && !selectedImage}>
                 <LinearGradient
-                  colors={(createContent.trim() || selectedImage) ? ["#7c3aed", "#4f1d9a"] : ["#2d3561", "#1e2a4a"]}
+                  colors={(createContent.trim() || selectedImage) ? [colors.brand, colors.tealMid] : [colors.border, colors.border]}
                   style={styles.createPostBtn}
                 >
                   <Text style={styles.createPostBtnText}>Share</Text>
@@ -1092,7 +1093,7 @@ export default function SocialFeedScreen() {
                   {createType === t.key && (
                     <LinearGradient colors={[t.color + "40", t.color + "10"]} style={[StyleSheet.absoluteFill, { borderRadius: 18 }]} />
                   )}
-                  <Ionicons name={t.icon as any} size={13} color={createType === t.key ? t.color : "#6b7280"} />
+                  <Ionicons name={t.icon as any} size={13} color={createType === t.key ? t.color : colors.faint} />
                   <Text style={[styles.typePillText, createType === t.key && { color: t.color, fontWeight: "700" }]}>{t.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -1119,7 +1120,7 @@ export default function SocialFeedScreen() {
               <TextInput
                 style={styles.createInput}
                 placeholder="What's your fitness vibe today? 💪"
-                placeholderTextColor="#4b5563"
+                placeholderTextColor={colors.borderStrong}
                 multiline
                 scrollEnabled={false}
                 value={createContent}
@@ -1136,21 +1137,21 @@ export default function SocialFeedScreen() {
                   {createFeeling && (
                     <TouchableOpacity
                       onPress={() => setCreateFeeling(null)}
-                      style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#eab30820", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: "#eab30840" }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.warning + '20', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.warning + '40' }}
                     >
                       <Text style={{ fontSize: 14 }}>{createFeeling.emoji}</Text>
-                      <Text style={{ fontSize: 12, color: "#eab308", fontWeight: "600" }}>{createFeeling.label}</Text>
-                      <Ionicons name="close-circle" size={14} color="#eab30880" />
+                      <Text style={{ fontSize: 12, color: colors.warning, fontWeight: "600" }}>{createFeeling.label}</Text>
+                      <Ionicons name="close-circle" size={14} color={colors.warning + '80'} />
                     </TouchableOpacity>
                   )}
                   {createLocation !== "" && (
                     <TouchableOpacity
                       onPress={() => { setCreateLocation(""); setShowLocationInput(false); }}
-                      style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#f9731620", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: "#f9731640" }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.accent + '20', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.accent + '40' }}
                     >
-                      <Ionicons name="location" size={12} color="#f97316" />
-                      <Text style={{ fontSize: 12, color: "#f97316", fontWeight: "600" }} numberOfLines={1}>{createLocation}</Text>
-                      <Ionicons name="close-circle" size={14} color="#f9731680" />
+                      <Ionicons name="location" size={12} color={colors.accent} />
+                      <Text style={{ fontSize: 12, color: colors.accent, fontWeight: "600" }} numberOfLines={1}>{createLocation}</Text>
+                      <Ionicons name="close-circle" size={14} color={colors.accent + '80'} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1159,17 +1160,17 @@ export default function SocialFeedScreen() {
 
               {/* Feeling picker grid */}
               {showFeelingPicker && (
-                <View style={{ backgroundColor: "#161b2e", borderRadius: 16, borderWidth: 1, borderColor: "#eab30840", padding: 12, marginBottom: 10 }}>
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#6b7280", letterSpacing: 1, marginBottom: 10 }}>HOW ARE YOU FEELING?</Text>
+                <View style={{ backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.warning + '40', padding: 12, marginBottom: 10 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.faint, letterSpacing: 1, marginBottom: 10 }}>HOW ARE YOU FEELING?</Text>
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                     {FEELINGS.map(f => (
                       <TouchableOpacity
                         key={f.label}
                         onPress={() => { setCreateFeeling(createFeeling?.label === f.label ? null : f); setShowFeelingPicker(false); }}
-                        style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: createFeeling?.label === f.label ? "#eab308" : "#2d3561", backgroundColor: createFeeling?.label === f.label ? "#eab30825" : "#0d0f1a" }}
+                        style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: createFeeling?.label === f.label ? colors.warning : colors.border, backgroundColor: createFeeling?.label === f.label ? colors.warning + '25' : colors.bg }}
                       >
                         <Text style={{ fontSize: 15 }}>{f.emoji}</Text>
-                        <Text style={{ fontSize: 12, color: createFeeling?.label === f.label ? "#eab308" : "#94a3b8", fontWeight: "600" }}>{f.label}</Text>
+                        <Text style={{ fontSize: 12, color: createFeeling?.label === f.label ? colors.warning : colors.muted, fontWeight: "600" }}>{f.label}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -1182,7 +1183,7 @@ export default function SocialFeedScreen() {
                   <Image source={{ uri: selectedImage }} style={styles.previewImage} resizeMode="cover" />
                   <TouchableOpacity style={styles.previewRemove} onPress={() => setSelectedImage(null)}>
                     <View style={styles.previewRemoveGrad}>
-                      <Ionicons name="close" size={16} color="#fff" />
+                      <Ionicons name="close" size={16} color={colors.white} />
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -1192,15 +1193,15 @@ export default function SocialFeedScreen() {
             {/* ── Media toolbar ── */}
             <View style={styles.mediaToolbar}>
               <TouchableOpacity style={styles.mediaBtn} onPress={openCamera} activeOpacity={0.75}>
-                <View style={[styles.mediaBtnGrad, { backgroundColor: "#7c3aed22" }]}>
-                  <Ionicons name="camera" size={20} color="#a78bfa" />
+                <View style={[styles.mediaBtnGrad, { backgroundColor: colors.brand + '22' }]}>
+                  <Ionicons name="camera" size={20} color={colors.brand} />
                 </View>
                 <Text style={styles.mediaBtnLabel}>Camera</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.mediaBtn} onPress={openGallery} activeOpacity={0.75}>
-                <View style={[styles.mediaBtnGrad, { backgroundColor: "#22c55e22" }]}>
-                  <Ionicons name="images" size={20} color="#22c55e" />
+                <View style={[styles.mediaBtnGrad, { backgroundColor: colors.success + '22' }]}>
+                  <Ionicons name="images" size={20} color={colors.success} />
                 </View>
                 <Text style={styles.mediaBtnLabel}>Gallery</Text>
               </TouchableOpacity>
@@ -1211,12 +1212,12 @@ export default function SocialFeedScreen() {
                 onPress={handleGetLocation}
                 disabled={fetchingLocation}
               >
-                <View style={[styles.mediaBtnGrad, { backgroundColor: createLocation ? "#f9731640" : "#f9731622", borderWidth: createLocation ? 1 : 0, borderColor: "#f9731660" }]}>
+                <View style={[styles.mediaBtnGrad, { backgroundColor: createLocation ? colors.accent + '40' : colors.accent + '22', borderWidth: createLocation ? 1 : 0, borderColor: colors.accent + '60' }]}>
                   {fetchingLocation
-                    ? <ActivityIndicator size="small" color="#f97316" />
-                    : <Ionicons name="location" size={20} color="#f97316" />}
+                    ? <ActivityIndicator size="small" color={colors.accent} />
+                    : <Ionicons name="location" size={20} color={colors.accent} />}
                 </View>
-                <Text style={[styles.mediaBtnLabel, createLocation && { color: "#f97316" }]}>
+                <Text style={[styles.mediaBtnLabel, createLocation && { color: colors.accent }]}>
                   {fetchingLocation ? "Getting…" : createLocation ? "Located" : "Location"}
                 </Text>
               </TouchableOpacity>
@@ -1226,10 +1227,10 @@ export default function SocialFeedScreen() {
                 activeOpacity={0.75}
                 onPress={() => { setShowFeelingPicker(v => !v); setShowLocationInput(false); }}
               >
-                <View style={[styles.mediaBtnGrad, { backgroundColor: showFeelingPicker || createFeeling ? "#eab30840" : "#eab30822", borderWidth: showFeelingPicker || createFeeling ? 1 : 0, borderColor: "#eab30860" }]}>
+                <View style={[styles.mediaBtnGrad, { backgroundColor: showFeelingPicker || createFeeling ? colors.warning + '40' : colors.warning + '22', borderWidth: showFeelingPicker || createFeeling ? 1 : 0, borderColor: colors.warning + '60' }]}>
                   <Text style={{ fontSize: createFeeling ? 20 : 18 }}>{createFeeling ? createFeeling.emoji : "😊"}</Text>
                 </View>
-                <Text style={[styles.mediaBtnLabel, (showFeelingPicker || createFeeling) && { color: "#eab308" }]}>
+                <Text style={[styles.mediaBtnLabel, (showFeelingPicker || createFeeling) && { color: colors.warning }]}>
                   {createFeeling ? createFeeling.label : "Feeling"}
                 </Text>
               </TouchableOpacity>
@@ -1248,122 +1249,122 @@ const styles = StyleSheet.create({
 
   // Header
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10 },
-  headerTitle: { fontSize: 22, fontWeight: "900", color: "#fff", letterSpacing: -0.5 },
+  headerTitle: { fontSize: 22, fontWeight: "900", color: colors.ink, letterSpacing: -0.5 },
   headerRight: { flexDirection: "row", alignItems: "center", gap: 4 },
   headerIcon: { padding: 8 },
   createBtn: { marginLeft: 4 },
   createBtnGrad: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
 
   // Stories
-  storiesBar: { borderBottomWidth: 1, borderBottomColor: "#2d356130" },
+  storiesBar: { borderBottomWidth: 1, borderBottomColor: colors.border },
   storiesContent: { paddingHorizontal: 16, paddingVertical: 12, gap: 16 },
   storyItem: { alignItems: "center", width: 70 },
   storyRingGrad: { width: 62, height: 62, borderRadius: 31, justifyContent: "center", alignItems: "center", marginBottom: 6 },
-  storyAvatarInner: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: "#0d0f1a", overflow: "hidden" },
-  addStoryWrap: { width: 62, height: 62, borderRadius: 31, marginBottom: 6, position: "relative", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#2d3561", borderStyle: "dashed" },
-  addStoryPlus: { position: "absolute", bottom: 0, right: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: "#7c3aed", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#0d0f1a" },
-  storyName: { fontSize: 11, color: "#94a3b8", textAlign: "center", fontWeight: "500" },
+  storyAvatarInner: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: colors.bg, overflow: "hidden" },
+  addStoryWrap: { width: 62, height: 62, borderRadius: 31, marginBottom: 6, position: "relative", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: colors.border, borderStyle: "dashed" },
+  addStoryPlus: { position: "absolute", bottom: 0, right: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: colors.brand, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: colors.bg },
+  storyName: { fontSize: 11, color: colors.muted, textAlign: "center", fontWeight: "500" },
   storyRing: { marginRight: 10 },
 
   // Filter
   filterBar: { marginVertical: 10 },
   filterContent: { paddingHorizontal: 16, gap: 8 },
-  filterTab: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#2d3561", gap: 5, overflow: "hidden" },
-  filterTabText: { fontSize: 13, color: "#6b7280", fontWeight: "500" },
+  filterTab: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.border, gap: 5, overflow: "hidden" },
+  filterTabText: { fontSize: 13, color: colors.faint, fontWeight: "500" },
 
   // Post card
-  postCard: { backgroundColor: "#161b2e", marginHorizontal: 12, marginBottom: 12, borderRadius: 20, borderWidth: 1, borderColor: "#2d356150", overflow: "hidden" },
+  postCard: { backgroundColor: colors.surface, marginHorizontal: 12, marginBottom: 12, borderRadius: 20, borderWidth: 1, borderColor: colors.border, overflow: "hidden" },
   postHeader: { flexDirection: "row", alignItems: "center", padding: 14, paddingBottom: 10 },
   postAuthorInfo: { flex: 1 },
-  authorName: { fontSize: 15, fontWeight: "700", color: "#f1f5f9" },
+  authorName: { fontSize: 15, fontWeight: "700", color: colors.ink },
   postMeta: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
   typeBadge: { flexDirection: "row", alignItems: "center", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, gap: 4 },
   typeBadgeText: { fontSize: 11, fontWeight: "700" },
-  postTime: { fontSize: 12, color: "#6b7280" },
+  postTime: { fontSize: 12, color: colors.faint },
   moreBtn: { padding: 4 },
-  postContent: { fontSize: 15, color: "#e2e8f0", lineHeight: 22, paddingHorizontal: 14, paddingBottom: 12 },
+  postContent: { fontSize: 15, color: colors.ink, lineHeight: 22, paddingHorizontal: 14, paddingBottom: 12 },
   tagsRow: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 14, gap: 6, paddingBottom: 12 },
-  tagPill: { backgroundColor: "#7c3aed20", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: "#7c3aed40" },
-  tagText: { color: "#a78bfa", fontSize: 13, fontWeight: "500" },
-  postDivider: { height: 1, backgroundColor: "#2d356140", marginHorizontal: 14 },
+  tagPill: { backgroundColor: colors.brand + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: colors.brand + '40' },
+  tagText: { color: colors.brand, fontSize: 13, fontWeight: "500" },
+  postDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: 14 },
 
   // Actions
   actionsRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 5, marginRight: 20 },
-  actionCount: { fontSize: 14, color: "#94a3b8", fontWeight: "600" },
+  actionCount: { fontSize: 14, color: colors.muted, fontWeight: "600" },
 
   // Comments
-  commentsSection: { paddingHorizontal: 14, paddingBottom: 14, borderTopWidth: 1, borderTopColor: "#2d356140" },
+  commentsSection: { paddingHorizontal: 14, paddingBottom: 14, borderTopWidth: 1, borderTopColor: colors.border },
   commentRow: { flexDirection: "row", gap: 10, marginTop: 10, alignItems: "flex-start" },
-  commentBubble: { flex: 1, backgroundColor: "#0d0f1a", borderRadius: 14, padding: 10, borderWidth: 1, borderColor: "#2d356140" },
-  commentAuthor: { fontSize: 12, fontWeight: "700", color: "#a78bfa", marginBottom: 2 },
-  commentText: { fontSize: 14, color: "#e2e8f0", lineHeight: 20 },
-  noCommentsText: { fontSize: 13, color: "#6b7280", textAlign: "center", marginTop: 10 },
+  commentBubble: { flex: 1, backgroundColor: colors.bg, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: colors.border },
+  commentAuthor: { fontSize: 12, fontWeight: "700", color: colors.brand, marginBottom: 2 },
+  commentText: { fontSize: 14, color: colors.ink, lineHeight: 20 },
+  noCommentsText: { fontSize: 13, color: colors.faint, textAlign: "center", marginTop: 10 },
   addCommentTap: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
-  addCommentPlaceholder: { fontSize: 14, color: "#6b7280" },
+  addCommentPlaceholder: { fontSize: 14, color: colors.faint },
   inlineInput: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
-  inlineInputField: { flex: 1, backgroundColor: "#0d0f1a", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, color: "#fff", fontSize: 14, borderWidth: 1, borderColor: "#2d3561" },
+  inlineInputField: { flex: 1, backgroundColor: colors.bg, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, color: colors.ink, fontSize: 14, borderWidth: 1, borderColor: colors.border },
   sendBtn: {},
   sendBtnGrad: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
 
   // Empty
   emptyState: { alignItems: "center", paddingVertical: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#6b7280", marginTop: 14 },
-  emptyHint: { fontSize: 13, color: "#2d3561", marginTop: 4 },
+  emptyTitle: { fontSize: 18, fontWeight: "700", color: colors.faint, marginTop: 14 },
+  emptyHint: { fontSize: 13, color: colors.border, marginTop: 4 },
 
   // Create modal
   createModal: { flex: 1 },
-  createHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#2d356140" },
+  createHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   createCancelBtn: { minWidth: 60 },
-  createCancel: { color: "#6b7280", fontSize: 15, fontWeight: "500" },
-  createTitle: { fontSize: 17, fontWeight: "800", color: "#fff" },
+  createCancel: { color: colors.faint, fontSize: 15, fontWeight: "500" },
+  createTitle: { fontSize: 17, fontWeight: "800", color: colors.ink },
   createPostBtn: { paddingHorizontal: 20, paddingVertical: 9, borderRadius: 20 },
-  createPostBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  createPostBtnText: { color: colors.white, fontWeight: "700", fontSize: 14 },
 
   // Type chips
-  typePickerRow: { height: 52, borderBottomWidth: 1, borderBottomColor: "#2d356130" },
-  typePill: { flexDirection: "row", alignItems: "center", height: 34, paddingHorizontal: 13, borderRadius: 17, borderWidth: 1, borderColor: "#2d3561", gap: 5, overflow: "hidden" },
-  typePillText: { fontSize: 12, color: "#6b7280", fontWeight: "600" },
+  typePickerRow: { height: 52, borderBottomWidth: 1, borderBottomColor: colors.border },
+  typePill: { flexDirection: "row", alignItems: "center", height: 34, paddingHorizontal: 13, borderRadius: 17, borderWidth: 1, borderColor: colors.border, gap: 5, overflow: "hidden" },
+  typePillText: { fontSize: 12, color: colors.faint, fontWeight: "600" },
 
   // Composer body
   createBody: { flex: 1 },
   createBodyContent: { padding: 16, paddingBottom: 24 },
   createUserRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-  createUserName: { fontSize: 15, fontWeight: "700", color: "#f1f5f9" },
-  createUserSub: { fontSize: 12, color: "#4b5563", marginTop: 2 },
-  createInput: { fontSize: 17, color: "#fff", lineHeight: 26, textAlignVertical: "top", minHeight: 80 },
-  charCount: { textAlign: "right", color: "#374151", fontSize: 12, marginTop: 8, marginBottom: 4 },
+  createUserName: { fontSize: 15, fontWeight: "700", color: colors.ink },
+  createUserSub: { fontSize: 12, color: colors.faint, marginTop: 2 },
+  createInput: { fontSize: 17, color: colors.ink, lineHeight: 26, textAlignVertical: "top", minHeight: 80 },
+  charCount: { textAlign: "right", color: colors.faint, fontSize: 12, marginTop: 8, marginBottom: 4 },
 
   // Post image
   postImageWrap: { marginHorizontal: 0, marginBottom: 0, position: "relative" },
-  postImage: { width: "100%", height: SW * 0.65, backgroundColor: "#0d0f1a" },
-  moreImagesOverlay: { position: "absolute", bottom: 10, right: 10, flexDirection: "row", alignItems: "center", backgroundColor: "#00000080", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5, gap: 4 },
-  moreImagesText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  postImage: { width: "100%", height: SW * 0.65, backgroundColor: colors.bg },
+  moreImagesOverlay: { position: "absolute", bottom: 10, right: 10, flexDirection: "row", alignItems: "center", backgroundColor: colors.black + '80', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5, gap: 4 },
+  moreImagesText: { color: colors.ink, fontWeight: "700", fontSize: 13 },
 
   // Image preview
   previewWrap: { marginTop: 12, borderRadius: 16, overflow: "hidden", position: "relative" },
   previewImage: { width: "100%", height: 200, borderRadius: 16 },
   previewRemove: { position: "absolute", top: 10, right: 10 },
-  previewRemoveGrad: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#00000090", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#ffffff30" },
+  previewRemoveGrad: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.black + '90', justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: colors.white + '30' },
 
   // Media toolbar
-  mediaToolbar: { flexDirection: "row", justifyContent: "space-around", paddingHorizontal: 8, paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#2d356140" },
+  mediaToolbar: { flexDirection: "row", justifyContent: "space-around", paddingHorizontal: 8, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border },
   mediaBtn: { alignItems: "center", gap: 5 },
   mediaBtnGrad: { width: 46, height: 46, borderRadius: 14, justifyContent: "center", alignItems: "center" },
-  mediaBtnLabel: { fontSize: 11, color: "#6b7280", fontWeight: "500" },
+  mediaBtnLabel: { fontSize: 11, color: colors.faint, fontWeight: "500" },
 
   // Streak badge on story bubble
-  streakBadge: { position: "absolute", bottom: 2, right: 0, flexDirection: "row", alignItems: "center", backgroundColor: "#0d0f1a", borderRadius: 10, paddingHorizontal: 5, paddingVertical: 2, borderWidth: 1, borderColor: "#2d3561", gap: 1 },
-  streakBadgeText: { fontSize: 9, fontWeight: "800", color: "#f97316" },
+  streakBadge: { position: "absolute", bottom: 2, right: 0, flexDirection: "row", alignItems: "center", backgroundColor: colors.bg, borderRadius: 10, paddingHorizontal: 5, paddingVertical: 2, borderWidth: 1, borderColor: colors.border, gap: 1 },
+  streakBadgeText: { fontSize: 9, fontWeight: "800", color: colors.accent },
 
   // Discover section
   discoverSection: { paddingTop: 14, paddingBottom: 6 },
   discoverHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 10 },
-  discoverTitle: { fontSize: 14, fontWeight: "800", color: "#f1f5f9" },
-  discoverSeeAll: { fontSize: 12, color: "#7c3aed", fontWeight: "700" },
-  discoverCard: { width: 148, backgroundColor: "#161b2e", borderRadius: 18, padding: 14, borderWidth: 1, overflow: "hidden" },
-  discoverCardTitle: { fontSize: 13, fontWeight: "800", color: "#f1f5f9", marginBottom: 3 },
-  discoverCardDesc: { fontSize: 11, color: "#6b7280", marginBottom: 10 },
+  discoverTitle: { fontSize: 14, fontWeight: "800", color: colors.ink },
+  discoverSeeAll: { fontSize: 12, color: colors.brand, fontWeight: "700" },
+  discoverCard: { width: 148, backgroundColor: colors.surface, borderRadius: 18, padding: 14, borderWidth: 1, overflow: "hidden" },
+  discoverCardTitle: { fontSize: 13, fontWeight: "800", color: colors.ink, marginBottom: 3 },
+  discoverCardDesc: { fontSize: 11, color: colors.faint, marginBottom: 10 },
   discoverCardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   discoverCardStat: { fontSize: 11, fontWeight: "700" },
   discoverTimeTag: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
@@ -1371,19 +1372,19 @@ const styles = StyleSheet.create({
 
   // Quick Snap FAB
   snapFab: { position: "absolute", bottom: 24, right: 20, zIndex: 50 },
-  snapFabGrad: { width: 58, height: 58, borderRadius: 29, justifyContent: "center", alignItems: "center", shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 10 },
+  snapFabGrad: { width: 58, height: 58, borderRadius: 29, justifyContent: "center", alignItems: "center", shadowColor: colors.brand, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 10 },
 
   // Quick Snap creator
-  snapSticker: { width: 50, height: 50, borderRadius: 16, backgroundColor: "#ffffff15", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#ffffff20" },
-  snapStickerActive: { backgroundColor: "#7c3aed50", borderColor: "#7c3aed", borderWidth: 2 },
-  snapTextInput: { fontSize: 24, fontWeight: "700", color: "#fff", textAlign: "center", width: "100%", minHeight: 80, textShadowColor: "#00000080", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
+  snapSticker: { width: 50, height: 50, borderRadius: 16, backgroundColor: colors.surfaceAlt, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: colors.surfaceAlt },
+  snapStickerActive: { backgroundColor: colors.brand + '50', borderColor: colors.brand, borderWidth: 2 },
+  snapTextInput: { fontSize: 24, fontWeight: "700", color: colors.ink, textAlign: "center", width: "100%", minHeight: 80, textShadowColor: colors.black + '80', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
   snapBottomBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", paddingHorizontal: 32, paddingBottom: 50, paddingTop: 16 },
   snapBottomBtn: { alignItems: "center", gap: 6 },
-  snapBottomBtnGrad: { width: 52, height: 52, borderRadius: 16, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#ffffff20" },
-  snapBottomLabel: { fontSize: 11, color: "#ffffff80", fontWeight: "600" },
+  snapBottomBtnGrad: { width: 52, height: 52, borderRadius: 16, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: colors.surfaceAlt },
+  snapBottomLabel: { fontSize: 11, color: colors.ink + '80', fontWeight: "600" },
   snapPostBtn: { width: 68, height: 68, borderRadius: 34, justifyContent: "center", alignItems: "center" },
 
   // Story reactions
-  reactionBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center", backgroundColor: "#ffffff15", borderWidth: 1, borderColor: "#ffffff20" },
-  reactionBtnActive: { backgroundColor: "#7c3aed40", borderColor: "#7c3aed", borderWidth: 2 },
+  reactionBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center", backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.surfaceAlt },
+  reactionBtnActive: { backgroundColor: colors.brand + '40', borderColor: colors.brand, borderWidth: 2 },
 });

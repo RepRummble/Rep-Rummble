@@ -10,15 +10,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList, Meal } from '../../types';
 import api from '../../config/api';
 
+import { colors } from '../../theme/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const SW = Dimensions.get('window').width;
 
 const FEATURES = [
-  { icon: 'sparkles',    color: '#7c3aed', bg: '#7c3aed20', label: 'AI-Powered',        desc: 'GPT-4 Vision' },
-  { icon: 'nutrition',   color: '#22c55e', bg: '#22c55e20', label: 'Full Nutrition',     desc: 'Macros & micros' },
-  { icon: 'restaurant',  color: '#f97316', bg: '#f9731620', label: 'Regional Foods',     desc: 'Indian & local' },
-  { icon: 'bulb',        color: '#eab308', bg: '#eab30820', label: 'Smart Tips',         desc: 'Healthier swaps' },
+  { icon: 'sparkles',    color: colors.brand, bg: colors.brand + '20', label: 'AI-Powered',        desc: 'GPT-4 Vision' },
+  { icon: 'nutrition',   color: colors.success, bg: colors.success + '20', label: 'Full Nutrition',     desc: 'Macros & micros' },
+  { icon: 'restaurant',  color: colors.accent, bg: colors.accent + '20', label: 'Regional Foods',     desc: 'Indian & local' },
+  { icon: 'bulb',        color: colors.warning, bg: colors.warning + '20', label: 'Smart Tips',         desc: 'Healthier swaps' },
 ];
 
 const MEAL_EMOJIS: Record<string, string> = {
@@ -61,12 +62,12 @@ export default function SnapScreen() {
 
   return (
     <View style={s.root}>
-      <LinearGradient colors={['#120823', '#0d0f1a', '#080b14']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
         >
 
           {/* ── Header ── */}
@@ -76,13 +77,13 @@ export default function SnapScreen() {
               <Text style={s.subtitle}>Scan, search & track your meals</Text>
             </View>
             <View style={s.headerBadge}>
-              <Ionicons name="flame" size={14} color="#f97316" />
+              <Ionicons name="flame" size={14} color={colors.accent} />
               <Text style={s.headerBadgeText}>2,850 cal goal</Text>
             </View>
           </View>
 
           {/* ── Today's Macros Bar ── */}
-          <LinearGradient colors={['#1e0545', '#161b2e']} style={s.macroCard}>
+          <LinearGradient colors={[colors.surface, colors.surface]} style={s.macroCard}>
             <View style={s.macroRow}>
               <View style={{ flex: 1 }}>
                 <Text style={s.macroLabel}>TODAY'S CALORIES</Text>
@@ -92,7 +93,7 @@ export default function SnapScreen() {
                 </View>
                 <View style={s.macroTrack}>
                   <LinearGradient
-                    colors={['#7c3aed', '#22c55e']}
+                    colors={[colors.brand, colors.success]}
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                     style={[s.macroFill, { width: `${pct}%` }]}
                   />
@@ -100,9 +101,9 @@ export default function SnapScreen() {
               </View>
               <View style={s.macroStats}>
                 {[
-                  { label: 'Protein', val: `${totalProt}g`, color: '#7c3aed' },
-                  { label: 'Carbs',   val: `${totalCarbs}g`, color: '#22c55e' },
-                  { label: 'Fat',     val: `${totalFat}g`, color: '#f97316' },
+                  { label: 'Protein', val: `${totalProt}g`, color: colors.brand },
+                  { label: 'Carbs',   val: `${totalCarbs}g`, color: colors.success },
+                  { label: 'Fat',     val: `${totalFat}g`, color: colors.accent },
                 ].map((m, i) => (
                   <View key={i} style={s.macroStat}>
                     <Text style={[s.macroStatVal, { color: m.color }]}>{m.val}</Text>
@@ -122,16 +123,16 @@ export default function SnapScreen() {
               onPress={() => navigation.navigate('FoodScanner')}
               activeOpacity={0.85}
             >
-              <LinearGradient colors={['#16a34a', '#15803d', '#14532d']} style={s.scanCardInner}>
+              <LinearGradient colors={[colors.brand, colors.tealDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scanCardInner}>
                 <View style={s.scanIconWrap}>
-                  <LinearGradient colors={['#ffffff25', '#ffffff10']} style={s.scanIconBg}>
-                    <Ionicons name="camera" size={32} color="#fff" />
+                  <LinearGradient colors={[colors.white + '30', colors.white + '20']} style={s.scanIconBg}>
+                    <Ionicons name="camera" size={32} color={colors.white} />
                   </LinearGradient>
                 </View>
                 <Text style={s.scanCardTitle}>Scan Meal</Text>
                 <Text style={s.scanCardSub}>AI instant recognition</Text>
                 <View style={s.scanBadge}>
-                  <Ionicons name="flash" size={10} color="#fff" />
+                  <Ionicons name="flash" size={10} color={colors.white} />
                   <Text style={s.scanBadgeText}>Instant</Text>
                 </View>
               </LinearGradient>
@@ -143,17 +144,17 @@ export default function SnapScreen() {
               onPress={() => navigation.navigate('FoodSearch')}
               activeOpacity={0.85}
             >
-              <LinearGradient colors={['#2a0a4a', '#1e0a35', '#161b2e']} style={s.searchCardInner}>
+              <LinearGradient colors={[colors.surface, colors.surface]} style={s.searchCardInner}>
                 <View style={s.searchIconWrap}>
-                  <LinearGradient colors={['#7c3aed40', '#7c3aed20']} style={s.scanIconBg}>
-                    <Ionicons name="search" size={28} color="#a78bfa" />
+                  <LinearGradient colors={[colors.brand + '40', colors.brand + '20']} style={s.scanIconBg}>
+                    <Ionicons name="search" size={28} color={colors.brand} />
                   </LinearGradient>
                 </View>
                 <Text style={s.searchCardTitle}>Food Search</Text>
                 <Text style={s.searchCardSub}>USDA database</Text>
-                <View style={[s.scanBadge, { backgroundColor: '#7c3aed40' }]}>
-                  <Ionicons name="library-outline" size={10} color="#a78bfa" />
-                  <Text style={[s.scanBadgeText, { color: '#a78bfa' }]}>900k+ foods</Text>
+                <View style={[s.scanBadge, { backgroundColor: colors.brand + '40' }]}>
+                  <Ionicons name="library-outline" size={10} color={colors.brand} />
+                  <Text style={[s.scanBadgeText, { color: colors.brand }]}>900k+ foods</Text>
                 </View>
               </LinearGradient>
             </TouchableOpacity>
@@ -176,7 +177,7 @@ export default function SnapScreen() {
           {/* ── Recent Meals ── */}
           <View style={s.sectionRow}>
             <View style={s.sectionLeft}>
-              <Ionicons name="time-outline" size={14} color="#22c55e" />
+              <Ionicons name="time-outline" size={14} color={colors.success} />
               <Text style={s.sectionTitle}>Recent Meals</Text>
             </View>
             <TouchableOpacity onPress={() => navigation.navigate('FoodSearch')}>
@@ -186,7 +187,7 @@ export default function SnapScreen() {
 
           {recentMeals.length === 0 ? (
             <View style={s.emptyCard}>
-              <Ionicons name="restaurant-outline" size={36} color="#2d3561" />
+              <Ionicons name="restaurant-outline" size={36} color={colors.border} />
               <Text style={s.emptyText}>No meals logged yet</Text>
               <Text style={s.emptyHint}>Tap Scan Meal above to add your first</Text>
             </View>
@@ -199,9 +200,9 @@ export default function SnapScreen() {
                 <Text style={s.mealName}>{meal.foodName}</Text>
                 <View style={s.mealMacros}>
                   {[
-                    { label: `P ${meal.protein || 0}g`, color: '#7c3aed' },
-                    { label: `C ${meal.carbs || 0}g`,   color: '#22c55e' },
-                    { label: `F ${meal.fat || 0}g`,     color: '#f97316' },
+                    { label: `P ${meal.protein || 0}g`, color: colors.brand },
+                    { label: `C ${meal.carbs || 0}g`,   color: colors.success },
+                    { label: `F ${meal.fat || 0}g`,     color: colors.accent },
                   ].map((m, j) => (
                     <Text key={j} style={[s.mealMacro, { color: m.color }]}>{m.label}</Text>
                   ))}
@@ -228,61 +229,61 @@ const s = StyleSheet.create({
   scroll: { paddingHorizontal: 16, paddingBottom: 120 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, paddingBottom: 16 },
-  title: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-  subtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  headerBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#f9731618', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: '#f9731630' },
-  headerBadgeText: { fontSize: 11, color: '#f97316', fontWeight: '700' },
+  title: { fontSize: 22, fontWeight: '900', color: colors.ink, letterSpacing: -0.5 },
+  subtitle: { fontSize: 12, color: colors.faint, marginTop: 2 },
+  headerBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.accent + '18', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.accent + '30' },
+  headerBadgeText: { fontSize: 11, color: colors.accent, fontWeight: '700' },
 
-  macroCard: { borderRadius: 20, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: '#3b1e6b50' },
+  macroCard: { borderRadius: 20, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
   macroRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  macroLabel: { fontSize: 10, fontWeight: '800', color: '#6b7280', letterSpacing: 1, marginBottom: 4 },
+  macroLabel: { fontSize: 10, fontWeight: '800', color: colors.faint, letterSpacing: 1, marginBottom: 4 },
   macroValRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
-  macroVal: { fontSize: 28, fontWeight: '900', color: '#fff' },
-  macroGoal: { fontSize: 13, color: '#6b7280' },
-  macroTrack: { height: 6, backgroundColor: '#2d3561', borderRadius: 3, overflow: 'hidden' },
+  macroVal: { fontSize: 28, fontWeight: '900', color: colors.ink },
+  macroGoal: { fontSize: 13, color: colors.faint },
+  macroTrack: { height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
   macroFill: { height: '100%', borderRadius: 3 },
   macroStats: { gap: 8 },
   macroStat: { alignItems: 'flex-end' },
   macroStatVal: { fontSize: 14, fontWeight: '800' },
-  macroStatLabel: { fontSize: 10, color: '#6b7280', marginTop: 1 },
+  macroStatLabel: { fontSize: 10, color: colors.faint, marginTop: 1 },
 
   actionRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
 
-  scanCard: { width: CARD_W, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#16a34a50' },
+  scanCard: { width: CARD_W, borderRadius: 20, overflow: 'hidden' },
   scanCardInner: { padding: 20, alignItems: 'flex-start', minHeight: 180 },
   scanIconWrap: { marginBottom: 14 },
   scanIconBg: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  scanCardTitle: { fontSize: 17, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  scanCardSub: { fontSize: 12, color: '#bbf7d0', marginBottom: 12, flex: 1 },
-  scanBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ffffff25', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  scanBadgeText: { fontSize: 10, fontWeight: '700', color: '#fff' },
+  scanCardTitle: { fontSize: 17, fontWeight: '800', color: colors.white, marginBottom: 4 },
+  scanCardSub: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginBottom: 12, flex: 1 },
+  scanBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  scanBadgeText: { fontSize: 10, fontWeight: '700', color: colors.white },
 
-  searchCard: { width: CARD_W, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#7c3aed40' },
+  searchCard: { width: CARD_W, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: colors.brand + '40' },
   searchCardInner: { padding: 20, alignItems: 'flex-start', minHeight: 180 },
   searchIconWrap: { marginBottom: 14 },
-  searchCardTitle: { fontSize: 17, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  searchCardSub: { fontSize: 12, color: '#a78bfa', marginBottom: 12, flex: 1 },
+  searchCardTitle: { fontSize: 17, fontWeight: '800', color: colors.ink, marginBottom: 4 },
+  searchCardSub: { fontSize: 12, color: colors.brand, marginBottom: 12, flex: 1 },
 
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  featureCard: { width: (SW - 42) / 2, backgroundColor: '#161b2e', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#2d356150' },
+  featureCard: { width: (SW - 42) / 2, backgroundColor: colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border },
   featureIconWrap: { width: 38, height: 38, borderRadius: 11, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  featureLabel: { fontSize: 13, fontWeight: '700', color: '#f1f5f9', marginBottom: 4 },
-  featureDesc: { fontSize: 11, color: '#6b7280', lineHeight: 16 },
+  featureLabel: { fontSize: 13, fontWeight: '700', color: colors.ink, marginBottom: 4 },
+  featureDesc: { fontSize: 11, color: colors.faint, lineHeight: 16 },
 
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   sectionLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#e2e8f0' },
-  sectionLink: { fontSize: 12, color: '#7c3aed', fontWeight: '600' },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: colors.ink },
+  sectionLink: { fontSize: 12, color: colors.brand, fontWeight: '600' },
 
-  mealRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#161b2e', borderRadius: 16, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#2d356150' },
-  mealEmoji: { width: 48, height: 48, backgroundColor: '#2d3561', borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  mealName: { fontSize: 13, fontWeight: '700', color: '#f1f5f9', marginBottom: 5 },
+  mealRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 16, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
+  mealEmoji: { width: 48, height: 48, backgroundColor: colors.border, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  mealName: { fontSize: 13, fontWeight: '700', color: colors.ink, marginBottom: 5 },
   mealMacros: { flexDirection: 'row', gap: 8 },
   mealMacro: { fontSize: 11, fontWeight: '700' },
-  mealCal: { fontSize: 18, fontWeight: '900', color: '#fff' },
-  mealCalUnit: { fontSize: 10, color: '#6b7280' },
-  mealTime: { fontSize: 10, color: '#4b5563' },
-  emptyCard: { backgroundColor: '#161b2e', borderRadius: 14, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: '#2d356140', marginBottom: 8 },
-  emptyText: { fontSize: 15, color: '#6b7280', marginTop: 12, fontWeight: '500' },
-  emptyHint: { fontSize: 12, color: '#2d3561', marginTop: 4 },
+  mealCal: { fontSize: 18, fontWeight: '900', color: colors.ink },
+  mealCalUnit: { fontSize: 10, color: colors.faint },
+  mealTime: { fontSize: 10, color: colors.faint },
+  emptyCard: { backgroundColor: colors.surface, borderRadius: 14, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
+  emptyText: { fontSize: 15, color: colors.faint, marginTop: 12, fontWeight: '500' },
+  emptyHint: { fontSize: 12, color: colors.border, marginTop: 4 },
 });

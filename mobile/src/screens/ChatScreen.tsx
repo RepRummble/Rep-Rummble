@@ -14,6 +14,7 @@ import { DEV_BYPASS_AUTH } from '../config/devConfig';
 import { useSubscription } from '../context/SubscriptionContext';
 import { PaywallModal } from './SubscriptionScreen';
 
+import { colors } from '../theme/colors';
 // ── Local AI response engine (dev / offline mode) ───────────────────────────
 
 const AI_BANK: Array<{ keys: string[]; replies: string[] }> = [
@@ -240,8 +241,8 @@ export default function ChatScreen() {
     return (
       <View style={[st.row, isUser ? st.rowUser : st.rowOther]}>
         {!isUser && (
-          <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.avatar}>
-            <Ionicons name="sparkles" size={14} color="#fff" />
+          <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.avatar}>
+            <Ionicons name="sparkles" size={14} color={colors.white} />
           </LinearGradient>
         )}
         <View style={[st.bubble, isUser ? st.bubbleUser : st.bubbleOther]}>
@@ -255,7 +256,7 @@ export default function ChatScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={st.container}>
-        <ActivityIndicator size="large" color="#7c3aed" style={{ marginTop: 60 }} />
+        <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 60 }} />
         <Text style={st.loadingText}>Starting AI chat...</Text>
       </SafeAreaView>
     );
@@ -272,14 +273,14 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={st.header}>
         <TouchableOpacity onPress={() => (navigation as any).goBack()} style={st.backBtn}>
-          <Ionicons name="close" size={24} color="#fff" />
+          <Ionicons name="close" size={24} color={colors.ink} />
         </TouchableOpacity>
         <View style={st.headerCenter}>
           <View style={st.headerAvatarWrap}>
-            <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.headerAvatar}>
-              <Ionicons name="sparkles" size={18} color="#fff" />
+            <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.headerAvatar}>
+              <Ionicons name="sparkles" size={18} color={colors.white} />
             </LinearGradient>
-            <View style={[st.onlineDot, { backgroundColor: '#22c55e' }]} />
+            <View style={[st.onlineDot, { backgroundColor: colors.success }]} />
           </View>
           <View>
             <Text style={st.headerTitle}>AI Coach</Text>
@@ -304,8 +305,8 @@ export default function ChatScreen() {
           ListFooterComponent={
             isTyping ? (
               <View style={st.typingRow}>
-                <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.avatar}>
-                  <Ionicons name="sparkles" size={14} color="#fff" />
+                <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.avatar}>
+                  <Ionicons name="sparkles" size={14} color={colors.white} />
                 </LinearGradient>
                 <View style={st.typingBubble}>
                   <View style={st.typingDots}>
@@ -339,7 +340,7 @@ export default function ChatScreen() {
           <TextInput
             style={st.input}
             placeholder="Ask your AI coach anything..."
-            placeholderTextColor="#4b5563"
+            placeholderTextColor={colors.borderStrong}
             value={inputText}
             onChangeText={setInputText}
             multiline
@@ -351,10 +352,10 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!inputText.trim() || isSending}
           >
-            <LinearGradient colors={['#7c3aed', '#4f1d9a']} style={st.sendGrad}>
+            <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.sendGrad}>
               {isSending
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name="send" size={18} color="#fff" />}
+                ? <ActivityIndicator size="small" color={colors.white} />
+                : <Ionicons name="send" size={18} color={colors.white} />}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -364,17 +365,17 @@ export default function ChatScreen() {
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080b14' },
-  loadingText: { color: '#94a3b8', marginTop: 12, fontSize: 15, textAlign: 'center' },
+  container: { flex: 1, backgroundColor: colors.bg },
+  loadingText: { color: colors.muted, marginTop: 12, fontSize: 15, textAlign: 'center' },
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#161b2e' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   headerAvatarWrap: { position: 'relative' },
   headerAvatar: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
-  onlineDot: { position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, borderWidth: 2, borderColor: '#080b14' },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  headerSub: { fontSize: 11, color: '#22c55e', marginTop: 1 },
+  onlineDot: { position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, borderWidth: 2, borderColor: colors.bg },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  headerSub: { fontSize: 11, color: colors.success, marginTop: 1 },
 
   list: { padding: 16, paddingBottom: 8 },
 
@@ -385,26 +386,26 @@ const st = StyleSheet.create({
   avatar: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginTop: 2, flexShrink: 0 },
 
   bubble: { padding: 12, borderRadius: 18, maxWidth: '100%' },
-  bubbleUser: { backgroundColor: '#7c3aed', borderBottomRightRadius: 4 },
-  bubbleOther: { backgroundColor: '#161b2e', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#2d356150' },
-  senderName: { fontSize: 11, color: '#a78bfa', fontWeight: '700', marginBottom: 4 },
-  msgText: { fontSize: 15, color: '#f1f5f9', lineHeight: 22 },
-  msgTextUser: { color: '#fff' },
+  bubbleUser: { backgroundColor: colors.brand, borderBottomRightRadius: 4 },
+  bubbleOther: { backgroundColor: colors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
+  senderName: { fontSize: 11, color: colors.brand, fontWeight: '700', marginBottom: 4 },
+  msgText: { fontSize: 15, color: colors.ink, lineHeight: 22 },
+  msgTextUser: { color: colors.ink },
 
   systemWrap: { alignItems: 'center', marginVertical: 10 },
-  systemMsg: { fontSize: 12, color: '#6b7280', backgroundColor: '#161b2e', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12 },
+  systemMsg: { fontSize: 12, color: colors.faint, backgroundColor: colors.surface, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12 },
 
   typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 8 },
-  typingBubble: { backgroundColor: '#161b2e', borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: '#2d356150' },
+  typingBubble: { backgroundColor: colors.surface, borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: colors.border },
   typingDots: { flexDirection: 'row', gap: 5, alignItems: 'center' },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#7c3aed' },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.brand },
 
   suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
-  suggestionChip: { backgroundColor: '#161b2e', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: '#2d356180' },
-  suggestionText: { fontSize: 12, color: '#a78bfa', fontWeight: '600' },
+  suggestionChip: { backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.border },
+  suggestionText: { fontSize: 12, color: colors.brand, fontWeight: '600' },
 
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#161b2e' },
-  input: { flex: 1, backgroundColor: '#161b2e', borderRadius: 22, paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, color: '#f1f5f9', maxHeight: 120, borderWidth: 1, borderColor: '#2d356150' },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.surface },
+  input: { flex: 1, backgroundColor: colors.surface, borderRadius: 22, paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, color: colors.ink, maxHeight: 120, borderWidth: 1, borderColor: colors.border },
   sendBtn: { marginBottom: 2 },
   sendGrad: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
 });

@@ -14,13 +14,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { friendService, Friend, FriendRequest } from "../services/friendService";
 
+import { colors } from '../theme/colors';
 const AVATAR_COLORS: readonly [string, string][] = [
-  ["#7c3aed", "#4f1d9a"],
-  ["#22c55e", "#15803d"],
-  ["#f97316", "#c2410c"],
-  ["#eab308", "#92400e"],
-  ["#ef4444", "#b91c1c"],
-  ["#3b82f6", "#1d4ed8"],
+  [colors.brand, colors.tealMid],
+  [colors.brand, colors.tealMid],
+  [colors.accent, colors.accent],
+  [colors.warning, colors.warning],
+  [colors.danger, colors.danger],
+  [colors.info, colors.info],
 ];
 
 function getColor(name: string): readonly [string, string] {
@@ -29,10 +30,10 @@ function getColor(name: string): readonly [string, string] {
 }
 
 function Avatar({ name, size = 44 }: { name: string; size?: number }) {
-  const colors = getColor(name);
+  const gradient = getColor(name);
   return (
-    <LinearGradient colors={colors} style={{ width: size, height: size, borderRadius: size / 2, justifyContent: "center", alignItems: "center" }}>
-      <Text style={{ color: "#fff", fontWeight: "800", fontSize: size * 0.38 }}>{name[0].toUpperCase()}</Text>
+    <LinearGradient colors={gradient} style={{ width: size, height: size, borderRadius: size / 2, justifyContent: "center", alignItems: "center" }}>
+      <Text style={{ color: colors.white, fontWeight: "800", fontSize: size * 0.38 }}>{name[0].toUpperCase()}</Text>
     </LinearGradient>
   );
 }
@@ -122,9 +123,9 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
   if (loading) {
     return (
       <View style={styles.root}>
-        <LinearGradient colors={["#1a0533", "#0d0f1a"]} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={[colors.bg, colors.bg]} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.safeArea}>
-          <ActivityIndicator size="large" color="#7c3aed" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 40 }} />
         </SafeAreaView>
       </View>
     );
@@ -132,12 +133,12 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={["#1a0533", "#0d0f1a", "#080b14"]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
+            <Ionicons name="arrow-back" size={22} color={colors.ink} />
           </TouchableOpacity>
           <Text style={styles.title}>Friends</Text>
           {requests.length > 0 && (
@@ -151,7 +152,7 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
         <View style={styles.tabBar}>
           {TABS.map(t => (
             <TouchableOpacity key={t.key} style={[styles.tab, activeTab === t.key && styles.tabActive]} onPress={() => setActiveTab(t.key)} activeOpacity={0.8}>
-              {activeTab === t.key && <LinearGradient colors={["#7c3aed20", "#7c3aed05"]} style={[StyleSheet.absoluteFill, { borderRadius: 10 }]} />}
+              {activeTab === t.key && <LinearGradient colors={[colors.brand + '20', colors.brand + '05']} style={[StyleSheet.absoluteFill, { borderRadius: 10 }]} />}
               <Text style={[styles.tabText, activeTab === t.key && styles.tabTextActive]}>
                 {t.label}{t.count !== undefined ? ` (${t.count})` : ""}
               </Text>
@@ -177,18 +178,18 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
                     <Text style={styles.friendEmail}>{item.email}</Text>
                   </View>
                   <TouchableOpacity onPress={() => handleRemove(item.friendshipId, name)} style={styles.removeBtn}>
-                    <Ionicons name="person-remove-outline" size={18} color="#ef4444" />
+                    <Ionicons name="person-remove-outline" size={18} color={colors.danger} />
                   </TouchableOpacity>
                 </View>
               );
             }}
             ListEmptyComponent={
               <View style={styles.empty}>
-                <Ionicons name="people-outline" size={56} color="#2d3561" />
+                <Ionicons name="people-outline" size={56} color={colors.border} />
                 <Text style={styles.emptyTitle}>No friends yet</Text>
                 <Text style={styles.emptyHint}>Search for people to connect with</Text>
                 <TouchableOpacity onPress={() => setActiveTab("search")} style={styles.emptyBtn}>
-                  <LinearGradient colors={["#7c3aed", "#4f1d9a"]} style={styles.emptyBtnGrad}>
+                  <LinearGradient colors={[colors.brand, colors.tealMid]} style={styles.emptyBtnGrad}>
                     <Text style={styles.emptyBtnText}>Find Friends</Text>
                   </LinearGradient>
                 </TouchableOpacity>
@@ -216,12 +217,12 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
                   </View>
                   <View style={styles.requestBtns}>
                     <TouchableOpacity onPress={() => handleAccept(item.id)} style={styles.acceptBtn}>
-                      <LinearGradient colors={["#22c55e", "#15803d"]} style={styles.acceptBtnGrad}>
-                        <Ionicons name="checkmark" size={16} color="#fff" />
+                      <LinearGradient colors={[colors.brand, colors.tealMid]} style={styles.acceptBtnGrad}>
+                        <Ionicons name="checkmark" size={16} color={colors.white} />
                       </LinearGradient>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleDecline(item.id)} style={styles.declineBtn}>
-                      <Ionicons name="close" size={16} color="#ef4444" />
+                      <Ionicons name="close" size={16} color={colors.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -229,7 +230,7 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
             }}
             ListEmptyComponent={
               <View style={styles.empty}>
-                <Ionicons name="mail-outline" size={56} color="#2d3561" />
+                <Ionicons name="mail-outline" size={56} color={colors.border} />
                 <Text style={styles.emptyTitle}>No pending requests</Text>
               </View>
             }
@@ -240,11 +241,11 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
         {activeTab === "search" && (
           <View style={{ flex: 1 }}>
             <View style={styles.searchBar}>
-              <Ionicons name="search" size={18} color="#6b7280" style={{ marginRight: 8 }} />
+              <Ionicons name="search" size={18} color={colors.faint} style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search by name or email..."
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={colors.faint}
                 value={searchQuery}
                 onChangeText={handleSearch}
                 autoCapitalize="none"
@@ -252,7 +253,7 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => { setSearchQuery(""); setSearchResults([]); }}>
-                  <Ionicons name="close-circle" size={18} color="#6b7280" />
+                  <Ionicons name="close-circle" size={18} color={colors.faint} />
                 </TouchableOpacity>
               )}
             </View>
@@ -272,8 +273,8 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
                       <Text style={styles.friendEmail}>{item.email}</Text>
                     </View>
                     <TouchableOpacity onPress={() => handleSendRequest(item._id)} style={styles.addBtn}>
-                      <LinearGradient colors={["#7c3aed", "#4f1d9a"]} style={styles.addBtnGrad}>
-                        <Ionicons name="person-add" size={15} color="#fff" />
+                      <LinearGradient colors={[colors.brand, colors.tealMid]} style={styles.addBtnGrad}>
+                        <Ionicons name="person-add" size={15} color={colors.white} />
                         <Text style={styles.addBtnText}>Add</Text>
                       </LinearGradient>
                     </TouchableOpacity>
@@ -283,12 +284,12 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
               ListEmptyComponent={
                 searchQuery.length >= 2 ? (
                   <View style={styles.empty}>
-                    <Ionicons name="search-outline" size={48} color="#2d3561" />
+                    <Ionicons name="search-outline" size={48} color={colors.border} />
                     <Text style={styles.emptyTitle}>No users found</Text>
                   </View>
                 ) : (
                   <View style={styles.empty}>
-                    <Ionicons name="person-add-outline" size={56} color="#2d3561" />
+                    <Ionicons name="person-add-outline" size={56} color={colors.border} />
                     <Text style={styles.emptyTitle}>Find People</Text>
                     <Text style={styles.emptyHint}>Type at least 2 characters to search</Text>
                   </View>
@@ -307,43 +308,43 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
 
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, gap: 10 },
-  backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "#2d356150", justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 26, fontWeight: "800", color: "#fff", letterSpacing: -0.5, flex: 1 },
-  requestBadge: { backgroundColor: "#ef4444", width: 24, height: 24, borderRadius: 12, justifyContent: "center", alignItems: "center" },
-  requestBadgeText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: colors.border, justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 26, fontWeight: "800", color: colors.ink, letterSpacing: -0.5, flex: 1 },
+  requestBadge: { backgroundColor: colors.danger, width: 24, height: 24, borderRadius: 12, justifyContent: "center", alignItems: "center" },
+  requestBadgeText: { color: colors.white, fontSize: 12, fontWeight: "800" },
 
   tabBar: { flexDirection: "row", paddingHorizontal: 16, marginBottom: 8 },
   tab: { flex: 1, paddingVertical: 12, alignItems: "center", position: "relative", borderRadius: 10, overflow: "hidden" },
   tabActive: {},
-  tabText: { fontSize: 14, color: "#6b7280", fontWeight: "500" },
-  tabTextActive: { color: "#a78bfa", fontWeight: "700" },
-  tabUnderline: { position: "absolute", bottom: 0, left: "20%", right: "20%", height: 2, backgroundColor: "#7c3aed", borderRadius: 1 },
+  tabText: { fontSize: 14, color: colors.faint, fontWeight: "500" },
+  tabTextActive: { color: colors.brand, fontWeight: "700" },
+  tabUnderline: { position: "absolute", bottom: 0, left: "20%", right: "20%", height: 2, backgroundColor: colors.brand, borderRadius: 1 },
 
   listContent: { paddingHorizontal: 16, paddingBottom: 100 },
 
-  friendRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#161b2e", borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: "#2d356150", gap: 12 },
-  requestRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#161b2e", borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: "#2d356150", gap: 12 },
+  friendRow: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border, gap: 12 },
+  requestRow: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border, gap: 12 },
   friendInfo: { flex: 1 },
-  friendName: { fontSize: 15, fontWeight: "700", color: "#f1f5f9" },
-  friendEmail: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  requestDate: { fontSize: 11, color: "#2d3561", marginTop: 2 },
+  friendName: { fontSize: 15, fontWeight: "700", color: colors.ink },
+  friendEmail: { fontSize: 12, color: colors.faint, marginTop: 2 },
+  requestDate: { fontSize: 11, color: colors.border, marginTop: 2 },
 
-  removeBtn: { width: 36, height: 36, backgroundColor: "#ef444415", borderRadius: 18, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#ef444430" },
+  removeBtn: { width: 36, height: 36, backgroundColor: colors.danger + '15', borderRadius: 18, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: colors.danger + '30' },
   requestBtns: { flexDirection: "row", gap: 8 },
   acceptBtn: {},
   acceptBtnGrad: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
-  declineBtn: { width: 36, height: 36, backgroundColor: "#ef444415", borderRadius: 18, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#ef444430" },
+  declineBtn: { width: 36, height: 36, backgroundColor: colors.danger + '15', borderRadius: 18, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: colors.danger + '30' },
   addBtn: {},
   addBtnGrad: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, gap: 5 },
-  addBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  addBtnText: { color: colors.white, fontSize: 13, fontWeight: "700" },
 
-  searchBar: { flexDirection: "row", alignItems: "center", backgroundColor: "#161b2e", borderRadius: 14, marginHorizontal: 16, marginVertical: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: "#2d3561" },
-  searchInput: { flex: 1, color: "#fff", fontSize: 15 },
+  searchBar: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: 14, marginHorizontal: 16, marginVertical: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: colors.border },
+  searchInput: { flex: 1, color: colors.ink, fontSize: 15 },
 
   empty: { alignItems: "center", paddingVertical: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#6b7280", marginTop: 14 },
-  emptyHint: { fontSize: 13, color: "#2d3561", marginTop: 4 },
+  emptyTitle: { fontSize: 18, fontWeight: "700", color: colors.faint, marginTop: 14 },
+  emptyHint: { fontSize: 13, color: colors.border, marginTop: 4 },
   emptyBtn: { marginTop: 20 },
   emptyBtnGrad: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 },
-  emptyBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  emptyBtnText: { color: colors.white, fontWeight: "700", fontSize: 15 },
 });

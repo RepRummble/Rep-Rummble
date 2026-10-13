@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { colors } from '../../theme/colors';
 interface ChatFABProps {
   onPress: () => void;
   unreadCount?: number;
@@ -45,7 +46,7 @@ export default function ChatFAB({ onPress, unreadCount = 0 }: ChatFABProps) {
         onPressOut={handlePressOut}
         activeOpacity={0.9}
       >
-        <Ionicons name="chatbubbles" size={28} color="#fff" />
+        <Ionicons name="chatbubbles" size={28} color={colors.white} />
         {unreadCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
@@ -69,10 +70,10 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.brand,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#22c55e',
+    shadowColor: colors.brand,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.danger,
     minWidth: 22,
     height: 22,
     borderRadius: 11,
@@ -90,10 +91,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 6,
     borderWidth: 2,
-    borderColor: '#1e1e1e',
+    borderColor: colors.surface,
   },
   badgeText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 12,
     fontWeight: 'bold',
   },

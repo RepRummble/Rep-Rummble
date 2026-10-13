@@ -12,6 +12,7 @@ import ProfileScreen from '../screens/tabs/ProfileScreen';
 import WearablesScreen from '../screens/WearablesScreen';
 import SocialStackNavigator from "./SocialStackNavigator";
 
+import { colors } from '../theme/colors';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabNavigator() {
@@ -20,15 +21,15 @@ export default function MainTabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#161b2e",
-          borderTopColor: "#2d3561",
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
           height: 85,
           paddingBottom: 20,
           paddingTop: 10,
         },
-        tabBarActiveTintColor: "#22c55e",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "600",

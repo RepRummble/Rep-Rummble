@@ -17,6 +17,7 @@ import ChatScreen from '../screens/ChatScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
 import { SubscriptionProvider } from '../context/SubscriptionContext';
 
+import { colors } from '../theme/colors';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
@@ -24,8 +25,8 @@ export default function RootNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0d0f1a' }}>
-        <ActivityIndicator size="large" color="#22c55e" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg }}>
+        <ActivityIndicator size="large" color={colors.brand} />
       </View>
     );
   }
@@ -35,7 +36,7 @@ export default function RootNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#0d0f1a' },
+        contentStyle: { backgroundColor: colors.bg },
       }}
     >
       {isAuthenticated ? (

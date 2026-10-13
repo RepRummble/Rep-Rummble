@@ -15,12 +15,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { challengeService, Challenge, ChallengeProgress } from "../services/challengeService";
 import { useAuth } from "../context/AuthContext";
 
+import { colors } from '../theme/colors';
 const { width: SW } = Dimensions.get("window");
 
 const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: readonly [string, string] }> = {
-  workout: { icon: "barbell",    color: "#7c3aed", bg: ["#3b0d6b", "#1e0545"] },
-  calories: { icon: "flame",    color: "#f97316", bg: ["#431407", "#1f0a03"] },
-  steps:    { icon: "footsteps", color: "#22c55e", bg: ["#052e16", "#021208"] },
+  workout: { icon: "barbell",    color: colors.brand, bg: [colors.brandSoft, colors.brandSoft] },
+  calories: { icon: "flame",    color: colors.accent, bg: [colors.dangerSoft, colors.dangerSoft] },
+  steps:    { icon: "footsteps", color: colors.success, bg: [colors.successSoft, colors.successSoft] },
 };
 
 function daysLeft(endDate: string) {
@@ -106,8 +107,8 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
                     {item.targetValue} {item.targetUnit}
                   </Text>
                 </View>
-                <View style={[styles.cardTag, { borderColor: "#2d3561", backgroundColor: "#0d0f1a40" }]}>
-                  <Ionicons name="time-outline" size={11} color="#94a3b8" />
+                <View style={[styles.cardTag, { borderColor: colors.border, backgroundColor: colors.bg + '40' }]}>
+                  <Ionicons name="time-outline" size={11} color={colors.muted} />
                   <Text style={styles.cardTagTextGray}>{days}d left</Text>
                 </View>
               </View>
@@ -126,7 +127,7 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
               </LinearGradient>
             ))}
             {item.participants.length > 4 && (
-              <View style={[styles.participantAvatar, { marginLeft: -10, backgroundColor: "#2d3561", zIndex: 5 }]}>
+              <View style={[styles.participantAvatar, { marginLeft: -10, backgroundColor: colors.border, zIndex: 5 }]}>
                 <Text style={styles.participantAvatarText}>+{item.participants.length - 4}</Text>
               </View>
             )}
@@ -180,7 +181,7 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
               <TouchableOpacity onPress={() => handleJoin(item._id)} activeOpacity={0.85}>
                 <LinearGradient colors={[cfg.color, cfg.color + "cc"]} style={styles.joinBtn}>
                   <Text style={styles.joinBtnText}>Join</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#fff" />
+                  <Ionicons name="arrow-forward" size={14} color={colors.white} />
                 </LinearGradient>
               </TouchableOpacity>
             )}
@@ -193,9 +194,9 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
   if (loading) {
     return (
       <View style={styles.root}>
-        <LinearGradient colors={["#1a0533", "#0d0f1a"]} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={[colors.bg, colors.bg]} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.safeArea}>
-          <ActivityIndicator size="large" color="#7c3aed" style={{ marginTop: 60 }} />
+          <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 60 }} />
         </SafeAreaView>
       </View>
     );
@@ -203,19 +204,19 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={["#1a0533", "#0d0f1a", "#080b14"]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
+            <Ionicons name="arrow-back" size={22} color={colors.ink} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Challenges</Text>
             <Text style={styles.subtitle}>Compete. Win. Repeat.</Text>
           </View>
-          <LinearGradient colors={["#7c3aed20", "#7c3aed05"]} style={styles.statPill}>
-            <Ionicons name="trophy" size={16} color="#eab308" />
+          <LinearGradient colors={[colors.brand + '20', colors.brand + '05']} style={styles.statPill}>
+            <Ionicons name="trophy" size={16} color={colors.warning} />
             <Text style={styles.statPillText}>{myChallenges.length} active</Text>
           </LinearGradient>
         </View>
@@ -232,8 +233,8 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
               onPress={() => setActiveTab(t.key)}
               activeOpacity={0.8}
             >
-              {activeTab === t.key && <LinearGradient colors={["#7c3aed20", "#7c3aed05"]} style={[StyleSheet.absoluteFill, { borderRadius: 12 }]} />}
-              <Ionicons name={t.icon as any} size={15} color={activeTab === t.key ? "#a78bfa" : "#6b7280"} />
+              {activeTab === t.key && <LinearGradient colors={[colors.brand + '20', colors.brand + '05']} style={[StyleSheet.absoluteFill, { borderRadius: 12 }]} />}
+              <Ionicons name={t.icon as any} size={15} color={activeTab === t.key ? colors.brandBright : colors.faint} />
               <Text style={[styles.tabText, activeTab === t.key && styles.tabTextActive]}>{t.label}</Text>
               {activeTab === t.key && <View style={styles.tabUnderline} />}
             </TouchableOpacity>
@@ -248,7 +249,7 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="trophy-outline" size={56} color="#2d3561" />
+              <Ionicons name="trophy-outline" size={56} color={colors.border} />
               <Text style={styles.emptyTitle}>{activeTab === "browse" ? "No active challenges" : "You haven't joined any"}</Text>
               <Text style={styles.emptyHint}>{activeTab === "active" ? "Browse and join a challenge above" : "Check back soon!"}</Text>
             </View>
@@ -264,59 +265,59 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
 
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, gap: 10 },
-  backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "#2d356150", justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 28, fontWeight: "800", color: "#fff", letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: "#6b7280", marginTop: 2 },
-  statPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: "#7c3aed30" },
-  statPillText: { color: "#a78bfa", fontWeight: "700", fontSize: 13 },
+  backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: colors.border, justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 28, fontWeight: "800", color: colors.ink, letterSpacing: -0.5 },
+  subtitle: { fontSize: 13, color: colors.faint, marginTop: 2 },
+  statPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: colors.brand + '30' },
+  statPillText: { color: colors.brand, fontWeight: "700", fontSize: 13 },
 
   tabBar: { flexDirection: "row", paddingHorizontal: 16, marginBottom: 10 },
   tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, gap: 6, borderRadius: 12, position: "relative", overflow: "hidden" },
   tabActive: {},
-  tabText: { fontSize: 13, color: "#6b7280", fontWeight: "500" },
-  tabTextActive: { color: "#a78bfa", fontWeight: "700" },
-  tabUnderline: { position: "absolute", bottom: 0, left: "20%", right: "20%", height: 2, backgroundColor: "#7c3aed", borderRadius: 1 },
+  tabText: { fontSize: 13, color: colors.faint, fontWeight: "500" },
+  tabTextActive: { color: colors.brand, fontWeight: "700" },
+  tabUnderline: { position: "absolute", bottom: 0, left: "20%", right: "20%", height: 2, backgroundColor: colors.brand, borderRadius: 1 },
 
   list: { paddingHorizontal: 16, paddingBottom: 100 },
 
   // Card
-  card: { borderRadius: 20, marginBottom: 14, overflow: "hidden", borderWidth: 1, borderColor: "#2d356150" },
+  card: { borderRadius: 20, marginBottom: 14, overflow: "hidden", borderWidth: 1, borderColor: colors.border },
   cardBanner: { padding: 16 },
   cardBannerContent: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
-  typeIconWrap: { width: 48, height: 48, borderRadius: 14, backgroundColor: "#00000030", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#ffffff20" },
-  cardTitle: { fontSize: 17, fontWeight: "800", color: "#fff", letterSpacing: -0.3, marginBottom: 8 },
+  typeIconWrap: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.black + '30', justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: colors.surfaceAlt },
+  cardTitle: { fontSize: 17, fontWeight: "800", color: colors.ink, letterSpacing: -0.3, marginBottom: 8 },
   cardTagRow: { flexDirection: "row", gap: 8 },
   cardTag: { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, gap: 4 },
   cardTagText: { fontSize: 12, fontWeight: "700" },
-  cardTagTextGray: { fontSize: 12, color: "#94a3b8", fontWeight: "500" },
+  cardTagTextGray: { fontSize: 12, color: colors.muted, fontWeight: "500" },
   participantRow: { flexDirection: "row", alignItems: "center" },
-  participantAvatar: { width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#0d0f1a" },
-  participantAvatarText: { color: "#fff", fontSize: 10, fontWeight: "800" },
-  participantCount: { marginLeft: 8, fontSize: 12, color: "#94a3b8", fontWeight: "500" },
+  participantAvatar: { width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: colors.bg },
+  participantAvatarText: { color: colors.white, fontSize: 10, fontWeight: "800" },
+  participantCount: { marginLeft: 8, fontSize: 12, color: colors.muted, fontWeight: "500" },
 
-  cardBody: { backgroundColor: "#161b2e", padding: 16 },
-  cardDesc: { fontSize: 14, color: "#94a3b8", lineHeight: 20, marginBottom: 14 },
+  cardBody: { backgroundColor: colors.surface, padding: 16 },
+  cardDesc: { fontSize: 14, color: colors.muted, lineHeight: 20, marginBottom: 14 },
 
   progressWrap: { marginBottom: 14 },
   progressHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  progressLabel: { fontSize: 12, color: "#94a3b8", fontWeight: "500", textTransform: "uppercase", letterSpacing: 0.5 },
+  progressLabel: { fontSize: 12, color: colors.muted, fontWeight: "500", textTransform: "uppercase", letterSpacing: 0.5 },
   progressPct: { fontSize: 12, fontWeight: "800" },
-  progressTrack: { height: 8, backgroundColor: "#2d3561", borderRadius: 4, overflow: "hidden" },
+  progressTrack: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 4 },
-  progressDetail: { fontSize: 11, color: "#6b7280", marginTop: 4, textAlign: "center" },
+  progressDetail: { fontSize: 11, color: colors.faint, marginTop: 4, textAlign: "center" },
 
   cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   creatorRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
   creatorAvatar: { width: 26, height: 26, borderRadius: 13, justifyContent: "center", alignItems: "center" },
-  creatorAvatarText: { color: "#fff", fontSize: 11, fontWeight: "800" },
-  creatorName: { fontSize: 12, color: "#94a3b8", fontWeight: "500" },
-  creatorDate: { fontSize: 11, color: "#6b7280" },
+  creatorAvatarText: { color: colors.white, fontSize: 11, fontWeight: "800" },
+  creatorName: { fontSize: 12, color: colors.muted, fontWeight: "500" },
+  creatorDate: { fontSize: 11, color: colors.faint },
   joinBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingVertical: 9, borderRadius: 20, gap: 6 },
-  joinBtnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
-  joinedBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: "#00000020" },
+  joinBtnText: { color: colors.white, fontWeight: "800", fontSize: 14 },
+  joinedBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: colors.black + '20' },
   joinedText: { fontSize: 13, fontWeight: "700" },
 
   empty: { alignItems: "center", paddingVertical: 60 },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: "#6b7280", marginTop: 14 },
-  emptyHint: { fontSize: 13, color: "#2d3561", marginTop: 4 },
+  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.faint, marginTop: 14 },
+  emptyHint: { fontSize: 13, color: colors.border, marginTop: 4 },
 });
