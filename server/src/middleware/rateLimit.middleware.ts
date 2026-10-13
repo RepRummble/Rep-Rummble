@@ -88,6 +88,15 @@ export const businessApplyLimiter = rateLimit({
   message: { success: false, message: 'Too many applications. Please try again later.' },
 })
 
+/** Refreshing is routine (about once an hour per device) but is still a login-like call, so cap it per IP. */
+export const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+})
+
 /** Verification emails cost money and can be used to annoy someone, so keep resends scarce. */
 export const resendLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,

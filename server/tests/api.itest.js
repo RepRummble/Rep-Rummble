@@ -60,7 +60,7 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   sup.verifyToken = async (token) => (token === firstParty || token === thirdParty) ? realVerify('owner') : realVerify(token);
   sup.getUserById = async (id) => { const u = Object.values(users).find((x) => x.id === id); if (u && u.noAdmin) return { success: false, error: 'service unreachable' }; return u ? { success: true, user: { id, created_at: new Date(u.created).toISOString() } } : { success: false }; };
 
-  const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n(); rl.authLimiter = (q, r, n) => n(); rl.loginLimiter = (q, r, n) => n(); rl.resendLimiter = (q, r, n) => n();
+  const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n(); rl.authLimiter = (q, r, n) => n(); rl.loginLimiter = (q, r, n) => n(); rl.resendLimiter = (q, r, n) => n(); rl.refreshLimiter = (q, r, n) => n();
   const realPerUserLimiter = rl.perUserLimiter; // kept for its own tests below
   const realPerIpLimiter = rl.perIpLimiter;
   rl.perUserLimiter = () => (q, r, n) => n();
@@ -78,6 +78,8 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   sup.signInWithEmail = async (email, password) => password === 'right-but-unverified' ? { success: false, error: 'Email not confirmed' } : { success: false, error: 'Invalid login credentials' };
   let deleteMode = 'ok'; const deletedAuth = [];
   sup.deleteUser = async (id) => { if (deleteMode === 'fail') return { success: false, error: 'Database error deleting user' }; deletedAuth.push(id); return { success: true }; };
+  const goodRefresh = new Set(['refresh-good']);
+  sup.refreshSession = async (token) => goodRefresh.delete(token) ? { success: true, user: { id: users.maya.id, email: users.maya.email, user_metadata: { displayName: 'Maya' } }, session: { access_token: 'access-2', refresh_token: 'refresh-2' } } : { success: false, error: 'Invalid Refresh Token: Already Used' };
   sup.resendVerification = async (email) => { resent.push(email); };
   const express = require('express');
   const { connectDB } = require(SRC + '/config/database');
@@ -899,6 +901,26 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
       assert.equal(seen.length, 2);
       await sup.checkSupabaseKeys(); assert.equal(seen.length, 2, 'result is cached for a minute');
     } finally { global.fetch = realFetch; delete process.env.SUPABASE_URL; delete process.env.SUPABASE_ANON_KEY; delete process.env.SUPABASE_SERVICE_KEY; }
+  });
+
+
+  console.log('Session refresh');
+  await t('a valid refresh token returns a new access token and the replacement refresh token', async () => {
+    const r = await call(null, 'POST', '/api/auth/refresh', { refreshToken: 'refresh-good' });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.data.token, 'access-2'); assert.equal(r.body.data.refreshToken, 'refresh-2');
+    assert.equal(r.body.data.user.email, users.maya.email);
+  });
+  await t('a used, expired or made-up refresh token is refused with session_expired', async () => {
+    for (const token of ['refresh-good', 'nonsense']) {
+      const r = await call(null, 'POST', '/api/auth/refresh', { refreshToken: token });
+      assert.equal(r.status, 401); assert.equal(r.body.code, 'session_expired');
+    }
+  });
+  await t('refresh rejects a missing, non-text or oversized token without asking Supabase', async () => {
+    for (const body of [{}, { refreshToken: 42 }, { refreshToken: { $ne: 1 } }, { refreshToken: 'x'.repeat(3000) }]) {
+      assert.equal((await call(null, 'POST', '/api/auth/refresh', body)).status, 400);
+    }
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);

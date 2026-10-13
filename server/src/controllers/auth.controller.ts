@@ -136,6 +136,33 @@ export const login = async (req: Request, res: Response) => {
   }
 }
 
+// @route POST /api/auth/refresh
+// Mobile sessions last about an hour; this swaps the stored refresh token for a fresh pair so people
+// stay signed in. A refresh token works once, so the response carries the replacement.
+export const refresh = async (req: Request, res: Response) => {
+  const refreshToken = req.body?.refreshToken
+  if (typeof refreshToken !== 'string' || !refreshToken || refreshToken.length > 2048) {
+    return res.status(400).json({ success: false, message: 'A refresh token is required' })
+  }
+  const result = await supabaseService.refreshSession(refreshToken)
+  if (!result.success || !result.session || !result.user) {
+    // Expired, revoked, or already used: the person has to sign in again.
+    return res.status(401).json({ success: false, code: 'session_expired', message: 'Your session has expired. Please sign in again.' })
+  }
+  return res.json({
+    success: true,
+    data: {
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        displayName: result.user.user_metadata?.displayName,
+      },
+      token: result.session.access_token,
+      refreshToken: result.session.refresh_token,
+    },
+  })
+}
+
 // @route GET /api/auth/me
 export const getMe = async (req: AuthRequest, res: Response) => {
   try {

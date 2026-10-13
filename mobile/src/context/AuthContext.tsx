@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../config/api';
+import api, { setSessionExpiredHandler } from '../config/api';
 import { User, AuthState, LoginCredentials, RegisterCredentials } from '../types';
 import { DEV_BYPASS_AUTH, DEV_DUMMY_USER } from '../config/devConfig';
 
@@ -25,6 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Load stored auth data on mount
   useEffect(() => {
     loadStoredAuth();
+  }, []);
+
+  // When a session can no longer be refreshed, return to the sign-in screen.
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setState({ user: null, token: null, isLoading: false, isAuthenticated: false });
+    });
+    return () => setSessionExpiredHandler(null);
   }, []);
 
   const loadStoredAuth = async () => {
@@ -59,10 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: LoginCredentials) => {
     try {
       const response = await api.post('/auth/login', credentials);
-      const { token, user } = response.data.data;
+      const { token, refreshToken, user } = response.data.data;
 
       await AsyncStorage.multiSet([
         ['rep_rumble_token', token],
+        ['rep_rumble_refresh', refreshToken || ''],
         ['rep_rumble_user', JSON.stringify(user)],
       ]);
 
@@ -84,10 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.data.data.emailVerificationRequired) {
         return { emailVerificationRequired: true };
       }
-      const { token, user } = response.data.data;
+      const { token, refreshToken, user } = response.data.data;
 
       await AsyncStorage.multiSet([
         ['rep_rumble_token', token],
+        ['rep_rumble_refresh', refreshToken || ''],
         ['rep_rumble_user', JSON.stringify(user)],
       ]);
 
@@ -106,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await AsyncStorage.multiRemove([
       'rep_rumble_token',
+      'rep_rumble_refresh',
       'rep_rumble_user',
       'rep_rumble_meals',
       'rep_rumble_workouts',

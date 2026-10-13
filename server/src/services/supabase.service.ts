@@ -331,3 +331,22 @@ export async function checkSupabaseKeys(): Promise<{ anon: KeyStatus; service: K
   keyCheck = { at: Date.now(), result: { anon, service } }
   return keyCheck.result
 }
+
+
+/**
+ * Trades a refresh token for a new access token. Supabase rotates refresh tokens, so the new one in
+ * the result replaces the old one, which cannot be used again.
+ */
+export async function refreshSession(refreshToken: string): Promise<AuthResult> {
+  const client = anonClient()
+  if (!client) return { success: false, error: 'Supabase not configured' }
+  try {
+    const { data, error } = await client.auth.refreshSession({ refresh_token: refreshToken })
+    if (error || !data.session || !data.user) {
+      return { success: false, error: error?.message || 'Could not refresh the session' }
+    }
+    return { success: true, user: data.user, session: data.session }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
