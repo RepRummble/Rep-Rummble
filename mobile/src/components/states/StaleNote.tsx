@@ -17,6 +17,6 @@ export default function StaleNote({ savedAt, what = 'This is' }: { savedAt?: num
 }
 
 const s = StyleSheet.create({
-  wrap: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginHorizontal: 20, marginBottom: 12, padding: 12, borderRadius: radius.md, backgroundColor: colors.warningSoft, borderWidth: 1, borderColor: '#fedf89' },
-  text: { flex: 1, fontSize: 12.5, lineHeight: 18, color: '#93370d' },
+  wrap: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginHorizontal: 20, marginBottom: 12, padding: 12, borderRadius: radius.md, backgroundColor: colors.warningSoft, borderWidth: 1, borderColor: '#ffa62b55' },
+  text: { flex: 1, fontSize: 12.5, lineHeight: 18, color: '#ffd9a0' },
 });

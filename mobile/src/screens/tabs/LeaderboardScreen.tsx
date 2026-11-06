@@ -141,7 +141,7 @@ export default function LeaderboardScreen() {
               <View style={[styles.podiumXpBadge, { backgroundColor: colors.gold + '20', borderColor: colors.gold }]}>
                 <Text style={[styles.podiumXpText, { color: colors.gold }]}>{leaderboard[0].xp} XP</Text>
               </View>
-              <LinearGradient colors={[colors.warningSoft, '#fde9b8']} style={[styles.podiumPlatform, { height: 80 }]}>
+              <LinearGradient colors={[colors.gold + '55', colors.gold + '14']} style={[styles.podiumPlatform, { height: 80 }]}>
                 <Text style={[styles.platformNum, { color: colors.gold }]}>1</Text>
               </LinearGradient>
             </View>
@@ -156,7 +156,7 @@ export default function LeaderboardScreen() {
               <View style={[styles.podiumXpBadge, { borderColor: colors.bronze }]}>
                 <Text style={styles.podiumXpText}>{leaderboard[2].xp} XP</Text>
               </View>
-              <LinearGradient colors={[colors.accentSoft, '#fbd9b8']} style={[styles.podiumPlatform, { height: 40 }]}>
+              <LinearGradient colors={[colors.bronze + '55', colors.bronze + '14']} style={[styles.podiumPlatform, { height: 40 }]}>
                 <Text style={[styles.platformNum, { color: colors.bronze }]}>3</Text>
               </LinearGradient>
             </View>

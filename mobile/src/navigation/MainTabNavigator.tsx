@@ -75,12 +75,12 @@ export default function MainTabNavigator() {
       <Tab.Screen
         name="Snap"
         component={SnapScreen}
-        options={{ tabBarLabel: "Snap Meal" }}
+        options={{ tabBarLabel: "Meals" }}
       />
       <Tab.Screen
         name="Streak"
         component={StreakScreen}
-        options={{ tabBarLabel: "Workout" }}
+        options={{ tabBarLabel: "Train" }}
       />
       <Tab.Screen
         name="Leaderboard"

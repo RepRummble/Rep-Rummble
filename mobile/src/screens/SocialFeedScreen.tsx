@@ -25,6 +25,8 @@ import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { socialService, SocialPost } from "../services/socialService";
+import { friendService, type Friend } from "../services/friendService";
+import { challengeService, type Challenge } from "../services/challengeService";
 import { useAuth } from "../context/AuthContext";
 
 import { colors } from '../theme/colors';
@@ -51,21 +53,6 @@ const TYPE_META: Record<string, { color: string; icon: string; label: string }> 
   general:     { color: colors.muted, icon: "chatbubble", label: "Post" },
 };
 
-const MOCK_STORIES = [
-  { id: "s1", name: "Alex K",  initial: "A", color: [colors.brand, colors.tealMid] as const, hasStory: true,  streak: 7  },
-  { id: "s2", name: "Jordan",  initial: "J", color: [colors.brand, colors.tealMid] as const, hasStory: true,  streak: 14 },
-  { id: "s3", name: "Sam R",   initial: "S", color: [colors.accent, colors.accent] as const, hasStory: true,  streak: 3  },
-  { id: "s4", name: "Taylor",  initial: "T", color: [colors.warning, colors.warning] as const, hasStory: false, streak: 0  },
-  { id: "s5", name: "Morgan",  initial: "M", color: [colors.danger, colors.danger] as const, hasStory: true,  streak: 21 },
-];
-
-const DISCOVER = [
-  { id: "d1", title: "Push Up Challenge", desc: "100 reps today",   emoji: "💪", color: colors.brand, joined: 847,  left: "18h" },
-  { id: "d2", title: "Morning Run Club",  desc: "5km sunrise run",  emoji: "🏃", color: colors.success, joined: 234,  left: "6h"  },
-  { id: "d3", title: "Protein Goal",      desc: "Hit 150g protein", emoji: "🥩", color: colors.accent, joined: 512,  left: "12h" },
-  { id: "d4", title: "Squat PR Day",      desc: "Beat your squat",  emoji: "🏋️", color: colors.warning, joined: 183,  left: "20h" },
-];
-
 const SNAP_STICKERS = [
   { emoji: "💪", label: "Crushed it" },
   { emoji: "🔥", label: "On fire"    },
@@ -77,7 +64,6 @@ const SNAP_STICKERS = [
   { emoji: "⚡", label: "Energy"     },
 ];
 
-const REACTIONS = ["💪", "🔥", "❤️", "🏆", "😤", "🤩"];
 
 const FEELINGS = [
   { emoji: "💪", label: "Motivated"  },
@@ -162,10 +148,7 @@ export default function SocialFeedScreen() {
   const [statusImage, setStatusImage] = useState<string | null>(null);
   const [myStatus, setMyStatus] = useState<{ text: string; mood: string; image: string | null } | null>(null);
   const [viewingMyStatus, setViewingMyStatus] = useState(false);
-  const [viewingStory, setViewingStory] = useState<typeof MOCK_STORIES[0] | null>(null);
   const storyProgress = useRef(new Animated.Value(0)).current;
-  const [storyReaction, setStoryReaction] = useState<string | null>(null);
-  const reactionScale = useRef(new Animated.Value(1)).current;
 
   // Quick Snap state
   const [showQuickSnap, setShowQuickSnap] = useState(false);
@@ -174,25 +157,37 @@ export default function SocialFeedScreen() {
   const [snapImage, setSnapImage] = useState<string | null>(null);
   const snapFabScale = useRef(new Animated.Value(1)).current;
 
-  // Rep Score (derived from user XP)
-  const repScore = (user?.xp || 0) + (user?.streak || 0) * 50;
+  // Real people and challenges from the server (nothing here is sample data).
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  useEffect(() => {
+    loadWithCache("friends", async () => {
+      const res = await friendService.getFriends();
+      if (!res.success) throw new Error("friends failed");
+      return res.friends;
+    }).then((r) => { if (r.data) setFriends(r.data); });
+    loadWithCache("challenges", async () => {
+      const res = await challengeService.getChallenges({ status: "active" });
+      if (!res.success) throw new Error("challenges failed");
+      return res.challenges;
+    }).then((r) => { if (r.data) setChallenges(r.data); });
+  }, []);
 
   useEffect(() => { loadFeed(); }, []);
 
   useEffect(() => {
-    const active = viewingStory || viewingMyStatus;
+    const active = viewingMyStatus;
     if (active) {
       storyProgress.setValue(0);
       Animated.timing(storyProgress, { toValue: 1, duration: 4000, useNativeDriver: false }).start(({ finished }) => {
         if (finished) {
-          setViewingStory(null);
           setViewingMyStatus(false);
         }
       });
     } else {
       storyProgress.stopAnimation();
     }
-  }, [viewingStory, viewingMyStatus]);
+  }, [viewingMyStatus]);
 
   const [feedFailed, setFeedFailed] = useState(false);
   const [feedSavedAt, setFeedSavedAt] = useState<number | undefined>();
@@ -301,12 +296,6 @@ export default function SocialFeedScreen() {
     if (!statusText.trim() && !statusMood && !statusImage) return;
     setMyStatus({ text: statusText.trim(), mood: statusMood, image: statusImage });
     closeAddStatus();
-  };
-
-  const sendReaction = (emoji: string) => {
-    setStoryReaction(emoji);
-    reactionScale.setValue(0.5);
-    Animated.spring(reactionScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 14 }).start();
   };
 
   const handleQuickSnapPost = () => {
@@ -610,7 +599,7 @@ export default function SocialFeedScreen() {
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Text style={{ fontSize: 13 }}>🏆</Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.brand }}>{repScore.toLocaleString()}</Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.brand }}>{(user?.xp || 0).toLocaleString()} XP</Text>
               </View>
               {(user?.streak || 0) > 0 && (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
@@ -670,54 +659,54 @@ export default function SocialFeedScreen() {
                   <Text style={styles.storyName} numberOfLines={1}>{myStatus ? "My Status" : "Add Status"}</Text>
                 </TouchableOpacity>
 
-                {/* Friend stories */}
-                {MOCK_STORIES.map(s => (
-                  <TouchableOpacity key={s.id} style={styles.storyItem} onPress={() => s.hasStory && setViewingStory(s)} activeOpacity={0.8}>
-                    <View style={{ position: "relative" }}>
-                      <LinearGradient
-                        colors={s.hasStory ? [colors.brand, colors.accent] : [colors.border, colors.border]}
-                        style={styles.storyRingGrad}
-                      >
-                        <View style={styles.storyAvatarInner}>
-                          <Avatar name={s.name} size={52} gradient={s.color} />
-                        </View>
-                      </LinearGradient>
-                      {/* Streak badge */}
-                      {s.streak > 0 && (
-                        <View style={styles.streakBadge}>
-                          <Text style={{ fontSize: 9 }}>🔥</Text>
-                          <Text style={styles.streakBadgeText}>{s.streak}</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.storyName} numberOfLines={1}>{s.name}</Text>
-                  </TouchableOpacity>
-                ))}
+                {/* Your friends (real) */}
+                {friends.map(f => {
+                  const label = f.displayName || f.email.split("@")[0];
+                  return (
+                    <TouchableOpacity key={f.id} style={styles.storyItem} onPress={() => navigation.navigate("Friends" as never)} activeOpacity={0.8}>
+                      <View style={{ position: "relative" }}>
+                        <LinearGradient colors={[colors.border, colors.border]} style={styles.storyRingGrad}>
+                          <View style={styles.storyAvatarInner}>
+                            <Avatar name={label} size={52} />
+                          </View>
+                        </LinearGradient>
+                      </View>
+                      <Text style={styles.storyName} numberOfLines={1}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
 
-              {/* ── Discover / Daily Challenges ── */}
-              <View style={styles.discoverSection}>
-                <View style={styles.discoverHeader}>
-                  <Text style={styles.discoverTitle}>⚡ Today's Challenges</Text>
-                  <TouchableOpacity><Text style={styles.discoverSeeAll}>See all</Text></TouchableOpacity>
+              {/* ── Active challenges (real) ── */}
+              {challenges.length > 0 && (
+                <View style={styles.discoverSection}>
+                  <View style={styles.discoverHeader}>
+                    <Text style={styles.discoverTitle}>⚡ Active challenges</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate("Challenges" as never)}><Text style={styles.discoverSeeAll}>See all</Text></TouchableOpacity>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
+                    {challenges.slice(0, 8).map(c => {
+                      const emoji = c.challengeType === "steps" ? "👟" : c.challengeType === "calories" ? "🔥" : "💪";
+                      const msLeft = new Date(c.endDate).getTime() - Date.now();
+                      const left = msLeft <= 0 ? "ended" : msLeft < 36e5 * 48 ? `${Math.max(1, Math.round(msLeft / 36e5))}h left` : `${Math.round(msLeft / 864e5)}d left`;
+                      return (
+                        <TouchableOpacity key={c._id} activeOpacity={0.85} onPress={() => navigation.navigate("Challenges" as never)} style={[styles.discoverCard, { borderColor: colors.brand + "50" }]}>
+                          <LinearGradient colors={[colors.brand + "25", colors.brand + "08"]} style={StyleSheet.absoluteFill} />
+                          <Text style={{ fontSize: 28, marginBottom: 8 }}>{emoji}</Text>
+                          <Text style={styles.discoverCardTitle} numberOfLines={2}>{c.title}</Text>
+                          <Text style={styles.discoverCardDesc} numberOfLines={1}>{c.targetValue.toLocaleString()} {c.targetUnit}</Text>
+                          <View style={styles.discoverCardFooter}>
+                            <Text style={[styles.discoverCardStat, { color: colors.brand }]}>👥 {c.participants.length}</Text>
+                            <View style={[styles.discoverTimeTag, { backgroundColor: colors.brand + "20" }]}>
+                              <Text style={[styles.discoverTimeTxt, { color: colors.brand }]}>{left}</Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
-                  {DISCOVER.map(d => (
-                    <TouchableOpacity key={d.id} activeOpacity={0.85} style={[styles.discoverCard, { borderColor: d.color + "50" }]}>
-                      <LinearGradient colors={[d.color + "25", d.color + "08"]} style={StyleSheet.absoluteFill} />
-                      <Text style={{ fontSize: 28, marginBottom: 8 }}>{d.emoji}</Text>
-                      <Text style={styles.discoverCardTitle}>{d.title}</Text>
-                      <Text style={styles.discoverCardDesc}>{d.desc}</Text>
-                      <View style={styles.discoverCardFooter}>
-                        <Text style={[styles.discoverCardStat, { color: d.color }]}>👥 {d.joined}</Text>
-                        <View style={[styles.discoverTimeTag, { backgroundColor: d.color + "20" }]}>
-                          <Text style={[styles.discoverTimeTxt, { color: d.color }]}>{d.left}</Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+              )}
 
               {/* Filter Tabs */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={styles.filterContent}>
@@ -896,61 +885,6 @@ export default function SocialFeedScreen() {
                   <Text style={{ fontSize: 16, color: colors.white, textAlign: 'center', lineHeight: 24 }}>{myStatus.text}</Text>
                 </LinearGradient>
               ) : null}
-            </View>
-          </View>
-        )}
-      </Modal>
-
-      {/* ── Story Viewer Modal ── */}
-      <Modal visible={!!viewingStory} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => { setViewingStory(null); setStoryReaction(null); }}>
-        {viewingStory && (
-          <View style={{ flex: 1, backgroundColor: colors.black }}>
-            <LinearGradient colors={['#2a0954', colors.bg, colors.black]} style={StyleSheet.absoluteFill} />
-            {/* Progress bar */}
-            <View style={{ position: 'absolute', top: 54, left: 16, right: 16, height: 3, backgroundColor: colors.white + '30', borderRadius: 2, zIndex: 10 }}>
-              <Animated.View style={{ height: '100%', borderRadius: 2, backgroundColor: colors.white, width: storyProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
-            </View>
-            {/* Close */}
-            <TouchableOpacity onPress={() => { setViewingStory(null); setStoryReaction(null); }} style={{ position: 'absolute', top: 60, right: 16, zIndex: 20, padding: 8 }}>
-              <Ionicons name="close" size={26} color={colors.white} />
-            </TouchableOpacity>
-            {/* Story content */}
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
-              <LinearGradient colors={viewingStory.color} style={{ width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 3, borderColor: colors.white }}>
-                <Text style={{ fontSize: 36, fontWeight: '900', color: colors.white }}>{viewingStory.initial}</Text>
-              </LinearGradient>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.white, marginBottom: 6 }}>{viewingStory.name}</Text>
-              <Text style={{ fontSize: 13, color: colors.muted + '80', marginBottom: 40 }}>2h ago</Text>
-              <LinearGradient colors={[colors.surfaceAlt, colors.surfaceAlt]} style={{ borderRadius: 20, padding: 24, borderWidth: 1, borderColor: colors.surfaceAlt, width: '100%', alignItems: 'center' }}>
-                <Ionicons name="barbell" size={32} color={colors.success} style={{ marginBottom: 14 }} />
-                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.white, textAlign: 'center', marginBottom: 8 }}>Just crushed leg day 💪</Text>
-                <Text style={{ fontSize: 14, color: colors.muted, textAlign: 'center', lineHeight: 22 }}>4 sets of squats, RDLs, and lunges. New PR on squats — 140kg!</Text>
-              </LinearGradient>
-            </View>
-            {/* Reaction bottom bar */}
-            <View style={{ paddingHorizontal: 16, paddingBottom: 44, paddingTop: 12 }}>
-              {/* Emoji reactions */}
-              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 14 }}>
-                {REACTIONS.map(emoji => (
-                  <TouchableOpacity
-                    key={emoji}
-                    onPress={() => sendReaction(emoji)}
-                    style={[styles.reactionBtn, storyReaction === emoji && styles.reactionBtnActive]}
-                    activeOpacity={0.75}
-                  >
-                    {storyReaction === emoji ? (
-                      <Animated.Text style={{ fontSize: 22, transform: [{ scale: reactionScale }] }}>{emoji}</Animated.Text>
-                    ) : (
-                      <Text style={{ fontSize: 22 }}>{emoji}</Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {/* Reply input */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceAlt, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: colors.white + '25' }}>
-                <Text style={{ flex: 1, color: colors.muted + '70', fontSize: 15 }}>Reply to {viewingStory?.name}…</Text>
-                <Ionicons name="paper-plane-outline" size={22} color={colors.brand} />
-              </View>
             </View>
           </View>
         )}

@@ -9,7 +9,7 @@ import { isOnline, subscribeConnectivity } from '../../config/connectivity';
 export default function OfflineBanner() {
   const [online, setOnlineState] = useState(isOnline());
   const [justBack, setJustBack] = useState(false);
-  const slide = useRef(new Animated.Value(-80)).current;
+  const slide = useRef(new Animated.Value(-220)).current;
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -23,7 +23,7 @@ export default function OfflineBanner() {
 
   const visible = !online || justBack;
   useEffect(() => {
-    Animated.spring(slide, { toValue: visible ? 0 : -80, useNativeDriver: true, speed: 14, bounciness: 6 }).start();
+    Animated.spring(slide, { toValue: visible ? 0 : -220, useNativeDriver: true, speed: 14, bounciness: 6 }).start();
   }, [visible, slide]);
 
   return (

@@ -61,6 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isLoading: false,
           isAuthenticated: true,
         });
+        // Older sessions were saved before the profile carried the id the social features use, so refresh it quietly.
+        api.get('/auth/me').then(async (me) => {
+          const fresh = { ...user, ...me.data.data };
+          await AsyncStorage.setItem('rep_rumble_user', JSON.stringify(fresh));
+          setState((prev) => (prev.isAuthenticated ? { ...prev, user: fresh } : prev));
+        }).catch(() => { /* offline or expired: the normal request path handles that */ });
       } else {
         setState((prev) => ({ ...prev, isLoading: false }));
       }
