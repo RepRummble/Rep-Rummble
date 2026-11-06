@@ -61,11 +61,15 @@ export default function FoodResultsScreen() {
 
       await api.post('/meals', mealData);
 
-      // Update user XP
+      // The meal is saved at this point. XP is a bonus, so a failure here must not look like a failed save.
       if (user) {
         const newXp = (user.xp || 0) + 5;
-        updateUser({ xp: newXp });
-        await api.put('/users/profile', { xp: newXp });
+        try {
+          await api.put('/users/profile', { xp: newXp });
+          updateUser({ xp: newXp });
+        } catch (xpError) {
+          console.warn('XP update failed:', xpError);
+        }
       }
 
       Alert.alert(
@@ -75,7 +79,8 @@ export default function FoodResultsScreen() {
       );
     } catch (error) {
       console.error('Error saving meal:', error);
-      Alert.alert('Error', 'Failed to save meal. Please try again.');
+      const serverMessage = (error as any)?.response?.data?.message;
+      Alert.alert('Could not save meal', serverMessage || 'Please check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

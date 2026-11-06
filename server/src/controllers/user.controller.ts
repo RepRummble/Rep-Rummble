@@ -3,6 +3,9 @@ import { User } from '../models/User.model'
 import { AuthRequest } from '../middleware/auth.middleware'
 import { ApiError } from '../types'
 
+/** Search text is matched literally: a pattern like (a+)+ must not be able to slow the database down. */
+const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 // @desc    Get user profile
 // @route   GET /api/users/profile
 // @access  Private
@@ -37,7 +40,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     const user = await User.findByIdAndUpdate(
       req.user?.id,
       { $set: updates },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     )
 
     return res.json({ success: true, data: user })
@@ -66,8 +69,8 @@ export const searchUsers = async (req: AuthRequest, res: Response) => {
     const users = await User.find({
       _id: { $ne: currentUserId },
       $or: [
-        { displayName: { $regex: q, $options: "i" } },
-        { email: { $regex: q, $options: "i" } },
+        { displayName: { $regex: escapeRegex(q), $options: "i" } },
+        { email: { $regex: escapeRegex(q), $options: "i" } },
       ],
     })
       .select("displayName email")

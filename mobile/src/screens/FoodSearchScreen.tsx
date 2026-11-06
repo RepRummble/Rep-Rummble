@@ -43,6 +43,7 @@ export default function FoodSearchScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [searched, setSearched] = useState('');
   const [searchFailed, setSearchFailed] = useState(false);
+  const [failDetail, setFailDetail] = useState<string | undefined>();
 
   const handleSearch = async () => {
     const trimmed = query.trim();
@@ -50,12 +51,14 @@ export default function FoodSearchScreen() {
     setIsLoading(true);
     setSelected(null);
     setSearchFailed(false);
+    setFailDetail(undefined);
     try {
       const data = await searchNutrition(trimmed, 12);
       setResults(data);
       setSearched(trimmed);
     } catch (error) {
       console.error('Nutrition search error:', error);
+      setFailDetail((error as any)?.response?.data?.message);
       setSearchFailed(true);
     } finally {
       setIsLoading(false);
@@ -157,7 +160,7 @@ export default function FoodSearchScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            searchFailed ? <ErrorState onRetry={handleSearch} />
+            searchFailed ? <ErrorState detail={failDetail} onRetry={handleSearch} />
             : searched ? <NoResults query={searched} suggestions={['Chicken breast', 'Brown rice', 'Eggs', 'Greek yogurt']} onPick={(s) => { setQuery(s); setSearched(''); }} />
             : <EmptyState icon="restaurant-outline" title="Find a food to log" why="Search the USDA database by name, then pick a serving size. Try “chicken” or “oats”." />
           }

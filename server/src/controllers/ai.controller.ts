@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { analyzeFoodImageWithGemini, quickLogMealWithGemini } from '../services/gemini.service'
+import { AiUnavailableError, analyzeFoodImageWithGemini, quickLogMealWithGemini } from '../services/gemini.service'
 import { searchFoods } from '../services/usda.service'
 
 /**
@@ -45,6 +45,9 @@ export const analyzeFood = async (req: Request, res: Response) => {
     })
   } catch (error: any) {
     console.error('Food analysis error:', error)
+    if (error instanceof AiUnavailableError) {
+      return res.status(503).json({ success: false, code: 'ai_unavailable', message: error.message })
+    }
 
     // Handle specific errors
     if (error.message?.includes('API key')) {
@@ -97,6 +100,9 @@ export const quickLogMeal = async (req: Request, res: Response) => {
     })
   } catch (error: any) {
     console.error('Quick log error:', error)
+    if (error instanceof AiUnavailableError) {
+      return res.status(503).json({ success: false, code: 'ai_unavailable', message: error.message })
+    }
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to process quick log'
@@ -171,7 +177,13 @@ export const searchNutrition = async (req: Request, res: Response) => {
       }
     })
   } catch (error: any) {
-    console.error('Nutrition search error:', error)
+    console.error('Nutrition search error:', error?.response?.status, error?.message)
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
+      return res.status(503).json({ success: false, code: 'food_db_key_rejected', message: 'The food database rejected our access key. We are fixing it.' })
+    }
+    if (error?.response?.status === 429) {
+      return res.status(503).json({ success: false, code: 'food_db_busy', message: 'The food database is busy right now. Please try again in a minute.' })
+    }
     if (error.message?.includes('USDA_API_KEY')) {
       return res.status(503).json({
         success: false,

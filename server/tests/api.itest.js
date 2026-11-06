@@ -99,6 +99,8 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   app.use('/api/reports', require(SRC + '/routes/report.routes').default);
   app.use('/api/analytics', require(SRC + '/routes/analytics.routes').default);
   app.use('/api/wearables', require(SRC + '/routes/wearable.routes').default);
+  app.use('/api/users', require(SRC + '/routes/user.routes').default);
+  app.use('/api/ai', require(SRC + '/routes/ai.routes').default);
   app.use('/api/social', require(SRC + '/routes/social.routes').default);
   app.use('/api/friends', require(SRC + '/routes/friend.routes').default);
   app.use('/api/challenges', require(SRC + '/routes/challenge.routes').default);
@@ -990,6 +992,18 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   await t('an unverified email cannot use social features (it could be borrowing someone else\'s address)', async () => {
     const r = await call('unver', 'GET', '/api/social/feed');
     assert.equal(r.status, 403); assert.equal(r.body.code, 'email_not_verified');
+  });
+
+  console.log('Profile, XP and AI for Supabase accounts');
+  await t('saving XP works for a Supabase account (this used to be a 500 that made "save meal" fail)', async () => {
+    const r = await call('maya', 'PUT', '/api/users/profile', { xp: 25 });
+    assert.equal(r.status, 200); assert.equal(r.body.data.xp, 25);
+    assert.equal((await call('maya', 'GET', '/api/users/profile')).status, 200);
+  });
+  await t('food photo analysis says so when the AI is unavailable, instead of inventing nutrition numbers', async () => {
+    const r = await call('maya', 'POST', '/api/ai/analyze-food', { imageBase64: 'A'.repeat(300) });
+    assert.equal(r.status, 503); assert.equal(r.body.code, 'ai_unavailable');
+    assert.equal(r.body.data, undefined);
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);

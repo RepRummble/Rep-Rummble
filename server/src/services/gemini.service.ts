@@ -32,6 +32,14 @@ export interface FoodAnalysisResult {
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'
 }
 
+/** The AI could not produce a real answer. We say so instead of inventing numbers. */
+export class AiUnavailableError extends Error {
+  constructor(message = 'Our AI could not do that right now. Please try again in a moment.') {
+    super(message)
+    this.name = 'AiUnavailableError'
+  }
+}
+
 // Initialize Gemini client
 let genAI: GoogleGenerativeAI | null = null
 
@@ -52,7 +60,7 @@ export async function analyzeFoodImageWithGemini(
 ): Promise<FoodAnalysisResult> {
   try {
     if (!genAI) {
-      return getMockFoodAnalysis()
+      throw new AiUnavailableError()
     }
 
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
@@ -130,7 +138,7 @@ Guidelines:
     }
   } catch (error: any) {
     console.error('Gemini AI Error:', error)
-    return getMockFoodAnalysis()
+    throw new AiUnavailableError()
   }
 }
 
@@ -140,7 +148,7 @@ Guidelines:
 export async function quickLogMealWithGemini(description: string): Promise<FoodAnalysisResult> {
   try {
     if (!genAI) {
-      return getMockFoodAnalysis()
+      throw new AiUnavailableError()
     }
 
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
@@ -196,7 +204,7 @@ Return ONLY valid JSON (no markdown):
     }
   } catch (error: any) {
     console.error('Gemini Quick Log Error:', error)
-    return getMockFoodAnalysis()
+    throw new AiUnavailableError()
   }
 }
 
@@ -210,7 +218,7 @@ export async function generateWorkoutPlanWithGemini(
 ): Promise<any> {
   try {
     if (!genAI) {
-      return getMockWorkoutPlan()
+      throw new AiUnavailableError()
     }
 
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
@@ -255,7 +263,7 @@ Return ONLY valid JSON:
     return JSON.parse(jsonStr)
   } catch (error: any) {
     console.error('Gemini Workout Plan Error:', error)
-    return getMockWorkoutPlan()
+    throw new AiUnavailableError()
   }
 }
 
@@ -296,7 +304,7 @@ Return ONLY valid JSON:
     return JSON.parse(jsonStr)
   } catch (error) {
     console.error('Gemini Nutrition Error:', error)
-    return { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    throw new AiUnavailableError()
   }
 }
 
@@ -307,57 +315,6 @@ function detectMealType(): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
   if (hour >= 11 && hour < 15) return 'lunch'
   if (hour >= 15 && hour < 18) return 'snack'
   return 'dinner'
-}
-
-function getMockFoodAnalysis(): FoodAnalysisResult {
-  return {
-    detectedFoods: [
-      {
-        name: 'Sample Food',
-        confidence: 0.8,
-        portion: 'medium',
-        estimatedCalories: 350,
-        estimatedProtein: 15,
-        estimatedCarbs: 45,
-        estimatedFat: 12
-      }
-    ],
-    totalNutrition: {
-      calories: 350,
-      protein: 15,
-      carbs: 45,
-      fat: 12,
-      fiber: 4,
-      sugar: 8,
-      sodium: 500
-    },
-    healthScore: 70,
-    suggestions: [
-      'Set GEMINI_API_KEY for real AI analysis',
-      'Get free API key from: https://aistudio.google.com/app/apikey'
-    ],
-    alternatives: [],
-    confidence: 0.5,
-    mealType: 'lunch'
-  }
-}
-
-function getMockWorkoutPlan() {
-  return {
-    planName: 'Sample Workout Plan',
-    duration: '4 weeks',
-    days: [
-      {
-        day: 'Monday',
-        focus: 'Full Body',
-        exercises: [
-          { name: 'Push-ups', sets: 3, reps: '10-15', rest: '60s', notes: 'Keep core tight' },
-          { name: 'Squats', sets: 3, reps: '12-15', rest: '60s', notes: 'Knees over toes' }
-        ]
-      }
-    ],
-    tips: ['Set GEMINI_API_KEY for personalized plans']
-  }
 }
 
 export default {
