@@ -61,3 +61,6 @@ yarn-error.log*
 !web/public/**/*.png
 !web/public/**/*.jpg
 
+
+# TypeScript incremental build cache
+*.tsbuildinfo
