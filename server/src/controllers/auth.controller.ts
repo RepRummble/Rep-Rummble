@@ -8,6 +8,7 @@ import { sendMail } from "../services/mail.service"
 import { deleteAccountData } from "../services/account-deletion.service"
 import * as supabaseService from "../services/supabase.service"
 import { User } from "../models/User.model"
+import { ensureLegacyUser } from "../services/legacy-user.service"
 import { JWT_SECRET } from "../config/security"
 
 // Generate JWT Token
@@ -111,10 +112,14 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Get MongoDB user data
-    const mongoUser = await User.findOne({ email: result.user.email })
+    // The social features use this record's id, so make sure it exists and hand it to the app.
+    const mongoUser = result.user.email && result.user.email_confirmed_at
+      ? await ensureLegacyUser(result.user.email, result.user.user_metadata?.displayName)
+      : await User.findOne({ email: result.user.email })
 
     const userData = {
       id: result.user.id,
+      _id: mongoUser?._id?.toString(),
       email: result.user.email,
       displayName: result.user.user_metadata?.displayName || mongoUser?.displayName,
       streak: mongoUser?.streak || 0,
@@ -173,10 +178,15 @@ export const getMe = async (req: AuthRequest, res: Response) => {
     }
 
     const supabaseResult = await supabaseService.getUserById(userId)
-    const mongoUser = await User.findOne({ email: supabaseResult.user?.email })
+    const email = supabaseResult.user?.email
+    const verified = !!supabaseResult.user?.email_confirmed_at
+    const mongoUser = email && verified
+      ? await ensureLegacyUser(email, supabaseResult.user?.user_metadata?.displayName)
+      : await User.findOne({ email })
 
     const userData = {
       id: userId,
+      _id: mongoUser?._id?.toString(),
       email: supabaseResult.user?.email,
       displayName: supabaseResult.user?.user_metadata?.displayName || mongoUser?.displayName,
       streak: mongoUser?.streak || 0,

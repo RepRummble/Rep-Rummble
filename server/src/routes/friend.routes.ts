@@ -7,12 +7,13 @@ import {
   getFriendRequests,
   removeFriend,
 } from "../controllers/friend.controller";
-import { protect } from "../middleware/auth.middleware";
+import { protect, withLegacyUser } from "../middleware/auth.middleware";
 
 const router = Router();
 
 // All friend routes require authentication
 router.use(protect);
+router.use(withLegacyUser);
 
 router.post("/request", sendFriendRequest);
 router.post("/accept/:friendshipId", acceptFriendRequest);

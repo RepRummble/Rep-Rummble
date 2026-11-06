@@ -60,7 +60,7 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   const thirdParty = jwtFor('owner', { sub: users.owner.id, client_id: 'c-1234' });
   const realVerify = async (token) => users[token] ? { success: true, user: { id: users[token].id, email: users[token].email, user_metadata: {}, email_confirmed_at: users[token].verified === false ? null : new Date().toISOString() } } : { success: false };
   sup.verifyToken = async (token) => (token === firstParty || token === thirdParty) ? realVerify('owner') : realVerify(token);
-  sup.getUserById = async (id) => { const u = Object.values(users).find((x) => x.id === id); if (u && u.noAdmin) return { success: false, error: 'service unreachable' }; return u ? { success: true, user: { id, created_at: new Date(u.created).toISOString() } } : { success: false }; };
+  sup.getUserById = async (id) => { const u = Object.values(users).find((x) => x.id === id); if (u && u.noAdmin) return { success: false, error: 'service unreachable' }; return u ? { success: true, user: { id, email: u.email, user_metadata: {}, email_confirmed_at: u.verified === false ? null : new Date().toISOString(), created_at: new Date(u.created).toISOString() } } : { success: false }; };
 
   const rl = require(SRC + '/middleware/rateLimit.middleware'); rl.businessApplyLimiter = (q, r, n) => n(); rl.referralClaimLimiter = (q, r, n) => n(); rl.authLimiter = (q, r, n) => n(); rl.loginLimiter = (q, r, n) => n(); rl.resendLimiter = (q, r, n) => n(); rl.refreshLimiter = (q, r, n) => n();
   const realPerUserLimiter = rl.perUserLimiter; // kept for its own tests below
@@ -99,6 +99,9 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   app.use('/api/reports', require(SRC + '/routes/report.routes').default);
   app.use('/api/analytics', require(SRC + '/routes/analytics.routes').default);
   app.use('/api/wearables', require(SRC + '/routes/wearable.routes').default);
+  app.use('/api/social', require(SRC + '/routes/social.routes').default);
+  app.use('/api/friends', require(SRC + '/routes/friend.routes').default);
+  app.use('/api/challenges', require(SRC + '/routes/challenge.routes').default);
   // Unique indexes (e.g. one member per email per business) are built in the background on a fresh
   // database. Wait for them, or a fast test can slip a duplicate in before the index exists.
   await Promise.all(Object.values(require('mongoose').models).map((m) => m.init()));
@@ -960,6 +963,33 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
       }
       assert.equal(await hit('instagram', 'reprummble://auth-callback'), 400, 'unsupported providers are refused');
     } finally { sup.getOAuthUrl = realGet; }
+  });
+
+
+  console.log('Social features for Supabase accounts');
+  await t('the feed, friends and challenges work for an account whose id is a Supabase UUID (this used to fail with "Failed to get feed")', async () => {
+    const feed = await call('maya', 'GET', '/api/social/feed');
+    assert.equal(feed.status, 200); assert.equal(feed.body.success, true); assert.deepEqual(feed.body.posts, []);
+    assert.equal((await call('maya', 'GET', '/api/friends')).status, 200);
+    assert.equal((await call('maya', 'GET', '/api/challenges')).status, 200);
+  });
+  await t('a post is saved under the person and appears in their feed with their name', async () => {
+    const made = await call('maya', 'POST', '/api/social/posts', { content: 'First real post', postType: 'workout' });
+    assert.equal(made.status, 201);
+    const feed = await call('maya', 'GET', '/api/social/feed');
+    assert.equal(feed.body.posts.length, 1);
+    assert.equal(feed.body.posts[0].content, 'First real post');
+    assert.equal(feed.body.posts[0].author.email, users.maya.email);
+  });
+  await t('login and /auth/me hand the app the id the social features use, so it can tell which posts are the person\'s own', async () => {
+    const me = await call('maya', 'GET', '/api/auth/me');
+    assert.equal(me.status, 200); assert.match(me.body.data._id, /^[0-9a-f]{24}$/);
+    const feed = await call('maya', 'GET', '/api/social/feed');
+    assert.equal(feed.body.posts[0].author._id, me.body.data._id);
+  });
+  await t('an unverified email cannot use social features (it could be borrowing someone else\'s address)', async () => {
+    const r = await call('unver', 'GET', '/api/social/feed');
+    assert.equal(r.status, 403); assert.equal(r.body.code, 'email_not_verified');
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);

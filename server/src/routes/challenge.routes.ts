@@ -6,12 +6,13 @@ import {
   getChallengeProgress,
   getChallengeLeaderboard,
 } from "../controllers/challenge.controller";
-import { protect } from "../middleware/auth.middleware";
+import { protect, withLegacyUser } from "../middleware/auth.middleware";
 
 const router = Router();
 
 // All challenge routes require authentication
 router.use(protect);
+router.use(withLegacyUser);
 
 // Create a new challenge
 router.post("/", createChallenge);

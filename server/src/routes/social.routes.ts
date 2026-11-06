@@ -7,12 +7,13 @@ import {
   getPostComments,
   deletePost,
 } from "../controllers/social.controller";
-import { protect } from "../middleware/auth.middleware";
+import { protect, withLegacyUser } from "../middleware/auth.middleware";
 
 const router = Router();
 
 // All social routes require authentication
 router.use(protect);
+router.use(withLegacyUser);
 
 // Create a new post
 router.post("/posts", createPost);

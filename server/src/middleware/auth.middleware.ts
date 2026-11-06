@@ -1,3 +1,4 @@
+import { ensureLegacyUser } from '../services/legacy-user.service'
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { verifyToken } from '../services/supabase.service'
@@ -24,6 +25,8 @@ export interface AuthUser {
   /** True once the person has proven they own this email (link clicked, or a social provider vouched for it). */
   emailVerified?: boolean
   isBypass?: boolean
+  /** The Supabase id, kept when `id` is swapped for the Mongo user id (see withLegacyUser). */
+  supabaseId?: string
 }
 
 export interface AuthRequest extends Request {
@@ -223,5 +226,27 @@ export const agentOnly = async (req: AuthRequest, res: Response, next: NextFunct
       success: false,
       message: 'Server error during agent verification'
     })
+  }
+}
+
+
+/**
+ * For the social features (posts, friends, challenges), which are keyed by the Mongo user's ObjectId:
+ * points `req.user.id` at that record, found (or created) by the person's verified email.
+ */
+export const withLegacyUser = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  const user = req.user
+  if (!user || user.isBypass) return next()
+  if (!user.email || !user.emailVerified) {
+    res.status(403).json({ success: false, code: 'email_not_verified', message: 'Please verify your email address to use social features.' })
+    return
+  }
+  try {
+    const doc = await ensureLegacyUser(user.email, user.displayName)
+    req.user = { ...user, supabaseId: user.id, id: doc._id.toString() }
+    next()
+  } catch (error) {
+    console.error('withLegacyUser failed:', error)
+    res.status(500).json({ success: false, message: 'Could not load your social profile.' })
   }
 }
