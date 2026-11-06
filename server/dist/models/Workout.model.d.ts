@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 export interface IWorkout extends Document {
-    userId: mongoose.Types.ObjectId;
+    userId: string;
     exercise: string;
     duration: number;
     calories?: number;
@@ -9,9 +9,15 @@ export interface IWorkout extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Workout: mongoose.Model<IWorkout, {}, {}, {}, mongoose.Document<unknown, {}, IWorkout, {}, mongoose.DefaultSchemaOptions> & IWorkout & Required<{
+export declare const Workout: mongoose.Model<IWorkout, {}, {}, {}, Document<unknown, {}, IWorkout, {}, mongoose.DefaultSchemaOptions> & IWorkout & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IWorkout>;
+} & {
+    id: string;
+}, any, IWorkout & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=Workout.model.d.ts.map

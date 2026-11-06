@@ -47,9 +47,15 @@ export interface IWorkoutPlan extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const WorkoutPlan: mongoose.Model<IWorkoutPlan, {}, {}, {}, mongoose.Document<unknown, {}, IWorkoutPlan, {}, mongoose.DefaultSchemaOptions> & IWorkoutPlan & Required<{
+export declare const WorkoutPlan: mongoose.Model<IWorkoutPlan, {}, {}, {}, Document<unknown, {}, IWorkoutPlan, {}, mongoose.DefaultSchemaOptions> & IWorkoutPlan & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IWorkoutPlan>;
+} & {
+    id: string;
+}, any, IWorkoutPlan & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=WorkoutPlan.model.d.ts.map

@@ -137,7 +137,7 @@ exports.getActiveChats = getActiveChats;
  */
 const claimConversation = async (req, res) => {
     try {
-        const { conversationId } = req.params;
+        const conversationId = String(req.params.conversationId);
         const agent = req.agent;
         if (!agent) {
             return res.status(403).json({
@@ -201,7 +201,7 @@ exports.claimConversation = claimConversation;
  */
 const transferConversation = async (req, res) => {
     try {
-        const { conversationId } = req.params;
+        const conversationId = String(req.params.conversationId);
         const { targetAgentId, reason } = req.body;
         const currentAgent = req.agent;
         const conversation = await SupportConversation_model_1.SupportConversation.findById(conversationId);

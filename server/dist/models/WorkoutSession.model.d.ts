@@ -63,9 +63,15 @@ export interface IWorkoutSession extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const WorkoutSession: mongoose.Model<IWorkoutSession, {}, {}, {}, mongoose.Document<unknown, {}, IWorkoutSession, {}, mongoose.DefaultSchemaOptions> & IWorkoutSession & Required<{
+export declare const WorkoutSession: mongoose.Model<IWorkoutSession, {}, {}, {}, Document<unknown, {}, IWorkoutSession, {}, mongoose.DefaultSchemaOptions> & IWorkoutSession & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IWorkoutSession>;
+} & {
+    id: string;
+}, any, IWorkoutSession & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=WorkoutSession.model.d.ts.map

@@ -9,9 +9,15 @@ export interface IChallengeParticipant extends Document {
     completedAt?: Date;
     lastUpdated: Date;
 }
-export declare const ChallengeParticipant: mongoose.Model<IChallengeParticipant, {}, {}, {}, mongoose.Document<unknown, {}, IChallengeParticipant, {}, mongoose.DefaultSchemaOptions> & IChallengeParticipant & Required<{
+export declare const ChallengeParticipant: mongoose.Model<IChallengeParticipant, {}, {}, {}, Document<unknown, {}, IChallengeParticipant, {}, mongoose.DefaultSchemaOptions> & IChallengeParticipant & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IChallengeParticipant>;
+} & {
+    id: string;
+}, any, IChallengeParticipant & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=ChallengeParticipant.model.d.ts.map

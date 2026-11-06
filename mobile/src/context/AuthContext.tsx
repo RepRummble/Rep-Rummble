@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { setSessionExpiredHandler } from '../config/api';
 import { clearCache } from '../config/cache';
+import { signInWithProvider, type SocialProvider } from '../services/socialAuth';
 import { User, AuthState, LoginCredentials, RegisterCredentials } from '../types';
 import { DEV_BYPASS_AUTH, DEV_DUMMY_USER } from '../config/devConfig';
 
@@ -9,6 +10,8 @@ interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   /** Resolves with emailVerificationRequired: true when the person must click an emailed link before signing in. */
   register: (credentials: RegisterCredentials) => Promise<{ emailVerificationRequired: boolean }>;
+  /** Signs in with an Apple, Google, Microsoft or Facebook account. Resolves false if they closed the page. */
+  loginWithProvider: (provider: SocialProvider) => Promise<boolean>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
 }
@@ -108,6 +111,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithProvider = async (provider: SocialProvider) => {
+    const tokens = await signInWithProvider(provider);
+    if (!tokens) return false;
+    // Keep the tokens first, so the normal request path (and its token refresh) can fetch the profile.
+    await AsyncStorage.setMany({ rep_rumble_token: tokens.accessToken, rep_rumble_refresh: tokens.refreshToken });
+    try {
+      const me = await api.get('/auth/me');
+      const user = me.data.data;
+      await AsyncStorage.setItem('rep_rumble_user', JSON.stringify(user));
+      setState({ user, token: tokens.accessToken, isLoading: false, isAuthenticated: true });
+      return true;
+    } catch (error: any) {
+      await AsyncStorage.removeMany(['rep_rumble_token', 'rep_rumble_refresh', 'rep_rumble_user']);
+      throw new Error(error.response?.data?.message || 'We could not load your account after signing in.');
+    }
+  };
+
   const logout = async () => {
     await AsyncStorage.removeMany([
       'rep_rumble_token',
@@ -140,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...state,
         login,
         register,
+        loginWithProvider,
         logout,
         updateUser,
       }}

@@ -5,6 +5,7 @@ exports.quickLogMealWithGemini = quickLogMealWithGemini;
 exports.generateWorkoutPlanWithGemini = generateWorkoutPlanWithGemini;
 exports.getNutritionInfoWithGemini = getNutritionInfoWithGemini;
 const generative_ai_1 = require("@google/generative-ai");
+const ai_1 = require("../config/ai");
 // Initialize Gemini client
 let genAI = null;
 if (process.env.GEMINI_API_KEY) {
@@ -23,7 +24,7 @@ async function analyzeFoodImageWithGemini(imageBase64, mealType) {
         if (!genAI) {
             return getMockFoodAnalysis();
         }
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: ai_1.GEMINI_MODEL });
         const prompt = `You are an expert nutritionist. Analyze this food image and provide detailed nutrition information.
 
 Return ONLY a valid JSON object with this exact structure (no markdown, no code blocks):
@@ -104,7 +105,7 @@ async function quickLogMealWithGemini(description) {
         if (!genAI) {
             return getMockFoodAnalysis();
         }
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: ai_1.GEMINI_MODEL });
         const prompt = `You are a nutritionist. Parse this meal description and estimate nutrition.
 
 Meal description: "${description}"
@@ -164,7 +165,7 @@ async function generateWorkoutPlanWithGemini(goal, fitnessLevel, daysPerWeek) {
         if (!genAI) {
             return getMockWorkoutPlan();
         }
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: ai_1.GEMINI_MODEL });
         const prompt = `Create a workout plan with these parameters:
 - Goal: ${goal}
 - Fitness Level: ${fitnessLevel}
@@ -214,7 +215,7 @@ async function getNutritionInfoWithGemini(foodName) {
         if (!genAI) {
             return { calories: 0, protein: 0, carbs: 0, fat: 0 };
         }
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: ai_1.GEMINI_MODEL });
         const prompt = `Provide nutrition info for: "${foodName}" (1 serving)
 
 Return ONLY valid JSON:

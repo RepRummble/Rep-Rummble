@@ -16,9 +16,15 @@ export interface IChallenge extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Challenge: mongoose.Model<IChallenge, {}, {}, {}, mongoose.Document<unknown, {}, IChallenge, {}, mongoose.DefaultSchemaOptions> & IChallenge & Required<{
+export declare const Challenge: mongoose.Model<IChallenge, {}, {}, {}, Document<unknown, {}, IChallenge, {}, mongoose.DefaultSchemaOptions> & IChallenge & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IChallenge>;
+} & {
+    id: string;
+}, any, IChallenge & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=Challenge.model.d.ts.map

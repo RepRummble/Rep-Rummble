@@ -28,9 +28,15 @@ export interface ISupportConversation extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const SupportConversation: mongoose.Model<ISupportConversation, {}, {}, {}, mongoose.Document<unknown, {}, ISupportConversation, {}, mongoose.DefaultSchemaOptions> & ISupportConversation & Required<{
+export declare const SupportConversation: mongoose.Model<ISupportConversation, {}, {}, {}, Document<unknown, {}, ISupportConversation, {}, mongoose.DefaultSchemaOptions> & ISupportConversation & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, ISupportConversation>;
+} & {
+    id: string;
+}, any, ISupportConversation & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=SupportConversation.model.d.ts.map

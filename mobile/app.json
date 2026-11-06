@@ -71,7 +71,9 @@
           "backgroundColor": "#f6f8f9",
           "imageWidth": 220
         }
-      ]
-    ]
+      ],
+      "expo-web-browser"
+    ],
+    "scheme": "reprummble"
   }
 }

@@ -6,9 +6,15 @@ export interface IContact extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Contact: mongoose.Model<IContact, {}, {}, {}, mongoose.Document<unknown, {}, IContact, {}, mongoose.DefaultSchemaOptions> & IContact & Required<{
+export declare const Contact: mongoose.Model<IContact, {}, {}, {}, Document<unknown, {}, IContact, {}, mongoose.DefaultSchemaOptions> & IContact & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IContact>;
+} & {
+    id: string;
+}, any, IContact & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=Contact.model.d.ts.map

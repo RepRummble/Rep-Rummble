@@ -6,9 +6,15 @@ export interface IFriendship extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Friendship: mongoose.Model<IFriendship, {}, {}, {}, mongoose.Document<unknown, {}, IFriendship, {}, mongoose.DefaultSchemaOptions> & IFriendship & Required<{
+export declare const Friendship: mongoose.Model<IFriendship, {}, {}, {}, Document<unknown, {}, IFriendship, {}, mongoose.DefaultSchemaOptions> & IFriendship & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IFriendship>;
+} & {
+    id: string;
+}, any, IFriendship & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=Friendship.model.d.ts.map

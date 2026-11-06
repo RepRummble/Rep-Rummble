@@ -8,7 +8,8 @@ router.use(auth_middleware_1.protect); // All routes require authentication
 router.route('/')
     .get(workout_controller_1.getWorkouts)
     .post(workout_controller_1.createWorkout);
-router.get('/stats', workout_controller_1.getWorkoutStats);
+// Allow unauthenticated visitors to fetch aggregated stats (optional auth)
+router.get('/stats', auth_middleware_1.optionalAuth, workout_controller_1.getWorkoutStats);
 router.route('/:id')
     .get(workout_controller_1.getWorkout)
     .delete(workout_controller_1.deleteWorkout);

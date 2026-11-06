@@ -36,39 +36,60 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteAccount = exports.updateProfile = exports.logout = exports.getOAuthUrl = exports.getMe = exports.login = exports.register = void 0;
+exports.deleteAccount = exports.updateProfile = exports.logout = exports.getOAuthUrl = exports.getMe = exports.refresh = exports.login = exports.resendVerification = exports.register = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const validation_1 = require("../utils/validation");
+const database_1 = require("../config/database");
+const mail_service_1 = require("../services/mail.service");
+const account_deletion_service_1 = require("../services/account-deletion.service");
 const supabaseService = __importStar(require("../services/supabase.service"));
 const User_model_1 = require("../models/User.model");
-const nodemailer_1 = __importDefault(require("nodemailer"));
+const security_1 = require("../config/security");
 // Generate JWT Token
 const generateToken = (id) => {
     const options = { expiresIn: process.env.JWT_EXPIRE || "7d" };
-    return jsonwebtoken_1.default.sign({ id }, process.env.JWT_SECRET || "secret", options);
+    return jsonwebtoken_1.default.sign({ id }, security_1.JWT_SECRET, options);
 };
 // @route POST /api/auth/register
 const register = async (req, res) => {
     try {
         const { email, password, displayName } = req.body;
-        if (!email || !password) {
+        if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
             return res.status(400).json({ success: false, message: "Please provide email and password" });
         }
-        const result = await supabaseService.signUpWithEmail(email, password, { displayName });
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!(0, validation_1.isEmail)(normalizedEmail)) {
+            return res.status(400).json({ success: false, message: "Please enter a valid email address" });
+        }
+        const result = await supabaseService.signUpWithEmail(normalizedEmail, password, { displayName });
         if (!result.success || !result.user) {
             return res.status(400).json({ success: false, message: result.error || "Registration failed" });
         }
-        // Also create in MongoDB
-        await User_model_1.User.findOneAndUpdate({ email: result.user.email }, { email: result.user.email, displayName: displayName || "" }, { upsert: true, new: true });
-        const token = generateToken(result.user.id);
+        // Verification is on: the person has to click the link in their inbox before they can sign in.
+        // No token is issued yet, otherwise anyone could use an email address they do not own.
+        // The same answer is given whether or not the email already has an account.
+        if (result.needsVerification) {
+            if (!result.alreadyRegistered) {
+                await User_model_1.User.findOneAndUpdate({ email: { $eq: normalizedEmail } }, { email: normalizedEmail, displayName: typeof displayName === 'string' ? displayName : "" }, { upsert: true, new: true });
+            }
+            return res.status(202).json({
+                success: true,
+                data: { emailVerificationRequired: true, email: result.user.email },
+            });
+        }
+        // Verification is switched off in Supabase: the account is usable straight away.
+        await User_model_1.User.findOneAndUpdate({ email: { $eq: normalizedEmail } }, { email: normalizedEmail, displayName: typeof displayName === 'string' ? displayName : "" }, { upsert: true, new: true });
         return res.status(201).json({
             success: true,
             data: {
+                emailVerificationRequired: false,
                 user: {
                     id: result.user.id,
                     email: result.user.email,
                     displayName: displayName || result.user.user_metadata?.displayName,
                 },
-                token,
+                token: result.session?.access_token,
+                refreshToken: result.session?.refresh_token,
             },
         });
     }
@@ -78,6 +99,16 @@ const register = async (req, res) => {
     }
 };
 exports.register = register;
+// @route POST /api/auth/resend-verification
+const resendVerification = async (req, res) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if ((0, validation_1.isEmail)(email)) {
+        await supabaseService.resendVerification(email);
+    }
+    // Always the same answer, so this cannot be used to find out who has an account.
+    return res.json({ success: true, message: 'If that address needs verifying, we have sent a new link.' });
+};
+exports.resendVerification = resendVerification;
 // @route POST /api/auth/login
 const login = async (req, res) => {
     try {
@@ -87,6 +118,13 @@ const login = async (req, res) => {
         }
         const result = await supabaseService.signInWithEmail(email, password);
         if (!result.success || !result.user) {
+            if (/not confirmed/i.test(result.error || '')) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'email_not_verified',
+                    message: 'Please verify your email address first. Check your inbox for the link we sent.',
+                });
+            }
             return res.status(401).json({ success: false, message: result.error || "Invalid credentials" });
         }
         // Get MongoDB user data
@@ -114,6 +152,33 @@ const login = async (req, res) => {
     }
 };
 exports.login = login;
+// @route POST /api/auth/refresh
+// Mobile sessions last about an hour; this swaps the stored refresh token for a fresh pair so people
+// stay signed in. A refresh token works once, so the response carries the replacement.
+const refresh = async (req, res) => {
+    const refreshToken = req.body?.refreshToken;
+    if (typeof refreshToken !== 'string' || !refreshToken || refreshToken.length > 2048) {
+        return res.status(400).json({ success: false, message: 'A refresh token is required' });
+    }
+    const result = await supabaseService.refreshSession(refreshToken);
+    if (!result.success || !result.session || !result.user) {
+        // Expired, revoked, or already used: the person has to sign in again.
+        return res.status(401).json({ success: false, code: 'session_expired', message: 'Your session has expired. Please sign in again.' });
+    }
+    return res.json({
+        success: true,
+        data: {
+            user: {
+                id: result.user.id,
+                email: result.user.email,
+                displayName: result.user.user_metadata?.displayName,
+            },
+            token: result.session.access_token,
+            refreshToken: result.session.refresh_token,
+        },
+    });
+};
+exports.refresh = refresh;
 // @route GET /api/auth/me
 const getMe = async (req, res) => {
     try {
@@ -140,11 +205,37 @@ const getMe = async (req, res) => {
 };
 exports.getMe = getMe;
 // @route GET /api/auth/oauth/:provider
+// Only our own sites may receive the OAuth result. Anything else falls back to the
+// default, so this endpoint can't be used as an open redirect in phishing links.
+const OAUTH_REDIRECT_ORIGINS = new Set(['https://reprummble.com', 'https://www.reprummble.com', 'http://localhost:5173', process.env.CLIENT_URL]
+    .filter(Boolean)
+    .map((u) => { try {
+    return new URL(u).origin;
+}
+catch {
+    return '';
+} }));
+/** The mobile app's return address. It is opened by the system browser session that the app started. */
+const MOBILE_OAUTH_REDIRECT = 'reprummble://auth-callback';
+function safeOAuthRedirect(requested) {
+    const fallback = `${(process.env.CLIENT_URL || 'https://reprummble.com').replace(/\/$/, '')}/auth/callback`;
+    if (typeof requested !== 'string')
+        return fallback;
+    if (requested === MOBILE_OAUTH_REDIRECT)
+        return requested;
+    try {
+        const url = new URL(requested);
+        return OAUTH_REDIRECT_ORIGINS.has(url.origin) && url.pathname === '/auth/callback' ? url.toString() : fallback;
+    }
+    catch {
+        return fallback;
+    }
+}
 const getOAuthUrl = async (req, res) => {
     try {
         const provider = req.params.provider;
-        const redirectTo = req.query.redirect || process.env.CLIENT_URL + '/auth/callback';
-        const validProviders = ['google', 'facebook', 'apple', 'twitter'];
+        const redirectTo = safeOAuthRedirect(req.query.redirect);
+        const validProviders = ['google', 'facebook', 'apple', 'twitter', 'azure'];
         if (!validProviders.includes(provider)) {
             return res.status(400).json({ success: false, message: "Invalid OAuth provider" });
         }
@@ -178,12 +269,28 @@ exports.logout = logout;
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user?.id;
-        const { displayName, photoUrl } = req.body;
+        const body = req.body || {};
+        console.log('[auth.controller] updateProfile user=', req.user);
+        console.log('[auth.controller] updateProfile body=', body);
         if (!userId) {
             return res.status(401).json({ success: false, message: "Not authenticated" });
         }
-        if (displayName || photoUrl) {
-            await supabaseService.updateUserMetadata(userId, { displayName, photoUrl });
+        // Accept arbitrary profile metadata (displayName, photoUrl, goal, activity, diets, etc.)
+        const metadata = {};
+        const allowed = ['displayName', 'photoUrl', 'goal', 'activity', 'diets', 'devices', 'notifications'];
+        Object.keys(body).forEach((k) => {
+            if (allowed.includes(k))
+                metadata[k] = body[k];
+        });
+        if (Object.keys(metadata).length > 0) {
+            if (req.user?.isBypass) {
+                // Local bypass mode: skip Supabase update and return success
+                return res.json({ success: true, message: "Profile updated successfully (bypass mode)" });
+            }
+            const result = await supabaseService.updateUserMetadata(userId, metadata);
+            if (!result.success) {
+                return res.status(500).json({ success: false, message: result.error || 'Failed to update profile' });
+            }
         }
         return res.json({ success: true, message: "Profile updated successfully" });
     }
@@ -194,52 +301,57 @@ const updateProfile = async (req, res) => {
 };
 exports.updateProfile = updateProfile;
 // @route DELETE /api/auth/account
+// Deletes the signed-in person: first everything we hold about them, then their sign-in.
+// Safe to retry. If the sign-in cannot be removed the data is already gone, and we say so.
 const deleteAccount = async (req, res) => {
+    const userId = req.user?.id;
+    const userEmail = req.user?.email;
+    if (!userId) {
+        return res.status(401).json({ success: false, message: "Not authenticated" });
+    }
+    if (!(0, database_1.isDBConnected)()) {
+        return res.status(503).json({ success: false, code: 'unavailable', message: "Service temporarily unavailable. Please try again shortly." });
+    }
     try {
-        const userId = req.user?.id;
-        const userEmail = req.user?.email;
-        if (!userId) {
-            return res.status(401).json({ success: false, message: "Not authenticated" });
+        // Make sure we are able to close the sign-in before removing anything, so a misconfigured
+        // server cannot leave someone with their data deleted and their account still open.
+        const check = await supabaseService.getUserById(userId);
+        if (!check.success) {
+            console.error(`[deleteAccount] cannot reach Supabase for ${userId}: ${check.error}`);
+            return res.status(503).json({
+                success: false,
+                code: 'unavailable',
+                message: "We could not reach our sign-in service, so nothing was deleted. Please try again in a few minutes.",
+            });
         }
-        // Delete from Supabase auth
+        const removed = await (0, account_deletion_service_1.deleteAccountData)(userId, userEmail);
         const result = await supabaseService.deleteUser(userId);
         if (!result.success) {
-            return res.status(500).json({ success: false, message: result.error || "Failed to delete account" });
+            // Usually a database rule in the Supabase project (a table linked to auth.users without
+            // ON DELETE CASCADE). The log has the exact reason for whoever runs the project.
+            console.error(`[deleteAccount] Supabase refused to delete user ${userId}: ${result.error}. Their data was already removed:`, removed);
+            return res.status(502).json({
+                success: false,
+                code: 'auth_delete_failed',
+                message: "Your data has been deleted, but we could not close your sign-in. Please email support@reprummble.com and we will finish it for you.",
+            });
         }
-        // Delete from MongoDB
+        console.log(`[deleteAccount] deleted ${userId}:`, removed);
         if (userEmail) {
-            await User_model_1.User.deleteOne({ email: userEmail });
-        }
-        // Send confirmation email if configured
-        if (userEmail && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-            try {
-                const transporter = nodemailer_1.default.createTransport({
-                    service: 'gmail',
-                    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
-                });
-                await transporter.sendMail({
-                    from: `"Reprummble" <${process.env.GMAIL_USER}>`,
-                    to: userEmail,
-                    subject: 'Your Reprummble account has been deleted',
-                    text: `Hi,\n\nYour Reprummble account (${userEmail}) has been permanently deleted as requested.\n\nAll your personal data, health logs, and workout records have been removed from our systems within the timeframes described in our Privacy Policy.\n\nIf you did not request this, please contact us immediately at support@reprummble.com.\n\nTake care,\nThe Reprummble Team`,
-                });
-                // Also notify admin
-                await transporter.sendMail({
-                    from: `"Reprummble" <${process.env.GMAIL_USER}>`,
-                    to: process.env.GMAIL_USER,
-                    subject: `Account deletion: ${userEmail}`,
-                    text: `User ${userEmail} (ID: ${userId}) has deleted their account.\n\nTimestamp: ${new Date().toISOString()}`,
-                });
-            }
-            catch (_) {
-                // Email failure should not block account deletion
+            void (0, mail_service_1.sendMail)(userEmail, 'Your Reprummble account has been deleted', `Hi,\n\nYour Reprummble account (${userEmail}) has been permanently deleted as requested, along with your workouts, meals, and other data.\n\nIf you did not request this, please contact us immediately at support@reprummble.com.\n\nTake care,\nThe Reprummble Team\n`);
+            if (process.env.GMAIL_USER) {
+                void (0, mail_service_1.sendMail)(process.env.GMAIL_USER, `Account deletion: ${userEmail}`, `User ${userEmail} (ID: ${userId}) deleted their account.\n\nTimestamp: ${new Date().toISOString()}\n`);
             }
         }
         return res.json({ success: true, message: "Account deleted successfully" });
     }
     catch (error) {
-        const err = error;
-        return res.status(500).json({ success: false, message: err.message || "Server error" });
+        console.error('[deleteAccount] failed:', error);
+        return res.status(500).json({
+            success: false,
+            code: 'delete_failed',
+            message: "Something went wrong while deleting your data. Nothing about your sign-in was changed, so you can try again.",
+        });
     }
 };
 exports.deleteAccount = deleteAccount;

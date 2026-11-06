@@ -944,6 +944,24 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal(r.status, 409);
   });
 
+
+  console.log('Social sign-in redirects');
+  await t('the mobile return address and Microsoft are accepted, and anything else falls back to the website', async () => {
+    const seen = [];
+    const realGet = sup.getOAuthUrl;
+    sup.getOAuthUrl = async (provider, redirectTo) => { seen.push({ provider, redirectTo }); return { url: 'https://idp.example/authorize' }; };
+    try {
+      const hit = async (provider, redirect) => (await fetch(`${base}/api/auth/oauth/${provider}${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`, { redirect: 'manual' })).status;
+      assert.equal(await hit('azure', 'reprummble://auth-callback'), 302);
+      assert.deepEqual(seen[0], { provider: 'azure', redirectTo: 'reprummble://auth-callback' });
+      for (const evil of ['evilapp://auth-callback', 'reprummble://other', 'javascript:alert(1)', 'https://evil.example/auth/callback']) {
+        assert.equal(await hit('google', evil), 302);
+        assert.ok(!seen.at(-1).redirectTo.startsWith('evilapp') && !seen.at(-1).redirectTo.includes('evil.example') && !seen.at(-1).redirectTo.startsWith('javascript') && seen.at(-1).redirectTo !== 'reprummble://other', 'unlisted return address was refused: ' + evil);
+      }
+      assert.equal(await hit('instagram', 'reprummble://auth-callback'), 400, 'unsupported providers are refused');
+    } finally { sup.getOAuthUrl = realGet; }
+  });
+
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
   server.close(); await require('mongoose').disconnect(); await mms.stop();
 })().catch((e) => { console.error('Harness error:', e); process.exit(1); });

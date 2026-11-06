@@ -1,1 +1,1 @@
-{"version":3,"file":"workoutPlan.routes.d.ts","sourceRoot":"","sources":["../../src/routes/workoutPlan.routes.ts"],"names":[],"mappings":"AAYA,QAAA,MAAM,MAAM,4CAAW,CAAA;AA8BvB,eAAe,MAAM,CAAA"}
+{"version":3,"file":"workoutPlan.routes.d.ts","sourceRoot":"","sources":["../../src/routes/workoutPlan.routes.ts"],"names":[],"mappings":"AAYA,QAAA,MAAM,MAAM,4CAAW,CAAA;eA8BR,MAAM"}

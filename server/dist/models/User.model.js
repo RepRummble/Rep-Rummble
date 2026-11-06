@@ -58,6 +58,14 @@ const UserSchema = new mongoose_1.Schema({
         type: String,
         trim: true,
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user',
+        // Never settable from client-supplied request bodies — only changed
+        // via a trusted, server-side path (e.g. a seed script or DB console).
+        select: true,
+    },
     streak: {
         type: Number,
         default: 0,
@@ -94,19 +102,13 @@ const UserSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-// Hash password before saving
-UserSchema.pre('save', async function (next) {
-    // `this` is typed as IUser here
+// Hash password before saving.
+// Mongoose 9 no longer passes `next` to hooks: just return, or throw to fail the save.
+UserSchema.pre('save', async function () {
     if (!this.isModified('password'))
-        return next();
-    try {
-        const salt = await bcryptjs_1.default.genSalt(10);
-        this.password = await bcryptjs_1.default.hash(this.password, salt);
-        next();
-    }
-    catch (error) {
-        next(error);
-    }
+        return;
+    const salt = await bcryptjs_1.default.genSalt(10);
+    this.password = await bcryptjs_1.default.hash(this.password, salt);
 });
 // Compare password method
 UserSchema.methods.comparePassword = async function (candidatePassword) {

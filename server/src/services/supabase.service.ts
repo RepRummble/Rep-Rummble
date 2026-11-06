@@ -164,8 +164,10 @@ export async function verifyToken(token: string): Promise<AuthResult> {
 /**
  * Get OAuth URL for social login
  */
+export type OAuthProvider = 'google' | 'facebook' | 'apple' | 'twitter' | 'azure'
+
 export async function getOAuthUrl(
-  provider: 'google' | 'facebook' | 'apple' | 'twitter',
+  provider: OAuthProvider,
   redirectTo: string
 ): Promise<{ url: string | null; error?: string }> {
   if (!supabase) {
@@ -181,7 +183,9 @@ export async function getOAuthUrl(
     const { data, error } = await anonClient.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo
+        redirectTo,
+        // Microsoft (Azure) only returns the email address when it is asked for.
+        ...(provider === 'azure' ? { scopes: 'email' } : {}),
       }
     })
 

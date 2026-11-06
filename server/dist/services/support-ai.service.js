@@ -1,160 +1,201 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MAX_MESSAGE_CHARS = void 0;
+exports.getContextualQuickReplies = getContextualQuickReplies;
 exports.generateAIChatResponse = generateAIChatResponse;
+exports.streamAIChatResponse = streamAIChatResponse;
 exports.generateSupportResponse = generateSupportResponse;
 exports.generateHandoffSummary = generateHandoffSummary;
-const generative_ai_1 = require("@google/generative-ai");
-// ── Gemini client (uses existing GEMINI_API_KEY from Render) ─
-const genAI = process.env.GEMINI_API_KEY
-    ? new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    : null;
-const SYSTEM_PROMPT = `You are Rumi, a friendly support assistant for Reprummble — an all-in-one fitness and wellness platform.
-
-About Reprummble:
-- Plans: Starter (Free forever), Pro ($9/mo - AI + wearables + analytics), Elite ($19/mo - everything + coach access). All start with a free trial, no card needed.
-- Features: AI meal logging (photo or text), workout tracking, recovery readiness score, wearable sync, 30-day challenges, leaderboards, weekly analytics
-- Wearables: Apple Watch, Oura Ring, Garmin, Whoop, Fitbit, Polar
-- Support email: support@reprummble.com (24hr response weekdays)
-
-Guidelines:
-- Be warm, concise (under 120 words), friendly but not corporate
-- Use bullet points for steps
-- End with an offer to help further
-- For billing disputes, refunds, security issues: direct to support@reprummble.com
-- Never make up features that do not exist`;
-// ── Pre-written answer bank (rule-based fallback) ────────────
-const ANSWER_BANK = [
-    {
-        patterns: [/^(hi|hello|hey|good morning|good evening|sup)\b/i],
-        reply: "Hey! 👋 I'm Rumi, your Reprummble support assistant. I can help with features, billing, workouts, nutrition, or technical issues.\n\nWhat can I help you with today?",
-        quickReplies: ['How do I log a meal?', 'Pricing & plans', 'Connect my wearable', 'Technical issue'],
-    },
-    {
-        patterns: [/\b(price|plan|cost|subscription|how much|free trial|upgrade|monthly|annual|paid)\b/i],
-        reply: "Reprummble has 3 plans:\n\n• **Starter** — Free forever (basic tracking)\n• **Pro** — $9/month (AI features + wearable sync + full analytics)\n• **Elite** — $19/month (everything + personal coach access)\n\nAll plans start with a **free trial** — no card needed. Cancel anytime.",
-        quickReplies: ['Start free trial', 'What does Pro include?', 'How do I cancel?'],
-    },
-    {
-        patterns: [/\b(cancel|refund|money back|unsubscribe|stop subscription)\b/i],
-        reply: "To cancel:\n\n1. Go to **Settings → Account → Subscription**\n2. Tap **Cancel Plan**\n3. You keep access until your billing period ends\n\nFor refunds, email **support@reprummble.com** — handled within 24 hours.",
-        quickReplies: ['Contact support', 'Will I lose my data?', 'Switch to free plan'],
-    },
-    {
-        patterns: [/\b(log meal|track food|calorie|nutrition|macro|log food|add meal|what did i eat)\b/i],
-        reply: "Logging meals is quick!\n\n**Photo logging** (fastest):\n1. Tap **+** on your dashboard\n2. Take a photo — AI fills in the macros automatically\n\n**Text logging**:\n1. Type what you ate (e.g. \"2 eggs and toast\")\n2. Review & save\n\nYour macros update instantly. 🥗",
-        quickReplies: ['Edit a logged meal', 'Set my macro goals', 'Photo logging tips'],
-    },
-    {
-        patterns: [/\b(workout|exercise|training|log workout|strength|gym|run|cardio)\b/i],
-        reply: "To track a workout:\n\n1. Tap **Start Session** on your dashboard\n2. Log sets/reps or duration for each exercise\n3. Tap **Complete Session** when done\n\nYour AI training plan adapts weekly based on performance and recovery. Customise in **Profile → Goals**.",
-        quickReplies: ['My recovery score', 'Add a custom exercise', 'How does my plan adapt?'],
-    },
-    {
-        patterns: [/\b(recovery|readiness|hrv|sleep score|resting heart|rest day|readiness score)\b/i],
-        reply: "Your **Readiness Score** (0–100) is calculated from:\n• Sleep quality & duration\n• Resting heart rate\n• HRV\n• Recent training load\n\n**80–100**: Train hard 💪 | **50–79**: Moderate | **Below 50**: Rest 😴\n\nConnect a wearable for the most accurate score.",
-        quickReplies: ['Connect my wearable', 'Why is my score low?', 'What is HRV?'],
-    },
-    {
-        patterns: [/\b(wearable|apple watch|garmin|oura|whoop|fitbit|polar|sync device|connect device)\b/i],
-        reply: "Reprummble syncs with 6 wearables:\n⌚ Apple Watch · 💍 Oura Ring · 🗺️ Garmin · 📟 Whoop · Fitbit · Polar\n\nTo connect:\n1. Go to **Settings → Devices**\n2. Select your device\n3. Follow pairing instructions\n\nData syncs automatically on app open. 🔄",
-        quickReplies: ["Why isn't my device syncing?", 'Remove a device', 'Supported devices list'],
-    },
-    {
-        patterns: [/\b(challenge|leaderboard|streak|community|rank|points|badge)\b/i],
-        reply: "Community features:\n\n• **30-day challenges** — Join from the Explore tab\n• **Leaderboard** — Your weekly rank vs. all members\n• **Streaks** — Log daily to keep yours going 🔥\n\nChallenges reset monthly and earn you XP for the global leaderboard.",
-        quickReplies: ['Join a challenge', 'Leaderboard location', 'I lost my streak'],
-    },
-    {
-        patterns: [/\b(login|sign in|forgot password|locked out|can.t access|password reset)\b/i],
-        reply: "Account access fix:\n\n**Forgot password?**\n1. Tap **Forgot Password** on the login page\n2. Check your email (and spam!) for the reset link\n\n**Still locked out?**\nEmail **support@reprummble.com** — we'll get you in within a few hours.",
-        quickReplies: ['Reset my password', 'Change my email', 'Delete my account'],
-    },
-    {
-        patterns: [/\b(delete account|close account|remove my data|gdpr|data export)\b/i],
-        reply: "To delete your account: **Settings → Delete Account**\n\nThis permanently removes all your data and cannot be undone.\n\nFor a **data export** (GDPR), email **support@reprummble.com** — we'll send your archive within 7 days.",
-        quickReplies: ['Export my data', 'What data do you store?', 'Cancel subscription first'],
-    },
-    {
-        patterns: [/\b(not working|bug|crash|error|broken|glitch|slow|blank|loading|issue|problem)\b/i],
-        reply: "Let's troubleshoot:\n\n1. **Force-close** the app and reopen it\n2. Check your internet connection\n3. Make sure the app is **up to date**\n4. Try **signing out and back in**\n\nStill broken? Email **support@reprummble.com** — we investigate within 24 hours.",
-        quickReplies: ['Clear app cache', 'Report a bug', "It's still not working"],
-    },
-    {
-        patterns: [/\b(notification|reminder|alert|push notification|turn off|stop email)\b/i],
-        reply: "Manage all notifications in **Settings → Notifications**:\n\n• Workout reminders\n• Weekly progress reports\n• Challenge alerts\n• Recovery alerts\n• Tips & news\n\nFor push notifications, also check your phone's notification settings for Reprummble.",
-        quickReplies: ['Turn off all emails', 'Set reminder time', "I'm not getting notifications"],
-    },
-    {
-        patterns: [/\b(contact|email support|human|agent|real person|speak to|talk to)\b/i],
-        reply: "Reach our team at:\n\n📧 **support@reprummble.com**\n\nWe respond within **24 hours** on weekdays. Add \"URGENT\" for billing or security issues.\n\nAnything else I can help with first?",
-        quickReplies: ['Billing issue', 'Technical problem', 'Account question'],
-    },
-];
-function getRuleBasedResponse(message) {
-    const lower = message.toLowerCase().trim();
-    for (const item of ANSWER_BANK) {
-        if (item.patterns.some((p) => p.test(lower))) {
-            return { reply: item.reply, quickReplies: item.quickReplies };
-        }
+const genai_1 = require("@google/genai");
+const ai_1 = require("../config/ai");
+exports.MAX_MESSAGE_CHARS = 2000;
+const MAX_HISTORY = 12;
+// @google/genai 3 defaults to the stable v1 API, which does not serve "gemini-flash-latest".
+// Staying on v1beta keeps the model name (and the replies) working as before.
+let client;
+function getClient() {
+    if (client === undefined) {
+        client = process.env.GEMINI_API_KEY ? new genai_1.GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, apiVersion: 'v1beta' }) : null;
     }
-    return {
-        reply: "Thanks for reaching out! Could you tell me more about what you need help with?\n\n• A feature question\n• Billing or subscription\n• A technical issue\n• Account access\n\nOr email us at **support@reprummble.com** 📧",
-        quickReplies: ['How to log meals', 'Pricing & plans', 'Technical issue', 'Contact support'],
-    };
+    return client;
+}
+const SYSTEM_PROMPT = `You are Rumi, the assistant inside Reprummble — a fitness app for training, nutrition, and recovery, used by individuals, families, and partner gyms.
+
+Answer the user's actual question directly and specifically. You can:
+- Explain Reprummble's plans, features, and how things work (facts below).
+- Give practical, evidence-based fitness, training, nutrition, sleep, and recovery guidance tailored to what the user tells you (goals, weight, schedule, equipment, experience). Do the math when asked (e.g. protein targets, calorie estimates) and show the key numbers.
+- Ask one short clarifying question only when the answer genuinely depends on missing information.
+
+Reprummble facts (do not contradict or invent beyond these):
+- Plans: Free ($0, limited logging, habit streaks, weekly insights, 1 challenge a month); Pro ($9.99/month, full access: unlimited logging, personalized AI training plan, AI meal photo analysis, wearable sync, daily recovery/readiness score, advanced analytics, member pricing on partner-gym programs, 14-day free trial); Premium ($14.99/month, everything in Pro plus 1-on-1 coach check-ins twice a month, custom nutrition plan from a coach, PDF progress reports, priority support, early access).
+- Members of partner gyms get Pro included with their gym membership and can upgrade to Premium for $5/month.
+- Businesses (gyms, studios, personal trainers, online coaches, nutritionists, clinics, employers, clubs) can collaborate for free. Collaboration page and application: reprummble.com/collaborate. Approved businesses get a separate business dashboard to manage members, create workout plans and nutrition/food plans, and export reports. Gyms and coaches can publish programs and keep 80% of program sales.
+- Available on the web (reprummble.com), iPhone, and Android.
+- Wearables: on iPhone, Reprummble reads Apple Health, which includes Apple Watch and any device whose app syncs to Apple Health (Garmin, Oura, Whoop, Fitbit, Polar). Android Health Connect support is coming.
+- Referrals: when a friend creates a new account through your invite link (found in your dashboard under Referral), you each get 5% off your next subscription. Discounts stack up to 25%. Invite links only work for brand-new accounts, and the discount applies once online billing opens.
+- Business applications are reviewed by our team within two business days. Once approved, the business signs in to the business dashboard with their normal account. Coaches, nutritionists, and viewers can be added to the team with different permissions.
+- One account works on the web, iPhone, and Android; plans, workouts, and progress sync automatically. The website (reprummble.com) is for signing up, pricing, billing, FAQ, and contact. All workouts, programs, challenges, and exercise guides are in the iPhone and Android app.
+- Human support: support@reprummble.com (replies within 24 hours on weekdays). Contact form: reprummble.com/contact.
+
+In-app content library (keep in sync with mobile/src/content/library.ts). Recommend by name and say it is in the app; there are no website pages for these:
+- Workouts (filter by focus, level, equipment, time): First Steps Full Body (beginner, 15 min, no equipment), Living Room Strength (intermediate, 25 min, no equipment), Dumbbell Total Body (Pro, 35 min), Upper Body Push (20 min, no equipment), Dumbbell Upper Builder (Pro, 30 min), Desk Posture Fix (12 min, bands), Leg Day No Gym (beginner, 20 min), Glute Builder (Pro, 30 min, dumbbells), Gym Lower Power (Pro, advanced, 45 min), Core 10 (beginner, 10 min), Iron Core (advanced, 20 min), HIIT 20 (intermediate, 20 min), Low-Impact Cardio (beginner, 15 min, no jumping), Morning Mobility (10 min).
+- Programs: Start Here: 4 Weeks (complete beginners), Home Fat Loss (6 weeks, no equipment), Dumbbell Muscle Builder (Pro, 8 weeks), Gym Strength Foundations (Pro, 8 weeks, advanced), Strong Core & Posture (4 weeks, bands), 6-Week Conditioning (Pro).
+- Challenges: 30-Day Squat, 30-Day Plank (20 s to 3 min), 21-Day Push-up Builder, 14-Day Glute Bridge, 30-Day Burpee Ladder (advanced), 21-Day Wall Sit. Free members can join 1 challenge a month; Pro unlocks all.
+- Exercise how-to guides by muscle group.
+
+Rules:
+- If you are not sure how a specific screen or setting in the app works, say so and point to support@reprummble.com rather than inventing steps.
+- Billing disputes, refunds, account deletion, and security issues go to support@reprummble.com.
+- You are not a doctor. For pain, injuries, pregnancy, eating disorders, medications, or medical conditions, give general safe guidance and recommend a qualified professional. For emergencies, tell them to contact local emergency services.
+- For questions unrelated to fitness, health, or Reprummble, reply in one sentence that you can only help with those topics.
+- Keep replies under 150 words unless the user asks for more detail. Plain text only: use **bold** for emphasis and lines starting with "- " for lists. No headings, tables, or links in markdown syntax.`;
+function toGeminiHistory(history) {
+    const out = [];
+    for (const m of history.slice(-MAX_HISTORY)) {
+        const text = String(m.content ?? '').slice(0, exports.MAX_MESSAGE_CHARS).trim();
+        if (!text)
+            continue;
+        const role = m.role === 'user' ? 'user' : 'model';
+        const last = out[out.length - 1];
+        if (last && last.role === role)
+            last.parts = [...(last.parts ?? []), { text }];
+        else
+            out.push({ role, parts: [{ text }] });
+    }
+    // Gemini requires the history to start with a user turn.
+    while (out.length && out[0].role !== 'user')
+        out.shift();
+    return out;
+}
+function createChat(history) {
+    const ai = getClient();
+    if (!ai)
+        return null;
+    return ai.chats.create({
+        model: ai_1.GEMINI_MODEL,
+        history: toGeminiHistory(history),
+        config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.6, maxOutputTokens: 800 },
+    });
 }
 function getContextualQuickReplies(msg, reply) {
-    const t = (msg + ' ' + reply).toLowerCase();
-    if (/meal|food|nutrition|calorie|macro/.test(t))
-        return ['Edit a logged meal', 'Set macro goals', 'Photo tips'];
-    if (/workout|exercise|training/.test(t))
-        return ['Log a workout', 'My recovery score', 'Adjust plan'];
-    if (/plan|price|subscription/.test(t))
-        return ['Start free trial', 'Compare plans', 'How to cancel'];
-    if (/wearable|device|sync/.test(t))
-        return ['Supported devices', 'Sync issues', 'Remove device'];
-    if (/account|password|login/.test(t))
-        return ['Reset password', 'Change email', 'Delete account'];
-    return ['Log a meal', 'Pricing & plans', 'Technical help'];
+    const t = `${msg} ${reply}`.toLowerCase();
+    if (/gym|partner|coach/.test(t))
+        return ['How do gyms partner?', 'Is my gym a partner?', 'What does Premium add?'];
+    if (/meal|food|nutrition|calorie|macro|protein/.test(t))
+        return ['Build me a meal plan', 'How much protein do I need?', 'Log a meal with a photo'];
+    if (/challenge|streak/.test(t))
+        return ['Which challenge suits a beginner?', 'How do challenges work?', 'Pricing & plans'];
+    if (/workout|exercise|training|strength|muscle|program/.test(t))
+        return ['Which program should I start?', 'Workouts with no equipment', 'How do I progress safely?'];
+    if (/plan|price|subscription|premium|pro\b/.test(t))
+        return ['Free vs Pro vs Premium', 'Is there a free trial?', 'Partner gym perk'];
+    if (/device|phone|android|iphone|web/.test(t))
+        return ['Does it sync across devices?', 'Which wearables work?', 'Pricing & plans'];
+    if (/wearable|watch|sync|health/.test(t))
+        return ['Connect Apple Watch', 'Which devices work?', 'Why is my data missing?'];
+    if (/sleep|recovery|hrv|rest/.test(t))
+        return ['How can I sleep better?', 'What is HRV?', 'When should I rest?'];
+    return ['Pricing & plans', 'Build me a workout', 'Nutrition help'];
+}
+// Used only when the AI model is unreachable. Kept short and accurate rather than
+// pretending to answer questions it cannot understand.
+const FALLBACKS = [
+    {
+        pattern: /\b(price|pricing|plans|cost|subscription|trial|premium|pro|upgrade)\b/i,
+        reply: 'Reprummble has three plans:\n- **Free** — $0, the basics\n- **Pro** — $9.99/month, full access (14-day free trial)\n- **Premium** — $14.99/month, Pro plus 1-on-1 coach check-ins\n\nMembers of partner gyms get Pro included.',
+    },
+    {
+        pattern: /\b(partner|gym owner|my gym|business)\b/i,
+        reply: 'Businesses can collaborate with Reprummble for free. Approved gyms and coaches get a business dashboard, publish programs in the app, and keep 80% of every sale. Their members get Pro included. Apply at **reprummble.com/collaborate**.',
+    },
+    {
+        pattern: /\b(contact|support|human|agent|refund|cancel|delete|email)\b/i,
+        reply: 'You can reach our team at **support@reprummble.com** — we reply within 24 hours on weekdays.',
+    },
+];
+function fallbackResponse(message) {
+    const hit = FALLBACKS.find((f) => f.pattern.test(message));
+    const reply = hit
+        ? hit.reply
+        : "Sorry — my AI assistant is temporarily unavailable, so I can't answer that properly right now. Please try again in a few minutes, or email **support@reprummble.com** and a person will help.";
+    return { reply, quickReplies: ['Pricing & plans', 'Contact support'], fallback: true };
 }
 async function generateAIChatResponse(message, history) {
-    if (genAI) {
+    const chat = createChat(history);
+    if (chat) {
         try {
-            const model = genAI.getGenerativeModel({
-                model: 'gemini-2.0-flash',
-                systemInstruction: SYSTEM_PROMPT,
-            });
-            // Build Gemini chat history (must alternate user/model)
-            const geminiHistory = history.map((m) => ({
-                role: m.role === 'user' ? 'user' : 'model',
-                parts: [{ text: m.content }],
-            }));
-            const chat = model.startChat({ history: geminiHistory });
-            const result = await chat.sendMessage(message);
-            const text = result.response.text();
-            return { reply: text, quickReplies: getContextualQuickReplies(message, text) };
+            const res = await chat.sendMessage({ message });
+            const text = res.text?.trim();
+            if (text)
+                return { reply: text, quickReplies: getContextualQuickReplies(message, text) };
         }
         catch (err) {
-            console.error('Gemini API error — using rule-based fallback:', err);
+            console.error('Gemini chat error — using fallback:', err instanceof Error ? err.message : err);
         }
     }
-    return getRuleBasedResponse(message);
+    return fallbackResponse(message);
+}
+/**
+ * Streams the reply chunk by chunk via onDelta. Falls back to a canned reply
+ * (delivered as a single delta) if the model is unavailable before any text arrives.
+ */
+async function streamAIChatResponse(message, history, onDelta, isCancelled = () => false) {
+    const chat = createChat(history);
+    let full = '';
+    if (chat) {
+        try {
+            const stream = await chat.sendMessageStream({ message });
+            for await (const chunk of stream) {
+                if (isCancelled())
+                    break;
+                const t = chunk.text;
+                if (t) {
+                    full += t;
+                    onDelta(t);
+                }
+            }
+            if (full.trim())
+                return { reply: full, quickReplies: getContextualQuickReplies(message, full) };
+        }
+        catch (err) {
+            console.error('Gemini stream error:', err instanceof Error ? err.message : err);
+            if (full.trim()) {
+                const note = '\n\n(Sorry, my reply was cut off — please ask again.)';
+                onDelta(note);
+                return { reply: full + note, quickReplies: getContextualQuickReplies(message, full), fallback: true };
+            }
+        }
+    }
+    const fb = fallbackResponse(message);
+    onDelta(fb.reply);
+    return fb;
 }
 async function generateSupportResponse(query, history, _ctx) {
     const mapped = history
         .filter((m) => m.role === 'user' || m.role === 'assistant')
         .map((m) => ({ role: m.role, content: m.content }));
     const result = await generateAIChatResponse(query, mapped);
-    return { response: result.reply, confidence: 0.9, suggestedQuickReplies: result.quickReplies, shouldEscalate: false, sentiment: 'neutral' };
+    return {
+        response: result.reply,
+        confidence: result.fallback ? 0.3 : 0.9,
+        suggestedQuickReplies: result.quickReplies,
+        shouldEscalate: !!result.fallback,
+        sentiment: 'neutral',
+    };
 }
 async function generateHandoffSummary(conversationHistory) {
     if (!conversationHistory.length)
         return 'User needs assistance. Please review the conversation.';
-    if (genAI) {
+    const ai = getClient();
+    if (ai) {
         try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-            const text = conversationHistory.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
-            const result = await model.generateContent(`Summarize this support conversation in 2 sentences for a human agent:\n${text}`);
-            return result.response.text().trim();
+            const text = conversationHistory.slice(-5).map((m) => `${m.role}: ${m.content}`).join('\n');
+            const res = await ai.models.generateContent({
+                model: ai_1.GEMINI_MODEL,
+                contents: `Summarize this support conversation in 2 sentences for a human agent:\n${text}`,
+            });
+            if (res.text)
+                return res.text.trim();
         }
         catch { /* fall through */ }
     }

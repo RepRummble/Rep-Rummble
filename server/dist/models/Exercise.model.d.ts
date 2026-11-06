@@ -43,9 +43,15 @@ export interface IExercise extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Exercise: mongoose.Model<IExercise, {}, {}, {}, mongoose.Document<unknown, {}, IExercise, {}, mongoose.DefaultSchemaOptions> & IExercise & Required<{
+export declare const Exercise: mongoose.Model<IExercise, {}, {}, {}, Document<unknown, {}, IExercise, {}, mongoose.DefaultSchemaOptions> & IExercise & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IExercise>;
+} & {
+    id: string;
+}, any, IExercise & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=Exercise.model.d.ts.map

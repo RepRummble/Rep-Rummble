@@ -5,9 +5,15 @@ export interface ILead extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const Lead: mongoose.Model<ILead, {}, {}, {}, mongoose.Document<unknown, {}, ILead, {}, mongoose.DefaultSchemaOptions> & ILead & Required<{
+export declare const Lead: mongoose.Model<ILead, {}, {}, {}, Document<unknown, {}, ILead, {}, mongoose.DefaultSchemaOptions> & ILead & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, ILead>;
+} & {
+    id: string;
+}, any, ILead & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=Lead.model.d.ts.map

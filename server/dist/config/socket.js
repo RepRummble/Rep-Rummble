@@ -19,7 +19,9 @@ function initializeSocket(httpServer) {
                 'http://localhost:5173',
                 'http://localhost:19006',
                 'http://localhost:8081',
-                process.env.WEB_URL || ''
+                'https://reprummble.com',
+                'https://www.reprummble.com',
+                process.env.WEB_URL || '',
             ].filter(Boolean),
             credentials: true
         },

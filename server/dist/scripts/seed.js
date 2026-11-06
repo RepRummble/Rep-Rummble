@@ -8,7 +8,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Creates sample exercises, meals, and workout data for development
  */
 const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
+dotenv_1.default.config({ quiet: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const Exercise_model_1 = require("../models/Exercise.model");
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/reprummble';

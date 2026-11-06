@@ -26,9 +26,15 @@ export interface ISupportAgent extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const SupportAgent: mongoose.Model<ISupportAgent, {}, {}, {}, mongoose.Document<unknown, {}, ISupportAgent, {}, mongoose.DefaultSchemaOptions> & ISupportAgent & Required<{
+export declare const SupportAgent: mongoose.Model<ISupportAgent, {}, {}, {}, Document<unknown, {}, ISupportAgent, {}, mongoose.DefaultSchemaOptions> & ISupportAgent & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, ISupportAgent>;
+} & {
+    id: string;
+}, any, ISupportAgent & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=SupportAgent.model.d.ts.map

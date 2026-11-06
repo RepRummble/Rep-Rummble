@@ -25,9 +25,15 @@ export interface ISupportMessage extends Document {
     aiSuggestedEscalation?: boolean;
     createdAt: Date;
 }
-export declare const SupportMessage: mongoose.Model<ISupportMessage, {}, {}, {}, mongoose.Document<unknown, {}, ISupportMessage, {}, mongoose.DefaultSchemaOptions> & ISupportMessage & Required<{
+export declare const SupportMessage: mongoose.Model<ISupportMessage, {}, {}, {}, Document<unknown, {}, ISupportMessage, {}, mongoose.DefaultSchemaOptions> & ISupportMessage & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, ISupportMessage>;
+} & {
+    id: string;
+}, any, ISupportMessage & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=SupportMessage.model.d.ts.map

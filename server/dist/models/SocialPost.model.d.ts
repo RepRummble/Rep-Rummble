@@ -17,9 +17,15 @@ export interface ISocialPost extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const SocialPost: mongoose.Model<ISocialPost, {}, {}, {}, mongoose.Document<unknown, {}, ISocialPost, {}, mongoose.DefaultSchemaOptions> & ISocialPost & Required<{
+export declare const SocialPost: mongoose.Model<ISocialPost, {}, {}, {}, Document<unknown, {}, ISocialPost, {}, mongoose.DefaultSchemaOptions> & ISocialPost & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, ISocialPost>;
+} & {
+    id: string;
+}, any, ISocialPost & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=SocialPost.model.d.ts.map

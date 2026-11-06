@@ -16,7 +16,7 @@ export interface IFoodAlternative {
     reason: string;
 }
 export interface IMeal extends Document {
-    userId: mongoose.Types.ObjectId;
+    userId: string;
     foodName: string;
     calories: number;
     carbs: number;
@@ -38,9 +38,15 @@ export interface IMeal extends Document {
     aiSuggestions?: string[];
     alternatives?: IFoodAlternative[];
 }
-export declare const Meal: mongoose.Model<IMeal, {}, {}, {}, mongoose.Document<unknown, {}, IMeal, {}, mongoose.DefaultSchemaOptions> & IMeal & Required<{
+export declare const Meal: mongoose.Model<IMeal, {}, {}, {}, Document<unknown, {}, IMeal, {}, mongoose.DefaultSchemaOptions> & IMeal & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IMeal>;
+} & {
+    id: string;
+}, any, IMeal & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=Meal.model.d.ts.map

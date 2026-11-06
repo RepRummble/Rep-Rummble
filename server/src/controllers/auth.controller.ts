@@ -200,9 +200,13 @@ const OAUTH_REDIRECT_ORIGINS = new Set(
     .map((u) => { try { return new URL(u as string).origin } catch { return '' } })
 )
 
+/** The mobile app's return address. It is opened by the system browser session that the app started. */
+const MOBILE_OAUTH_REDIRECT = 'reprummble://auth-callback'
+
 function safeOAuthRedirect(requested: unknown): string {
   const fallback = `${(process.env.CLIENT_URL || 'https://reprummble.com').replace(/\/$/, '')}/auth/callback`
   if (typeof requested !== 'string') return fallback
+  if (requested === MOBILE_OAUTH_REDIRECT) return requested
   try {
     const url = new URL(requested)
     return OAUTH_REDIRECT_ORIGINS.has(url.origin) && url.pathname === '/auth/callback' ? url.toString() : fallback
@@ -213,10 +217,10 @@ function safeOAuthRedirect(requested: unknown): string {
 
 export const getOAuthUrl = async (req: Request, res: Response) => {
   try {
-    const provider = req.params.provider as 'google' | 'facebook' | 'apple' | 'twitter'
+    const provider = req.params.provider as supabaseService.OAuthProvider
     const redirectTo = safeOAuthRedirect(req.query.redirect)
 
-    const validProviders = ['google', 'facebook', 'apple', 'twitter']
+    const validProviders = ['google', 'facebook', 'apple', 'twitter', 'azure']
     if (!validProviders.includes(provider)) {
       return res.status(400).json({ success: false, message: "Invalid OAuth provider" })
     }

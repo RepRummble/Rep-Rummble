@@ -37,8 +37,7 @@ exports.Meal = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const MealSchema = new mongoose_1.Schema({
     userId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: true,
         index: true
     },

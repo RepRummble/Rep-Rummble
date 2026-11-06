@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../types';
 
 import { colors } from '../../theme/colors';
+import SocialButtons from '../../components/SocialButtons';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
 export default function RegisterScreen() {
@@ -167,6 +168,8 @@ export default function RegisterScreen() {
                   <Text style={styles.registerButtonText}>Create Account</Text>
                 )}
               </TouchableOpacity>
+
+              <SocialButtons disabled={isLoading} />
             </View>
 
             {/* Login Link */}

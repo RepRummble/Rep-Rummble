@@ -103,7 +103,7 @@ exports.quickLogMeal = quickLogMeal;
  */
 const getNutritionInfo = async (req, res) => {
     try {
-        const { foodName } = req.params;
+        const foodName = String(req.params.foodName);
         if (!foodName) {
             return res.status(400).json({
                 success: false,

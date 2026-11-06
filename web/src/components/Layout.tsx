@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { FaApple, FaFacebookF } from 'react-icons/fa';
+import { FaApple, FaFacebookF, FaMicrosoft } from 'react-icons/fa';
 import { Check, Eye, EyeOff, Menu, X } from 'lucide-react';
 import { DEV_BYPASS_AUTH, DEV_USER } from '../config/devAuth';
 import api from '../config/api';
@@ -369,7 +369,7 @@ export default function Layout() {
 
   // Starts social sign-in in the browser via Supabase, so visitors go straight from
   // reprummble.com to the provider instead of bouncing through the API host.
-  const handleOAuth = async (provider: 'google' | 'apple' | 'facebook' | 'twitter') => {
+  const handleOAuth = async (provider: 'google' | 'apple' | 'facebook' | 'twitter' | 'azure') => {
     setAuthStatus('loading');
     setAuthMessage('');
     const { error } = await supabaseAuth.signInWithOAuth(provider);
@@ -562,6 +562,9 @@ export default function Layout() {
                     </button>
                     <button type="button" className="rr-social" onClick={() => handleOAuth('facebook')} disabled={authStatus === 'loading'}>
                       <FaFacebookF size={18} color="#1877f2" aria-hidden="true" /> Continue with Facebook
+                    </button>
+                    <button type="button" className="rr-social" onClick={() => handleOAuth('azure')} disabled={authStatus === 'loading'}>
+                      <FaMicrosoft size={18} color="#00a4ef" aria-hidden="true" /> Continue with Microsoft
                     </button>
                   </div>
 

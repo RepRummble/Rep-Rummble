@@ -5,8 +5,17 @@ export interface ChatHistoryMessage {
 export interface AIChatResponse {
     reply: string;
     quickReplies: string[];
+    /** true when the AI model could not be reached and a canned reply was used */
+    fallback?: boolean;
 }
+export declare const MAX_MESSAGE_CHARS = 2000;
+export declare function getContextualQuickReplies(msg: string, reply: string): string[];
 export declare function generateAIChatResponse(message: string, history: ChatHistoryMessage[]): Promise<AIChatResponse>;
+/**
+ * Streams the reply chunk by chunk via onDelta. Falls back to a canned reply
+ * (delivered as a single delta) if the model is unavailable before any text arrives.
+ */
+export declare function streamAIChatResponse(message: string, history: ChatHistoryMessage[], onDelta: (text: string) => void, isCancelled?: () => boolean): Promise<AIChatResponse>;
 export interface ChatMessage {
     role: string;
     content: string;

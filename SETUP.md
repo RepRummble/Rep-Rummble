@@ -118,6 +118,23 @@ Staff access, member invites, and admin review only work for verified emails.
 3. Each application shows the business, type, city, size, message, and the account email. **Approve** opens their business dashboard, **Reject** asks for a reason, and approved businesses have a **Revoke access** button that turns access off immediately (including their team).
 4. Reviewers are emailed when an application arrives, and the applicant is emailed when you decide. This uses `GMAIL_USER` / `GMAIL_APP_PASSWORD`; without them everything works but no emails are sent.
 
+## Social sign-in (Apple, Google, Microsoft, Facebook)
+
+The website and the mobile app both offer these. Each provider must be switched on in **Supabase → Authentication → Providers**, with the keys from the provider's own developer console:
+
+| Button | Supabase provider | You need |
+| --- | --- | --- |
+| Google | Google | OAuth client ID and secret (Google Cloud Console) |
+| Apple | Apple | Services ID, team ID, key ID and private key (Apple Developer) |
+| Microsoft | Azure | Application (client) ID, secret and tenant URL (Microsoft Entra) |
+| Facebook | Facebook | App ID and secret (Meta for Developers) |
+
+Every provider's console has to allow Supabase's callback address, which Supabase shows on each provider's page (`https://<project>.supabase.co/auth/v1/callback`).
+
+For the mobile app, also add `reprummble://auth-callback` under **Authentication → URL Configuration → Redirect URLs**. Without it, Supabase sends people to the website after signing in and the app never gets the session.
+
+Instagram is not offered: Supabase has no Instagram sign-in, and Instagram no longer allows apps to sign people in. Facebook sign-in covers Meta accounts.
+
 ## Turning on payments (Stripe)
 
 Plans, renewal, auto-renew and the saved payment method are built and tested. Real charging switches on once Stripe is connected; until then the Billing page shows the plan and says payments are coming soon.

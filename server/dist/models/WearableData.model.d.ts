@@ -12,9 +12,15 @@ export interface IWearableData extends Document {
     bodyFat?: number;
     syncedAt: Date;
 }
-export declare const WearableData: mongoose.Model<IWearableData, {}, {}, {}, mongoose.Document<unknown, {}, IWearableData, {}, mongoose.DefaultSchemaOptions> & IWearableData & Required<{
+export declare const WearableData: mongoose.Model<IWearableData, {}, {}, {}, Document<unknown, {}, IWearableData, {}, mongoose.DefaultSchemaOptions> & IWearableData & Required<{
     _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
-}, any, IWearableData>;
+} & {
+    id: string;
+}, any, IWearableData & Required<{
+    _id: mongoose.Types.ObjectId;
+}> & {
+    __v: number;
+}>;
 //# sourceMappingURL=WearableData.model.d.ts.map

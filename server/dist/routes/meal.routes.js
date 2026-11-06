@@ -8,7 +8,8 @@ router.use(auth_middleware_1.protect); // All routes require authentication
 router.route('/')
     .get(meal_controller_1.getMeals)
     .post(meal_controller_1.createMeal);
-router.get('/stats', meal_controller_1.getMealStats);
+// Allow unauthenticated visitors to fetch aggregated stats (optional auth)
+router.get('/stats', auth_middleware_1.optionalAuth, meal_controller_1.getMealStats);
 router.route('/:id')
     .get(meal_controller_1.getMeal)
     .delete(meal_controller_1.deleteMeal);

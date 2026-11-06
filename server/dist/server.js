@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // Load environment variables FIRST before any other imports
 const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
+dotenv_1.default.config({ quiet: true });
 const express_1 = __importDefault(require("express"));
 const http_1 = require("http");
 const cors_1 = __importDefault(require("cors"));
@@ -28,6 +28,12 @@ const exercise_routes_1 = __importDefault(require("./routes/exercise.routes"));
 const workoutPlan_routes_1 = __importDefault(require("./routes/workoutPlan.routes"));
 const lead_routes_1 = __importDefault(require("./routes/lead.routes"));
 const report_routes_1 = __importDefault(require("./routes/report.routes"));
+const referral_routes_1 = __importDefault(require("./routes/referral.routes"));
+const billing_routes_1 = __importDefault(require("./routes/billing.routes"));
+const supabase_service_1 = require("./services/supabase.service");
+const billing_controller_1 = require("./controllers/billing.controller");
+const analytics_routes_1 = __importDefault(require("./routes/analytics.routes"));
+const business_routes_1 = __importDefault(require("./routes/business.routes"));
 const contact_routes_1 = __importDefault(require("./routes/contact.routes"));
 const chat_routes_1 = __importDefault(require("./routes/chat.routes"));
 const agent_routes_1 = __importDefault(require("./routes/agent.routes"));
@@ -35,6 +41,8 @@ const wearable_routes_1 = __importDefault(require("./routes/wearable.routes"));
 const challenge_routes_1 = __importDefault(require("./routes/challenge.routes"));
 const social_routes_1 = __importDefault(require("./routes/social.routes"));
 const friend_routes_1 = __importDefault(require("./routes/friend.routes"));
+const stats_routes_1 = __importDefault(require("./routes/stats.routes"));
+const review_routes_1 = __importDefault(require("./routes/review.routes"));
 // Create Express app and HTTP server
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
@@ -53,27 +61,35 @@ const allowedOrigins = [
     'https://www.reprummble.com',
     process.env.CLIENT_URL,
 ].filter(Boolean);
-app.use((0, cors_1.default)({
+const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
+        // Allow requests with no origin (mobile apps, Postman, server-to-server)
         if (!origin)
             return callback(null, true);
         // Allow Vercel preview deployments
         if (origin.endsWith('.vercel.app'))
             return callback(null, true);
-        if (allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
+        // Exact match: a prefix check would also allow e.g. https://reprummble.com.attacker.site
+        if (allowedOrigins.some(allowed => origin === allowed.replace(/\/$/, ''))) {
             return callback(null, true);
         }
         callback(new Error('Not allowed by CORS'));
     },
-    credentials: true
-}));
+    credentials: true,
+};
+app.use((0, cors_1.default)(corsOptions));
 app.use((0, compression_1.default)()); // Compress responses
 app.use((0, morgan_1.default)('dev')); // Logging
+// Stripe signs the exact bytes it sends, so its webhook must see the raw body, before JSON parsing.
+app.post('/api/billing/webhook', express_1.default.raw({ type: 'application/json', limit: '1mb' }), billing_controller_1.stripeWebhook);
 app.use(express_1.default.json({ limit: '50mb' })); // Parse JSON bodies (increased for image uploads)
 app.use(express_1.default.urlencoded({ extended: true, limit: '50mb' })); // Parse URL-encoded bodies
+// Express 5 leaves req.body undefined when a request has no body; handlers read fields from it, so keep it an object.
+app.use((req, _res, next) => { if (req.body === undefined)
+    req.body = {}; next(); });
 // Health check endpoint with service status
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", async (_req, res) => {
+    const keys = await (0, supabase_service_1.checkSupabaseKeys)();
     res.json({
         status: "OK",
         message: "Reprummble API is running",
@@ -81,6 +97,8 @@ app.get("/api/health", (_req, res) => {
         services: {
             mongodb: (0, database_1.isDBConnected)() ? "connected" : "not configured",
             supabase: process.env.SUPABASE_URL ? "configured" : "not configured",
+            // Whether Supabase accepts our keys. "rejected" explains "Invalid API key" on every sign-in.
+            supabaseKeys: keys,
             gemini: process.env.GEMINI_API_KEY ? "configured" : "not configured",
         }
     });
@@ -102,6 +120,10 @@ app.use('/api/exercises', exercise_routes_1.default);
 app.use('/api/workout-plans', workoutPlan_routes_1.default);
 app.use('/api/leads', lead_routes_1.default);
 app.use('/api/reports', report_routes_1.default);
+app.use('/api/referrals', referral_routes_1.default);
+app.use('/api/billing', billing_routes_1.default);
+app.use('/api/analytics', analytics_routes_1.default);
+app.use('/api/business', business_routes_1.default);
 app.use('/api/contact', contact_routes_1.default);
 app.use('/api/chat', chat_routes_1.default);
 app.use('/api/agent', agent_routes_1.default);
@@ -109,8 +131,10 @@ app.use("/api/wearables", wearable_routes_1.default);
 app.use("/api/challenges", challenge_routes_1.default);
 app.use("/api/social", social_routes_1.default);
 app.use("/api/friends", friend_routes_1.default);
+app.use('/api/public/stats', stats_routes_1.default);
+app.use('/api/reviews', review_routes_1.default);
 if (hasClientBuild) {
-    app.get('*', (req, res, next) => {
+    app.get('/{*splat}', (req, res, next) => {
         if (req.path.startsWith('/api')) {
             return next();
         }
@@ -119,7 +143,7 @@ if (hasClientBuild) {
 }
 else {
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    app.get('*', (req, res, next) => {
+    app.get('/{*splat}', (req, res, next) => {
         if (req.path.startsWith('/api')) {
             return next();
         }
