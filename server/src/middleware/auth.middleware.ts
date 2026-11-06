@@ -168,7 +168,7 @@ export const adminOnly = async (req: AuthRequest, res: Response, next: NextFunct
 
   try {
     // Dynamic import to avoid circular dependency, matching agentOnly below
-    const { User } = await import('../models/User.model')
+    const { User } = await import('../models/User.model.js')
 
     const dbUser = await User.findById(req.user.id).select('role')
 
@@ -202,7 +202,7 @@ export const agentOnly = async (req: AuthRequest, res: Response, next: NextFunct
 
   try {
     // Dynamic import to avoid circular dependency
-    const { SupportAgent } = await import('../models/SupportAgent.model')
+    const { SupportAgent } = await import('../models/SupportAgent.model.js')
 
     const agent = await SupportAgent.findOne({ userId: req.user.id })
 

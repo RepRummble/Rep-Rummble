@@ -16,10 +16,12 @@ export interface AIChatResponse {
 export const MAX_MESSAGE_CHARS = 2000
 const MAX_HISTORY = 12
 
+// @google/genai 3 defaults to the stable v1 API, which does not serve "gemini-flash-latest".
+// Staying on v1beta keeps the model name (and the replies) working as before.
 let client: GoogleGenAI | null | undefined
 function getClient(): GoogleGenAI | null {
   if (client === undefined) {
-    client = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null
+    client = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, apiVersion: 'v1beta' }) : null
   }
   return client
 }

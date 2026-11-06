@@ -111,7 +111,7 @@ export const quickLogMeal = async (req: Request, res: Response) => {
  */
 export const getNutritionInfo = async (req: Request, res: Response) => {
   try {
-    const { foodName } = req.params
+    const foodName = String(req.params.foodName)
 
     if (!foodName) {
       return res.status(400).json({

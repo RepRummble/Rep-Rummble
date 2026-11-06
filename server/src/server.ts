@@ -1,6 +1,6 @@
 // Load environment variables FIRST before any other imports
 import dotenv from 'dotenv'
-dotenv.config()
+dotenv.config({ quiet: true })
 
 import express, { Express, Request, Response, NextFunction } from 'express'
 import { createServer } from 'http'
@@ -89,6 +89,8 @@ app.use(morgan('dev')) // Logging
 app.post('/api/billing/webhook', express.raw({ type: 'application/json', limit: '1mb' }), stripeWebhook)
 app.use(express.json({ limit: '50mb' })) // Parse JSON bodies (increased for image uploads)
 app.use(express.urlencoded({ extended: true, limit: '50mb' })) // Parse URL-encoded bodies
+// Express 5 leaves req.body undefined when a request has no body; handlers read fields from it, so keep it an object.
+app.use((req: Request, _res: Response, next: NextFunction) => { if (req.body === undefined) req.body = {}; next() })
 
 // Health check endpoint with service status
 app.get("/api/health", async (_req: Request, res: Response) => {
@@ -140,7 +142,7 @@ app.use('/api/public/stats', statsRoutes)
 app.use('/api/reviews', reviewRoutes)
 
 if (hasClientBuild) {
-  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+  app.get('/{*splat}', (req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith('/api')) {
       return next()
     }
@@ -148,7 +150,7 @@ if (hasClientBuild) {
   })
 } else {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
-  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+  app.get('/{*splat}', (req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith('/api')) {
       return next()
     }

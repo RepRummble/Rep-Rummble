@@ -3,7 +3,7 @@
  * Creates sample exercises, meals, and workout data for development
  */
 import dotenv from 'dotenv'
-dotenv.config()
+dotenv.config({ quiet: true })
 
 import mongoose from 'mongoose'
 import { Exercise } from '../models/Exercise.model'

@@ -2,7 +2,8 @@
 // Runs against an in-memory MongoDB (downloaded on first run). Usage: npm run test:api
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const SRC = path.resolve(__dirname, '../src');
+// Runs against the compiled output (`npm run build` first; `npm run test:api` does it for you).
+const SRC = path.resolve(__dirname, '../dist');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const DAY = 86400000;
@@ -50,7 +51,6 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
 (async () => {
   const mms = await MongoMemoryServer.create();
   process.env.MONGODB_URI = mms.getUri() + 'reprummble';
-  require('ts-node').register({ transpileOnly: true, project: path.resolve(__dirname, '../tsconfig.json') });
 
   // Stand in for Supabase: token = key of the users map.
   const sup = require(SRC + '/services/supabase.service');

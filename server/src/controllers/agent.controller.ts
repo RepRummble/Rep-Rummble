@@ -150,7 +150,7 @@ export const getActiveChats = async (req: AgentRequest, res: Response) => {
  */
 export const claimConversation = async (req: AgentRequest, res: Response) => {
   try {
-    const { conversationId } = req.params
+    const conversationId = String(req.params.conversationId)
     const agent = req.agent
 
     if (!agent) {
@@ -227,7 +227,7 @@ export const claimConversation = async (req: AgentRequest, res: Response) => {
  */
 export const transferConversation = async (req: AgentRequest, res: Response) => {
   try {
-    const { conversationId } = req.params
+    const conversationId = String(req.params.conversationId)
     const { targetAgentId, reason } = req.body
     const currentAgent = req.agent
 
