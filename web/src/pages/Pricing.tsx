@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2, Check, Minus } from 'lucide-react';
+import { ArrowRight, Building2, Check, Minus, Sparkles } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PLAN_FEATURES, PLANS, PREMIUM_UPGRADE, PRICING, fmtPrice } from '../config/pricing';
 import Faq from '../components/site/Faq';
+import { Aurora, CountUp, Magnetic, MovingBorder, SpotlightCard } from '../components/fx/Effects';
 
 const FAQS = [
   { q: 'Is the free plan really free?', a: 'Yes. The free plan has no time limit and never asks for a card. It has limits on logging and challenges, and you can upgrade whenever you want more.' },
@@ -18,6 +20,39 @@ function Cell({ value }: { value: boolean | string }) {
   if (value === true) return <Check size={18} className="rr-yes" aria-label="Included" />;
   if (value === false) return <Minus size={18} className="rr-no" aria-label="Not included" />;
   return <span>{value}</span>;
+}
+
+const FINDER = [
+  { id: 'start', label: 'I am just getting started', plan: 'free', why: 'Free is plenty to build the habit: basic logging, streaks, weekly insights, and a challenge every month. No card, no time limit.' },
+  { id: 'serious', label: 'I want every feature', plan: 'pro', why: `Pro unlocks unlimited logging, your AI training plan, meal photos, wearable sync, and recovery scores. Start with ${PRICING.trialDays} days free.` },
+  { id: 'coach', label: 'I want a coach in my corner', plan: 'premium', why: `Premium adds twice-monthly 1-on-1 check-ins, a custom nutrition plan, PDF reports, and priority support, for ${fmtPrice(PREMIUM_UPGRADE)} more than Pro.` },
+  { id: 'gym', label: 'I train at a partner gym', plan: 'pro', why: `Pro is included with your gym membership at no extra cost. Add Premium coaching for just ${fmtPrice(PREMIUM_UPGRADE)}/month.` },
+] as const;
+
+function PlanFinder() {
+  const [pick, setPick] = useState<(typeof FINDER)[number]['id']>('serious');
+  const choice = FINDER.find((f) => f.id === pick)!;
+  const plan = PLANS.find((p) => p.id === choice.plan)!;
+  return (
+    <div className="fx-finder fx-glass" data-reveal>
+      <div className="fx-finder-q">
+        <span className="fx-eyebrow"><Sparkles size={14} /> Plan finder</span>
+        <h2>Which plan fits you?</h2>
+        <div className="fx-finder-opts" role="radiogroup" aria-label="Which describes you best">
+          {FINDER.map((f) => (
+            <button key={f.id} type="button" role="radio" aria-checked={pick === f.id} className={pick === f.id ? 'is-on' : ''} onClick={() => setPick(f.id)}>{f.label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="fx-finder-a" key={pick} aria-live="polite">
+        <span className="fx-finder-badge">We would pick</span>
+        <strong>{plan.name}</strong>
+        <div className="fx-finder-price">{fmtPrice(plan.price)}<small>{plan.price === 0 ? ' forever' : pick === 'gym' ? ' included at your gym' : '/month'}</small></div>
+        <p>{choice.why}</p>
+        <Link className="rr-btn rr-btn-primary" to="/?auth=signup">{plan.cta} <ArrowRight size={16} /></Link>
+      </div>
+    </div>
+  );
 }
 
 export default function Pricing() {
@@ -37,31 +72,34 @@ export default function Pricing() {
         </div>
       </header>
 
-      <section className="rr-section" style={{ paddingTop: 16 }}>
+      <section className="fx-section" style={{ paddingTop: 16 }}>
         <div className="rr-container">
           <div className="rr-price-grid" data-stagger>
-            {PLANS.map((plan) => (
-              <div className={`rr-price${plan.id === 'pro' ? ' is-featured' : ''}`} key={plan.id}>
-                {'badge' in plan && <span className="rr-price-badge">{plan.badge}</span>}
-                <h3>{plan.name}</h3>
-                <div className="rr-price-amount">
-                  {fmtPrice(plan.price)}<span className="rr-price-per">{plan.price === 0 ? 'forever' : '/month'}</span>
-                </div>
-                <p>{plan.tagline}</p>
-                <Link
-                  className={`rr-btn rr-btn-block ${plan.id === 'pro' ? 'rr-btn-primary' : plan.id === 'premium' ? 'rr-btn-dark' : 'rr-btn-outline'}`}
-                  to="/?auth=signup"
-                >
-                  {plan.cta}
-                </Link>
-                <ul>
-                  {plan.highlights.map((h) => <li key={h}><Check size={18} />{h}</li>)}
-                </ul>
-              </div>
-            ))}
+            {PLANS.map((plan) => {
+              const card = (
+                <SpotlightCard className={`rr-price fx-price${plan.id === 'pro' ? ' is-featured' : ''}`}>
+                  {'badge' in plan && <span className="rr-price-badge">{plan.badge}</span>}
+                  <h3>{plan.name}</h3>
+                  <div className="rr-price-amount">
+                    $<CountUp to={plan.price} decimals={plan.price % 1 ? 2 : 0} /><span className="rr-price-per">{plan.price === 0 ? 'forever' : '/month'}</span>
+                  </div>
+                  <p>{plan.tagline}</p>
+                  <Link
+                    className={`rr-btn rr-btn-block ${plan.id === 'pro' ? 'rr-btn-primary fx-btn-glow' : plan.id === 'premium' ? 'rr-btn-dark' : 'rr-btn-outline'}`}
+                    to="/?auth=signup"
+                  >
+                    {plan.cta}
+                  </Link>
+                  <ul>
+                    {plan.highlights.map((h) => <li key={h}><Check size={18} />{h}</li>)}
+                  </ul>
+                </SpotlightCard>
+              );
+              return plan.id === 'pro' ? <MovingBorder key={plan.id}>{card}</MovingBorder> : <div key={plan.id}>{card}</div>;
+            })}
           </div>
 
-          <div className="rr-gym-perk" data-reveal>
+          <div className="rr-gym-perk fx-glass" data-reveal>
             <span className="rr-icon"><Building2 size={22} /></span>
             <div>
               <strong>Train at a partner gym? Pro is included.</strong>
@@ -73,18 +111,24 @@ export default function Pricing() {
         </div>
       </section>
 
-      <section className="rr-section rr-section-tint">
+      <section className="fx-section is-soft">
+        <Aurora />
+        <div className="rr-container"><PlanFinder /></div>
+      </section>
+
+      <section className="fx-section">
         <div className="rr-container">
-          <div className="rr-head" data-reveal>
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow">Side by side</span>
             <h2>Compare plans</h2>
           </div>
-          <div className="rr-compare-wrap" data-reveal>
+          <div className="rr-compare-wrap fx-compare fx-glass" data-reveal>
             <table className="rr-compare">
               <thead>
                 <tr>
                   <th scope="col">Feature</th>
                   <th scope="col">Free</th>
-                  <th scope="col">Pro<br /><small>{fmtPrice(PRICING.proMonthly)}/mo</small></th>
+                  <th scope="col" className="is-pro">Pro<br /><small>{fmtPrice(PRICING.proMonthly)}/mo</small></th>
                   <th scope="col">Premium<br /><small>{fmtPrice(PRICING.premiumMonthly)}/mo</small></th>
                 </tr>
               </thead>
@@ -93,7 +137,7 @@ export default function Pricing() {
                   <tr key={f.label}>
                     <td>{f.label}</td>
                     <td><Cell value={f.free} /></td>
-                    <td><Cell value={f.pro} /></td>
+                    <td className="is-pro"><Cell value={f.pro} /></td>
                     <td><Cell value={f.premium} /></td>
                   </tr>
                 ))}
@@ -103,24 +147,23 @@ export default function Pricing() {
         </div>
       </section>
 
-      <section className="rr-section">
+      <section className="fx-section" style={{ paddingTop: 0 }}>
         <div className="rr-container">
-          <div className="rr-cta" data-reveal>
-            <div>
-              <span className="rr-eyebrow" style={{ background: 'rgba(255,255,255,0.08)', color: '#5eead4' }}>For gyms & coaches</span>
-              <h2 style={{ marginTop: 14 }}>Give your members Pro. Keep {PRICING.gymPayoutPercent}% of every sale.</h2>
-              <p>Free to join, no monthly subscription. Your members get Pro included, and you earn from every program you publish.</p>
-            </div>
-            <div className="rr-cta-actions">
-              <Link className="rr-btn rr-btn-white rr-btn-lg" to="/collaborate">Learn about collaborating <ArrowRight size={18} /></Link>
-            </div>
+          <div className="fx-cta" data-reveal>
+            <Aurora tone="dark" />
+            <span className="fx-eyebrow">For gyms & coaches</span>
+            <h2 style={{ marginTop: 14 }}>Give your members Pro. Keep {PRICING.gymPayoutPercent}% of every sale.</h2>
+            <p>Free to join, no monthly subscription. Your members get Pro included, and you earn from every program you publish.</p>
+            <Magnetic><Link className="rr-btn rr-btn-white rr-btn-lg" to="/collaborate">Learn about collaborating <ArrowRight size={18} /></Link></Magnetic>
           </div>
         </div>
       </section>
 
-      <section className="rr-section rr-section-tint">
+      <section className="fx-section is-soft">
+        <Aurora />
         <div className="rr-container">
-          <div className="rr-head" data-reveal>
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow">FAQ</span>
             <h2>Pricing questions</h2>
           </div>
           <Faq items={FAQS} />

@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, TriangleAlert } from 'lucide-react';
 import { biz, useLoad } from './api';
 import { useBusiness } from './useBusiness';
+import { ErrorState, SkeletonPage } from '../../components/states/States';
 
 export default function Overview() {
   const { allowed } = useBusiness();
   const { data, error, loading, reload } = useLoad(() => biz.stats(12), []);
 
-  if (loading) return <p className="dash-muted">Loading…</p>;
-  if (error || !data) return <div className="dash-empty"><p className="dash-error">{error || 'Could not load your overview.'}</p><button className="rr-btn rr-btn-outline" onClick={reload}>Try again</button></div>;
+  if (loading) return <SkeletonPage kind="cards" label="Loading your overview" />;
+  if (error || !data) return <ErrorState detail={error} onRetry={reload} />;
 
   const { counts, weeklySessions: weeks } = data;
   const max = Math.max(...weeks, 1);

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Check, CreditCard, Gift, RefreshCw } from 'lucide-react';
+import { Check, CreditCard, Crown, Gift, Leaf, RefreshCw, Zap } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api, { type BillingPlanId, type BillingView } from '../../config/api';
 import { PLANS, PRICING, fmtPrice } from '../../config/pricing';
+import { ErrorState, SkeletonPage } from '../../components/states/States';
 
 const RANK: Record<BillingPlanId, number> = { free: 0, pro: 1, premium: 2 };
 const planName = (id: BillingPlanId) => PLANS.find((p) => p.id === id)?.name ?? id;
@@ -18,6 +19,7 @@ export default function Billing() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; needsCard: boolean } | null>(null);
   const [notice, setNotice] = useState('');
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -34,8 +36,8 @@ export default function Billing() {
     return () => { cancelled = true; };
   }, [params]);
 
-  if (loadError) return <><div className="dash-head"><h1>Billing</h1></div><p className="pf-status is-error" role="alert">{loadError}</p></>;
-  if (!billing) return <p className="dash-muted">Loading…</p>;
+  if (loadError) return <><div className="dash-head"><h1>Billing</h1></div><ErrorState detail={loadError} onRetry={() => window.location.reload()} /></>;
+  if (!billing) return <SkeletonPage kind="cards" label="Loading your billing details" />;
 
   const run = async (action: () => ReturnType<typeof api.billing.get>, done: string) => {
     setBusy(true); setError(null); setNotice('');
@@ -99,7 +101,7 @@ export default function Billing() {
       )}
       {notice && <div className="bl-notice" role="status"><Check size={16} /> {notice}</div>}
 
-      <section className="dash-card bl-current" aria-label="Current plan">
+      <section className="dash-card bl-current bl-hero" aria-label="Current plan">
         <div className="bl-current-top">
           <div>
             <span className="bl-eyebrow">Current plan</span>
@@ -116,6 +118,16 @@ export default function Billing() {
         {billing.includedBy && billing.effectivePlan !== billing.plan && (
           <p className="bl-line"><Gift size={16} /> <span><strong>Pro is included</strong> with your {billing.includedBy} membership.</span></p>
         )}
+
+        {paid && !ending && billing.currentPeriodEnd && (() => {
+          const left = Math.max(0, Math.ceil((new Date(billing.currentPeriodEnd).getTime() - now) / 86400000));
+          return (
+            <div className="bl-meter" aria-label={`${left} days until renewal`}>
+              <div className="bl-meter-track"><i style={{ width: `${Math.min(100, Math.max(4, (1 - left / 30) * 100))}%` }} /></div>
+              <span><b className="fx-num">{left}</b> {left === 1 ? 'day' : 'days'} until {trialing ? 'billing starts' : 'renewal'}</span>
+            </div>
+          );
+        })()}
 
         {paid && (
           <div className="pf-rows bl-rows">
@@ -166,7 +178,9 @@ export default function Billing() {
           const action = actionFor(id);
           const isCurrent = id === billing.plan;
           return (
-            <div role="listitem" key={id} className={`dash-plan-opt bl-plan${isCurrent ? ' active' : ''}`}>
+            <div role="listitem" key={id} className={`dash-plan-opt bl-plan is-${id}${isCurrent ? ' active' : ''}`}>
+              {id === 'pro' && !isCurrent && <span className="bl-popular">Most popular</span>}
+              <span className="bl-plan-icon" aria-hidden="true">{id === 'free' ? <Leaf size={20} /> : id === 'pro' ? <Zap size={20} /> : <Crown size={20} />}</span>
               <strong>{p.name}{isCurrent && <span className="bl-current-tag">Current</span>}</strong>
               <b>{fmtPrice(p.price)}<small style={{ fontSize: 13, fontWeight: 500 }}>{p.price === 0 ? ' forever' : '/month'}</small></b>
               <ul>{p.highlights.slice(0, 4).map((h) => <li key={h}><Check size={12} /> {h}</li>)}</ul>

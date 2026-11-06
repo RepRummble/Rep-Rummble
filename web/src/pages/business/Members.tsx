@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Download, Trash2, UserPlus } from 'lucide-react';
 import { biz, downloadCsv, useLoad, type MemberStatus } from './api';
 import { useBusiness } from './useBusiness';
+import { ErrorState, SkeletonPage } from '../../components/states/States';
 
 const STATUS_LABEL: Record<MemberStatus, string> = { active: 'Active', inactive: 'Inactive', invited: 'Invited' };
 
@@ -76,7 +77,7 @@ export default function Members() {
           <button className="rr-btn rr-btn-outline" onClick={exportCsv} disabled={rows.length === 0}><Download size={16} /> Export CSV</button>
         </div>
 
-        {members.loading ? <p className="dash-muted">Loading…</p> : members.error ? <p className="dash-error">{members.error}</p> : (
+        {members.loading ? <SkeletonPage kind="table" label="Loading members" /> : members.error ? <ErrorState detail={members.error} onRetry={members.reload} /> : (
           <div className="dash-table-wrap">
             <table className="dash-table">
               <thead><tr><th>Member</th><th>Status</th><th>Workout plan</th><th>Meal plan</th><th>Adherence</th><th>Last session</th>{canEdit && <th />}</tr></thead>

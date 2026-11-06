@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useMemo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { FaApple, FaFacebookF } from 'react-icons/fa';
 import { Check, Eye, EyeOff, Menu, X } from 'lucide-react';
@@ -12,6 +12,8 @@ import { biz, can, type BusinessInfo, type Role } from '../pages/business/api';
 import { BUSINESS_NAV, MEMBER_NAV, isAppPath, type NavItem } from '../config/appNav';
 import SiteFooter from './site/SiteFooter';
 import '../styles/site.css';
+import '../styles/aurora.css';
+import { FieldMessage, OfflineBanner } from './states/States';
 
 const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact', '/privacy', '/terms', '/oauth/consent'];
 const navClass = ({ isActive }: { isActive: boolean }) => `rr-nav-link${isActive ? ' active' : ''}`;
@@ -46,6 +48,22 @@ export default function Layout() {
     email: '',
     password: '',
   });
+  // Inline checks: each field says what is wrong and how to fix it, and turns green once it is right.
+  const [touched, setTouched] = useState<{ name?: boolean; email?: boolean; password?: boolean }>({});
+  const fieldErrors = useMemo(() => {
+    const out: { name?: string; email?: string; password?: string } = {};
+    const email = formData.email.trim();
+    if (authMode === 'signup' && !formData.name.trim()) out.name = 'Add your name so we can greet you.';
+    if (!email) out.email = 'Enter your email address.';
+    else if (!email.includes('@')) out.email = 'Add an @, like name@gmail.com.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) out.email = 'Add a domain, like name@gmail.com.';
+    if (!formData.password) out.password = 'Enter your password.';
+    else if (authMode === 'signup' && formData.password.length < 8) out.password = `Use at least 8 characters (you have ${formData.password.length}).`;
+    return out;
+  }, [formData, authMode]);
+  const showError = (f: 'name' | 'email' | 'password') => (touched[f] ? fieldErrors[f] : undefined);
+  const isGood = (f: 'name' | 'email' | 'password') => !!touched[f] && !fieldErrors[f];
+
   const profileRef = useRef<HTMLDivElement>(null);
   const lastScroll = useRef(0);
   const hasMounted = useRef(false);
@@ -256,19 +274,11 @@ export default function Layout() {
     setAuthMessage('');
 
     try {
-      if (authMode === 'signup' && !formData.name.trim()) {
-        setAuthStatus('error');
-        setAuthMessage('Please enter your name to continue.');
-        return;
-      }
-      if (!formData.email.trim() || !formData.password.trim()) {
-        setAuthStatus('error');
-        setAuthMessage('Please enter your email and password.');
-        return;
-      }
-      if (authMode === 'signup' && formData.password.length < 8) {
-        setAuthStatus('error');
-        setAuthMessage('Your password needs at least 8 characters.');
+      setTouched({ name: true, email: true, password: true });
+      const firstBad = (['name', 'email', 'password'] as const).find((f) => fieldErrors[f]);
+      if (firstBad) {
+        setAuthStatus('idle');
+        document.getElementById(`auth-${firstBad}`)?.focus();
         return;
       }
 
@@ -330,6 +340,7 @@ export default function Layout() {
 
   const handleAuthModeChange = (mode: 'signin' | 'signup' | 'forgot') => {
     setVerifyEmail(null);
+    setTouched({});
     setAuthMode(mode);
     setAuthMessage('');
     setAuthStatus('idle');
@@ -561,22 +572,32 @@ export default function Layout() {
                       <label className="rr-auth-field">
                         <span>Name</span>
                         <input
+                          id="auth-name"
                           value={formData.name}
                           autoComplete="name"
                           placeholder="Your name"
+                          aria-invalid={!!showError('name')}
+                          aria-describedby="auth-name-msg"
+                          onBlur={() => setTouched((t) => ({ ...t, name: true }))}
                           onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
                         />
+                        {showError('name') ? <FieldMessage id="auth-name-msg" kind="error">{showError('name')}</FieldMessage> : isGood('name') ? <FieldMessage id="auth-name-msg" kind="ok">Looks good.</FieldMessage> : null}
                       </label>
                     )}
                     <label className="rr-auth-field">
                       <span>Email</span>
                       <input
+                        id="auth-email"
                         type="email"
                         value={formData.email}
                         autoComplete="email"
                         placeholder="you@example.com"
+                        aria-invalid={!!showError('email')}
+                        aria-describedby="auth-email-msg"
+                        onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                         onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
                       />
+                      {showError('email') ? <FieldMessage id="auth-email-msg" kind="error">{showError('email')}</FieldMessage> : isGood('email') ? <FieldMessage id="auth-email-msg" kind="ok">Looks good.</FieldMessage> : null}
                     </label>
                     <label className="rr-auth-field">
                       <span className="rr-auth-field-row">
@@ -587,16 +608,21 @@ export default function Layout() {
                       </span>
                       <span className="rr-auth-pw">
                         <input
+                          id="auth-password"
                           type={showPassword ? 'text' : 'password'}
                           value={formData.password}
                           autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
                           placeholder={authMode === 'signup' ? 'At least 8 characters' : 'Your password'}
+                          aria-invalid={!!showError('password')}
+                          aria-describedby="auth-password-msg"
+                          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                           onChange={(event) => setFormData((prev) => ({ ...prev, password: event.target.value }))}
                         />
                         <button type="button" className="rr-auth-eye" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </span>
+                      {showError('password') ? <FieldMessage id="auth-password-msg" kind="error">{showError('password')}</FieldMessage> : authMode === 'signup' && isGood('password') ? <FieldMessage id="auth-password-msg" kind="ok">Strong enough.</FieldMessage> : null}
                     </label>
                     <button className="rr-btn rr-btn-primary rr-btn-block" type="submit" disabled={authStatus === 'loading'}>
                       {authStatus === 'loading' ? 'Please wait…' : authMode === 'signin' ? 'Sign in' : 'Create account'}
@@ -620,6 +646,7 @@ export default function Layout() {
 
 
       <ChatWidget />
+      <OfflineBanner />
       <CookieBanner />
 
     </div>

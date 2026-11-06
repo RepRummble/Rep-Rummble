@@ -7,6 +7,7 @@ import {
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PREMIUM_UPGRADE, PRICING, fmtPrice } from '../config/pricing';
 import { GymDashboard } from '../components/site/Mockups';
+import { Aurora, Magnetic, SpotlightCard, TiltCard } from '../components/fx/Effects';
 import Faq from '../components/site/Faq';
 import { DEV_BYPASS_AUTH } from '../config/devAuth';
 import { supabase } from '../config/supabase';
@@ -15,12 +16,12 @@ import { biz } from './business/api';
 const BUSINESS_TYPES = ['Gym', 'CrossFit box', 'Studio', 'Personal trainer', 'Online coach', 'Nutritionist / dietitian', 'Employer / corporate wellness', 'Clinic / physiotherapist', 'Club / community', 'Other'];
 
 const AUDIENCES = [
-  { icon: Dumbbell, tone: '', title: 'Gyms & studios', desc: 'Give every member a training app with your branding on the programs, and add a perk that keeps them.' },
-  { icon: UserRound, tone: 'is-violet', title: 'Personal trainers & online coaches', desc: 'Deliver plans, check in with clients, and get paid, without spreadsheets or messaging apps.' },
-  { icon: Apple, tone: 'is-orange', title: 'Nutritionists & dietitians', desc: 'Build meal plans, set targets, and see what your clients actually eat.' },
-  { icon: Building2, tone: '', title: 'Employers & wellness teams', desc: 'Offer Reprummble to your staff and track participation, not personal health data.' },
-  { icon: Stethoscope, tone: 'is-violet', title: 'Clinics & physiotherapists', desc: 'Send rehab and mobility plans to patients and follow their progress between visits.' },
-  { icon: Users, tone: 'is-orange', title: 'Clubs & communities', desc: 'Run challenges and leaderboards for a team, school, or running group.' },
+  { icon: Dumbbell, tone: 'mint', title: 'Gyms & studios', desc: 'Give every member a training app with your branding on the programs, and add a perk that keeps them.' },
+  { icon: UserRound, tone: 'lilac', title: 'Personal trainers & online coaches', desc: 'Deliver plans, check in with clients, and get paid, without spreadsheets or messaging apps.' },
+  { icon: Apple, tone: 'peach', title: 'Nutritionists & dietitians', desc: 'Build meal plans, set targets, and see what your clients actually eat.' },
+  { icon: Building2, tone: 'sky', title: 'Employers & wellness teams', desc: 'Offer Reprummble to your staff and track participation, not personal health data.' },
+  { icon: Stethoscope, tone: 'lilac', title: 'Clinics & physiotherapists', desc: 'Send rehab and mobility plans to patients and follow their progress between visits.' },
+  { icon: Users, tone: 'peach', title: 'Clubs & communities', desc: 'Run challenges and leaderboards for a team, school, or running group.' },
 ];
 
 const DASHBOARD_FEATURES = [
@@ -33,12 +34,12 @@ const DASHBOARD_FEATURES = [
 ];
 
 const BENEFITS = [
-  { icon: Gift, tone: '', title: 'Pro included for your members', desc: `Every member of your gym gets Reprummble Pro (normally ${fmtPrice(PRICING.proMonthly)}/month) as part of their membership — a perk that helps you win and keep members.` },
-  { icon: Globe, tone: 'is-violet', title: 'Reach beyond your four walls', desc: 'Members who can\'t make it in every day can still train with your coaches from anywhere.' },
-  { icon: CreditCard, tone: 'is-orange', title: 'New revenue, zero upfront cost', desc: `No setup or monthly fees. You keep ${PRICING.gymPayoutPercent}% of every program you sell.` },
-  { icon: Smartphone, tone: '', title: 'Your programs, in a real app', desc: 'Publish workouts and plans to iOS, Android, and web without building anything yourself.' },
-  { icon: LayoutDashboard, tone: '', title: 'One business dashboard', desc: 'See who joined, who is training, and who needs a check-in, all in one place.' },
-  { icon: Megaphone, tone: 'is-violet', title: 'Get discovered', desc: 'Your gym and programs appear to Reprummble members looking for coaching nearby.' },
+  { icon: Gift, tone: 'mint', title: 'Pro included for your members', desc: `Every member of your gym gets Reprummble Pro (normally ${fmtPrice(PRICING.proMonthly)}/month) as part of their membership — a perk that helps you win and keep members.` },
+  { icon: Globe, tone: 'lilac', title: 'Reach beyond your four walls', desc: 'Members who can\'t make it in every day can still train with your coaches from anywhere.' },
+  { icon: CreditCard, tone: 'peach', title: 'New revenue, zero upfront cost', desc: `No setup or monthly fees. You keep ${PRICING.gymPayoutPercent}% of every program you sell.` },
+  { icon: Smartphone, tone: 'sky', title: 'Your programs, in a real app', desc: 'Publish workouts and plans to iOS, Android, and web without building anything yourself.' },
+  { icon: LayoutDashboard, tone: 'mint', title: 'One business dashboard', desc: 'See who joined, who is training, and who needs a check-in, all in one place.' },
+  { icon: Megaphone, tone: 'lilac', title: 'Get discovered', desc: 'Your gym and programs appear to Reprummble members looking for coaching nearby.' },
 ];
 
 const STEPS = [
@@ -170,6 +171,31 @@ function ApplyForm() {
   );
 }
 
+function DashboardShowcase() {
+  const [active, setActive] = useState(0);
+  const f = DASHBOARD_FEATURES[active];
+  return (
+    <div className="fx-showcase">
+      <div className="fx-showcase-list" role="tablist" aria-label="Business dashboard features">
+        {DASHBOARD_FEATURES.map(({ icon: Icon, title }, i) => (
+          <button key={title} role="tab" aria-selected={active === i} className={active === i ? 'is-on' : ''} onClick={() => setActive(i)}>
+            <span className="ic"><Icon size={18} /></span>{title}
+          </button>
+        ))}
+      </div>
+      <div className="fx-showcase-stage fx-glass">
+        <div className="fx-showcase-copy" key={active}>
+          <span className="fx-tile-icon"><f.icon size={22} /></span>
+          <h3>{f.title}</h3>
+          <p>{f.desc}</p>
+        </div>
+        <div className="fx-showcase-shot"><GymDashboard /></div>
+        <p className="rr-dash-note">Illustrative preview of the partner dashboard.</p>
+      </div>
+    </div>
+  );
+}
+
 export default function Collaborate() {
   usePageMeta({
     title: 'Collaboration',
@@ -183,108 +209,103 @@ export default function Collaborate() {
 
   return (
     <div className="rr-page">
-      <section className="rr-hero">
-        <div className="rr-container rr-hero-grid">
+      <section className="fx-hero">
+        <Aurora />
+        <div className="rr-container fx-hero-grid">
           <div>
-            <span className="rr-eyebrow"><span className="rr-eyebrow-dot" /> For businesses · Free to join</span>
+            <span className="fx-eyebrow"><span className="fx-dot" /> For businesses · Free to join</span>
             <h1>Bring Reprummble to <span className="rr-gradient-text">your members and clients.</span></h1>
-            <p className="rr-hero-lead">
+            <p className="fx-hero-lead">
               Run your members, plans, nutrition, and reports from one business dashboard, while your
               people train in the Reprummble app. No setup fees. No monthly subscription.
             </p>
-            <div className="rr-hero-ctas">
-              <a className="rr-btn rr-btn-primary rr-btn-lg" href="#apply">Apply to collaborate <ArrowRight size={18} /></a>
+            <div className="fx-ctas">
+              <Magnetic><a className="rr-btn rr-btn-primary rr-btn-lg fx-btn-glow" href="#apply">Apply to collaborate <ArrowRight size={18} /></a></Magnetic>
               <Link className="rr-btn rr-btn-outline rr-btn-lg" to="/business">Open business dashboard</Link>
             </div>
-            <ul className="rr-hero-checks">
+            <ul className="fx-trust">
               <li><Check size={16} /> $0 to join</li>
               <li><Check size={16} /> Members get Pro free</li>
               <li><Check size={16} /> Keep {PRICING.gymPayoutPercent}% of revenue</li>
               <li><Check size={16} /> No contract</li>
             </ul>
           </div>
-          <div className="rr-visual">
-            <div style={{ width: '100%' }}>
+          <div className="fx-stage" style={{ minHeight: 0 }}>
+            <TiltCard className="fx-glass-frame">
               <GymDashboard />
               <p className="rr-dash-note">Illustrative preview of the partner dashboard.</p>
-            </div>
+            </TiltCard>
           </div>
         </div>
       </section>
 
-      <section className="rr-section">
+      <section className="fx-section">
         <div className="rr-container">
           <div className="rr-head" data-reveal>
             <span className="rr-eyebrow">Who it's for</span>
             <h2>Built for anyone who helps people get healthier</h2>
             <p>Choose how you want to work with Reprummble. Many businesses do more than one.</p>
           </div>
-          <div className="rr-grid-3" data-stagger>
+          <div className="fx-more" data-stagger>
             {AUDIENCES.map(({ icon: Icon, tone, title, desc }) => (
-              <div className="rr-card" key={title}>
-                <span className={`rr-icon ${tone}`}><Icon size={22} /></span>
+              <SpotlightCard className={`fx-tile fx-glass is-tint-${tone}`} key={title}>
+                <span className="fx-tile-icon"><Icon size={22} /></span>
                 <h3>{title}</h3>
                 <p>{desc}</p>
-              </div>
+              </SpotlightCard>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="rr-section rr-section-tint" id="dashboard">
+      <section className="fx-section is-soft" id="dashboard">
+        <Aurora />
         <div className="rr-container">
           <div className="rr-head" data-reveal>
             <span className="rr-eyebrow"><LayoutDashboard size={14} /> Business dashboard</span>
             <h2>One place to run it all</h2>
             <p>A separate dashboard built for businesses, so you can look after your people without touching the member app.</p>
           </div>
-          <div className="rr-grid-3" data-stagger>
-            {DASHBOARD_FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div className="rr-card" key={title}>
-                <span className="rr-icon"><Icon size={22} /></span>
-                <h3>{title}</h3>
-                <p>{desc}</p>
-              </div>
-            ))}
-          </div>
-          <div className="rr-hero-ctas" style={{ justifyContent: 'center', marginTop: 36 }}>
-            <Link className="rr-btn rr-btn-primary rr-btn-lg" to="/business">Open business dashboard <ArrowRight size={18} /></Link>
+          <DashboardShowcase />
+          <div className="fx-ctas" style={{ justifyContent: 'center', marginTop: 36 }}>
+            <Magnetic><Link className="rr-btn rr-btn-primary rr-btn-lg fx-btn-glow" to="/business">Open business dashboard <ArrowRight size={18} /></Link></Magnetic>
           </div>
         </div>
       </section>
 
-      <section className="rr-section">
+      <section className="fx-section">
         <div className="rr-container">
           <div className="rr-head" data-reveal>
             <span className="rr-eyebrow">Why collaborate</span>
             <h2>Grow without growing your overhead</h2>
             <p>Reprummble handles the app, payments, and tracking. You focus on your people.</p>
           </div>
-          <div className="rr-grid-3" data-stagger>
+          <div className="fx-more" data-stagger>
             {BENEFITS.map(({ icon: Icon, tone, title, desc }) => (
-              <div className="rr-card" key={title}>
-                <span className={`rr-icon ${tone}`}><Icon size={22} /></span>
+              <SpotlightCard className={`fx-tile fx-glass is-tint-${tone}`} key={title}>
+                <span className="fx-tile-icon"><Icon size={22} /></span>
                 <h3>{title}</h3>
                 <p>{desc}</p>
-              </div>
+              </SpotlightCard>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="rr-section rr-section-dark" id="how">
+      <section className="fx-section is-dark" id="how">
+        <Aurora tone="dark" />
         <div className="rr-container">
           <div className="rr-head" data-reveal>
             <span className="rr-eyebrow" style={{ background: 'rgba(255,255,255,0.08)', color: '#5eead4' }}>How it works</span>
             <h2>Live in three simple steps</h2>
           </div>
-          <div className="rr-steps" data-stagger>
+          <div className="fx-steps is-dark" data-stagger>
             {STEPS.map((s, i) => (
-              <div className="rr-step" key={s.title}>
-                <div className="rr-step-num">{i + 1}</div>
+              <SpotlightCard className="fx-step fx-glass" key={s.title}>
+                <div className="n">{i + 1}</div>
                 <h3>{s.title}</h3>
                 <p>{s.desc}</p>
-              </div>
+              </SpotlightCard>
             ))}
           </div>
         </div>
@@ -309,7 +330,8 @@ export default function Collaborate() {
         </div>
       </section>
 
-      <section className="rr-section rr-section-tint" id="apply">
+      <section className="fx-section is-soft" id="apply">
+        <Aurora />
         <div className="rr-container rr-split" style={{ alignItems: 'start' }}>
           <div data-reveal>
             <span className="rr-eyebrow">Apply to collaborate</span>
@@ -321,7 +343,7 @@ export default function Collaborate() {
               <li><Check size={18} /> Direct line to our team</li>
             </ul>
           </div>
-          <div className="rr-card" style={{ padding: 'clamp(22px, 4vw, 36px)' }} data-reveal>
+          <div className="rr-card fx-glass" style={{ padding: 'clamp(22px, 4vw, 36px)' }} data-reveal>
             <ApplyForm />
           </div>
         </div>

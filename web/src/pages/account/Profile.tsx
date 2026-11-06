@@ -10,6 +10,7 @@ import api, { type BillingView } from '../../config/api';
 import { biz } from '../business/api';
 import { useAccountUser, type AccountUser } from './useAccountUser';
 import PaymentMethodManager from './PaymentMethod';
+import { SkeletonPage } from '../../components/states/States';
 
 const GOALS = ['Weight loss', 'Muscle gain', 'Improve endurance', 'Maintain weight', 'General fitness', 'Injury recovery'];
 const ACTIVITY = ['Sedentary (desk job, little movement)', 'Lightly active (1-3 days/week)', 'Moderately active (3-5 days/week)', 'Very active (6-7 days/week)', 'Athlete (2x per day)'];
@@ -79,8 +80,16 @@ export default function Profile() {
   const [params] = useSearchParams();
   const requested = SECTIONS.find((x) => x.id === params.get('section'))?.id;
   const [section, setSection] = useState<SectionId>(requested ?? 'profile');
-  if (!user) return <p className="dash-muted">Loading…</p>;
+  if (!user) return <SkeletonPage kind="form" label="Loading your profile" />;
 
+  const meta = user.metadata as { goal?: string; activity?: string; diets?: unknown[] };
+  const checks = [
+    { ok: !!user.name.trim(), hint: 'add your name' },
+    { ok: user.emailVerified, hint: 'verify your email' },
+    { ok: !!meta.goal, hint: 'pick a fitness goal' },
+    { ok: !!meta.activity || (Array.isArray(meta.diets) && meta.diets.length > 0), hint: 'set your activity level' },
+  ];
+  const strength = { pct: Math.round((checks.filter((c) => c.ok).length / checks.length) * 100), next: checks.find((c) => !c.ok)?.hint };
   const since = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : null;
 
   return (
@@ -94,6 +103,14 @@ export default function Profile() {
             {user.emailVerified && <span className="pf-badge is-ok"><BadgeCheck size={14} /> Email verified</span>}
             {since && <span className="pf-badge">Member since {since}</span>}
           </div>
+        </div>
+        <div className="pf-strength" role="img" aria-label={`Profile ${strength.pct} percent complete`}>
+          <svg viewBox="0 0 80 80" aria-hidden="true">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="7" />
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#5eead4" strokeWidth="7" strokeLinecap="round" transform="rotate(-90 40 40)" strokeDasharray={2 * Math.PI * 34} strokeDashoffset={2 * Math.PI * 34 * (1 - strength.pct / 100)} style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)' }} />
+          </svg>
+          <b className="fx-num">{strength.pct}%</b>
+          <span>{strength.next ? <>Next: {strength.next}</> : 'Profile complete'}</span>
         </div>
       </header>
 

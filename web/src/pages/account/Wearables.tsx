@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Watch } from 'lucide-react';
 import api, { type WearableDay } from '../../config/api';
 import { supabase } from '../../config/supabase';
 import { useAccountUser } from './useAccountUser';
+import { EmptyState, ErrorState, SkeletonPage } from '../../components/states/States';
 
 const CATALOG = ['Apple Watch', 'Oura Ring', 'Garmin', 'Whoop', 'Fitbit', 'Polar'];
 const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 1 });
@@ -24,7 +25,7 @@ export default function Wearables() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!user) return <p className="dash-muted">Loading…</p>;
+  if (!user) return <SkeletonPage kind="form" />;
   const saved = (user.metadata.devices as { name: string }[] | undefined)?.map((d) => d.name) ?? [];
 
   const tiles = days ? [
@@ -46,13 +47,14 @@ export default function Wearables() {
           <h2>Latest from your devices</h2>
           {lastSync && <small className="dash-muted">Last sync {new Date(lastSync).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</small>}
         </div>
-        {days === undefined ? <p className="dash-muted">Loading…</p> : days === null ? (
-          <p className="dash-error" role="alert">We could not load your wearable data. Please try again.</p>
+        {days === undefined ? <SkeletonPage kind="kpis" label="Loading your wearable data" /> : days === null ? (
+          <ErrorState detail="We could not load your wearable data." onRetry={() => window.location.reload()} />
         ) : days.length === 0 ? (
-          <div className="dash-empty">
-            <h2>No wearable data yet</h2>
-            <p className="dash-muted">Open the Reprummble iPhone app, go to your profile, and allow access to Apple Health. Your readings appear here after the next sync.</p>
-          </div>
+          <EmptyState
+            icon={Watch}
+            title="No wearable data yet"
+            why="Open the Reprummble iPhone app, go to your profile, and allow access to Apple Health. Your readings appear here after the next sync."
+          />
         ) : (
           <div className="dash-mini dash-mini-3">
             {tiles.map((t) => (

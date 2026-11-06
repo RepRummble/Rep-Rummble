@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Download, FileText } from 'lucide-react';
 import api, { type History, type ReportPeriod } from '../../config/api';
+import { ErrorState, SkeletonPage } from '../../components/states/States';
 
 const PERIODS: { id: ReportPeriod; label: string; rows: string }[] = [
   { id: 'monthly', label: 'Last 30 days', rows: 'Day by day' },
@@ -74,8 +75,8 @@ export default function Reports() {
       </div>
       {message && <div className={message.ok ? 'rr-msg-ok' : 'rr-msg-err'} role="status">{message.text}</div>}
 
-      {history === undefined ? <p className="dash-muted">Loading your history…</p> : history === null ? (
-        <div className="dash-empty"><p className="dash-error">{error || 'We could not load your history.'}</p><button className="rr-btn rr-btn-outline" onClick={() => choose(period)}>Try again</button></div>
+      {history === undefined ? <SkeletonPage kind="cards" label="Loading your history" /> : history === null ? (
+        <ErrorState detail={error} onRetry={() => choose(period)} />
       ) : (
         <>
           <div className="dash-kpis">

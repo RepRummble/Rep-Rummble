@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity, Apple, ArrowRight, Check, Dumbbell, HeartPulse, LineChart, Moon,
-  Trophy, Users, Watch,
+  Activity, ArrowRight, Check, Dumbbell, Flame, HeartPulse, Moon,
+  ScanLine, Sparkles, Trophy, Users, Watch,
 } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PLANS, PREMIUM_UPGRADE, PRICING, fmtPrice } from '../config/pricing';
@@ -9,17 +10,11 @@ import { PhoneMockup } from '../components/site/Mockups';
 import { LiveStats, ReviewsSection } from '../components/site/Reviews';
 import DeviceMarquee from '../components/site/DeviceMarquee';
 import DeviceSync from '../components/site/DeviceSync';
+import { Aurora, CountUp, FlipWords, Magnetic, MovingBorder, SpotlightCard, TiltCard } from '../components/fx/Effects';
+import RepFigure, { EXERCISES, type ExerciseId } from '../components/fx/RepFigure';
+import { DeviceOrbit, Leaderboard, MealScan, PulseLine, ReadinessRing, SleepStages, StreakGrid } from '../components/fx/Visuals';
 
 
-
-const PILLARS = [
-  { icon: Dumbbell, tone: '', title: 'Training that adapts', desc: 'A plan built around your schedule, equipment, and level — at home, outdoors, or in the gym.' },
-  { icon: Apple, tone: 'is-orange', title: 'Nutrition made simple', desc: 'Snap a photo to log a meal. Hit your protein and calorie targets without counting by hand.' },
-  { icon: Moon, tone: 'is-violet', title: 'Recovery you can see', desc: 'Sleep and heart-rate data become one daily readiness score, so you know when to push.' },
-  { icon: Watch, tone: '', title: 'Your devices, connected', desc: 'Sync the wearable you already own. No new hardware needed to get started.' },
-  { icon: LineChart, tone: 'is-orange', title: 'Progress, explained', desc: 'Weekly insights connect your habits to your results in plain language.' },
-  { icon: Trophy, tone: 'is-violet', title: 'Motivation built in', desc: 'Challenges and streaks keep you going on the days motivation runs out.' },
-];
 
 const STEPS = [
   { title: 'Create a free account', desc: 'Sign up on the web or in the app with email, Google, or Apple. No card needed.' },
@@ -33,41 +28,52 @@ export default function Home() {
     description: `One app for training, nutrition, and recovery. Start free, go Pro for ${fmtPrice(PRICING.proMonthly)}/month. Members of partner gyms get Pro included.`,
     canonical: '/',
   });
+  const [exercise, setExercise] = useState<ExerciseId>('squat');
+  const engine = EXERCISES[exercise];
 
   return (
     <div className="rr-page">
       {/* HERO */}
-      <section className="rr-hero">
-        <div className="rr-container rr-hero-grid">
+      <section className="fx-hero">
+        <Aurora />
+        <div className="rr-container fx-hero-grid">
           <div>
-            <span className="rr-eyebrow"><span className="rr-eyebrow-dot" /> Now on web, iOS & Android</span>
+            <span className="fx-eyebrow"><span className="fx-dot" /> Now on web, iOS & Android</span>
             <h1>
-              Fitness that fits <span className="rr-gradient-text">every budget.</span>
+              Fitness that fits <br />
+              <FlipWords words={['every budget.', 'every body.', 'every goal.', 'every day.']} />
             </h1>
-            <p className="rr-hero-lead">
-              Training, nutrition, and recovery in one simple app. Start free, upgrade for less
+            <p className="fx-hero-lead">
+              Training, nutrition, and recovery in one calm, clever app. Start free, upgrade for less
               than the cost of a single gym class, and follow programs from coaches at our partner gyms.
             </p>
-            <div className="rr-hero-ctas">
-              <Link className="rr-btn rr-btn-primary rr-btn-lg" to="/?auth=signup">
-                Start free <ArrowRight size={18} />
-              </Link>
+            <div className="fx-ctas">
+              <Magnetic>
+                <Link className="rr-btn rr-btn-primary rr-btn-lg fx-btn-glow" to="/?auth=signup">
+                  Start free <ArrowRight size={18} />
+                </Link>
+              </Magnetic>
+              <Link className="rr-btn rr-btn-outline rr-btn-lg" to="/features">See how it works</Link>
             </div>
-            <ul className="rr-hero-checks">
+            <ul className="fx-trust">
               <li><Check size={16} /> Free plan, no card needed</li>
               <li><Check size={16} /> Pro from {fmtPrice(PRICING.proMonthly)}/mo</li>
               <li><Check size={16} /> Cancel anytime</li>
             </ul>
           </div>
-          <div className="rr-visual">
-            <PhoneMockup />
-            <div className="rr-float-card rr-float-a" aria-hidden="true">
-              <span className="rr-float-icon" style={{ background: 'var(--rr-brand-soft)', color: 'var(--rr-brand)' }}><HeartPulse size={18} /></span>
-              <div><strong>Recovery tracked</strong><span>from your wearable</span></div>
+          <div className="fx-stage">
+            <TiltCard><PhoneMockup /></TiltCard>
+            <div className="fx-float fx-glass f1" aria-hidden="true">
+              <span className="ic" style={{ background: 'var(--rr-brand-soft)', color: 'var(--rr-brand)' }}><HeartPulse size={18} /></span>
+              <div><strong>Recovery tracked</strong><span className="sub">from your wearable</span></div>
             </div>
-            <div className="rr-float-card rr-float-b" aria-hidden="true">
-              <span className="rr-float-icon" style={{ background: 'var(--rr-accent-soft)', color: 'var(--rr-accent)' }}><Activity size={18} /></span>
-              <div><strong>Plan adjusted</strong><span>based on today</span></div>
+            <div className="fx-float fx-glass f2" aria-hidden="true">
+              <span className="ic" style={{ background: 'var(--rr-accent-soft)', color: 'var(--rr-accent)' }}><Flame size={18} /></span>
+              <div><strong>21-day streak</strong><span className="sub">keep it going</span></div>
+            </div>
+            <div className="fx-float fx-glass f3" aria-hidden="true">
+              <span className="ic" style={{ background: 'var(--rr-violet-soft)', color: 'var(--rr-violet)' }}><Activity size={18} /></span>
+              <div><strong>Plan adjusted</strong><span className="sub">based on today</span></div>
             </div>
           </div>
         </div>
@@ -76,53 +82,111 @@ export default function Home() {
       {/* DEVICES */}
       <DeviceMarquee />
 
-      {/* HOW IT WORKS */}
-      <section className="rr-section rr-section-tint">
+      {/* REP ENGINE */}
+      <section className="fx-section is-dark">
+        <Aurora tone="dark" />
         <div className="rr-container">
-          <div className="rr-head" data-reveal>
-            <span className="rr-eyebrow">Simple to start</span>
-            <h2>Up and running in minutes</h2>
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow"><Sparkles size={14} /> Form you can see</span>
+            <h2>Every rep, coached.</h2>
+            <p>Each exercise comes with a clear demonstration and a few cues that matter. Pick a lift and watch the movement.</p>
           </div>
-          <div className="rr-steps" data-stagger>
-            {STEPS.map((s, i) => (
-              <div className="rr-step" key={s.title}>
-                <div className="rr-step-num">{i + 1}</div>
-                <h3>{s.title}</h3>
-                <p>{s.desc}</p>
+          <div className="fx-engine" data-reveal>
+            <div className="fx-engine-stage">
+              <RepFigure exercise={exercise} />
+            </div>
+            <div className="fx-engine-side">
+              <div className="fx-tabs" role="tablist" aria-label="Exercise">
+                {(Object.keys(EXERCISES) as ExerciseId[]).map((id) => (
+                  <button key={id} role="tab" aria-selected={exercise === id} onClick={() => setExercise(id)}>{EXERCISES[id].label}</button>
+                ))}
               </div>
-            ))}
+              <h3>{engine.label}</h3>
+              <ul className="fx-cues">
+                {engine.cues.map((cue, i) => <li key={cue}><i>{i + 1}</i>{cue}</li>)}
+              </ul>
+              <p className="fx-note">Illustration of the movement. Your plan picks the right weight and reps for you.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="rr-section">
+      {/* BENTO FEATURES */}
+      <section className="fx-section is-soft">
+        <Aurora />
         <div className="rr-container">
-          <div className="rr-head" data-reveal>
-            <span className="rr-eyebrow">Everything in one place</span>
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow">Everything in one place</span>
             <h2>Stop juggling five different apps</h2>
             <p>Your workouts, meals, sleep, and wearable data finally work together.</p>
           </div>
-          <div className="rr-grid-3" data-stagger>
-            {PILLARS.map(({ icon: Icon, tone, title, desc }) => (
-              <div className="rr-card rr-card-hover" key={title}>
-                <span className={`rr-icon ${tone}`}><Icon size={22} /></span>
-                <h3>{title}</h3>
-                <p>{desc}</p>
+          <div className="fx-bento" data-stagger>
+            <SpotlightCard className="fx-tile fx-glass span-3 is-tint-mint">
+              <span className="tag"><Dumbbell size={15} /> Training that adapts</span>
+              <h3>A plan built around your week</h3>
+              <p>Tell us your schedule, equipment, and level. The plan adjusts as you get fitter, at home, outdoors, or in the gym.</p>
+              <div className="viz"><StreakGrid /></div>
+            </SpotlightCard>
+            <SpotlightCard className="fx-tile fx-glass span-3 is-tint-lilac">
+              <span className="tag" style={{ color: 'var(--rr-violet)' }}><Moon size={15} /> Recovery you can see</span>
+              <h3>One readiness score, every morning</h3>
+              <p>Sleep and heart-rate data become a single number that tells you when to push and when to rest.</p>
+              <div className="viz" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 18, alignItems: 'center' }}>
+                <ReadinessRing />
+                <div style={{ display: 'grid', gap: 18 }}><PulseLine /><SleepStages /></div>
               </div>
-            ))}
+            </SpotlightCard>
+            <SpotlightCard className="fx-tile fx-glass span-2 is-tint-peach">
+              <span className="tag" style={{ color: 'var(--rr-accent)' }}><ScanLine size={15} /> Nutrition made simple</span>
+              <h3>Snap a photo, log the meal</h3>
+              <p>Hit your protein and calorie targets without counting by hand.</p>
+              <div className="viz"><MealScan /></div>
+            </SpotlightCard>
+            <SpotlightCard className="fx-tile fx-glass span-2 is-tint-sky">
+              <span className="tag" style={{ color: '#2e7fd1' }}><Watch size={15} /> Your devices, connected</span>
+              <h3>Sync the wearable you own</h3>
+              <p>No new hardware needed to get started.</p>
+              <div className="viz"><DeviceOrbit /></div>
+            </SpotlightCard>
+            <SpotlightCard className="fx-tile fx-glass span-2">
+              <span className="tag"><Trophy size={15} /> Motivation built in</span>
+              <h3>Challenges that keep you going</h3>
+              <p>Streaks and friendly rivalries on the days motivation runs out.</p>
+              <div className="viz"><Leaderboard /></div>
+            </SpotlightCard>
           </div>
-          <div style={{ textAlign: 'center', marginTop: 36 }}>
+          <p className="fx-note" style={{ textAlign: 'center', marginTop: 18, color: 'var(--rr-muted)' }}>Sample visuals for illustration.</p>
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
             <Link className="rr-link-arrow" to="/features">Explore all features <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>
 
-      {/* SYNC */}
-      <section className="rr-section rr-section-tint">
+      {/* HOW IT WORKS */}
+      <section className="fx-section">
         <div className="rr-container">
-          <div className="rr-head" data-reveal>
-            <span className="rr-eyebrow">One account, every device</span>
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow">Simple to start</span>
+            <h2>Up and running in minutes</h2>
+          </div>
+          <div className="fx-steps" data-stagger>
+            {STEPS.map((s, i) => (
+              <SpotlightCard className="fx-step fx-glass" key={s.title}>
+                <div className="n">{i + 1}</div>
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
+              </SpotlightCard>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SYNC */}
+      <section className="fx-section is-soft">
+        <Aurora />
+        <div className="rr-container">
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow">One account, every device</span>
             <h2>Start on your phone. Pick up on the web.</h2>
             <p>Sign in with the same account everywhere. Your plan, workouts, and progress stay in sync automatically.</p>
           </div>
@@ -131,30 +195,33 @@ export default function Home() {
       </section>
 
       {/* PRICING TEASER */}
-      <section className="rr-section">
+      <section className="fx-section">
         <div className="rr-container">
-          <div className="rr-head" data-reveal>
-            <span className="rr-eyebrow">Honest pricing</span>
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow">Honest pricing</span>
             <h2>Three plans. No surprises.</h2>
             <p>Start free, unlock everything with Pro, or add real coaching with Premium.</p>
           </div>
           <div className="rr-price-grid" data-stagger>
-            {PLANS.map((plan) => (
-              <div className={`rr-price${plan.id === 'pro' ? ' is-featured' : ''}`} key={plan.id}>
-                {'badge' in plan && <span className="rr-price-badge">{plan.badge}</span>}
-                <h3>{plan.name}</h3>
-                <div className="rr-price-amount">
-                  {fmtPrice(plan.price)}<span className="rr-price-per">{plan.price === 0 ? 'forever' : '/month'}</span>
+            {PLANS.map((plan) => {
+              const card = (
+                <div className={`rr-price${plan.id === 'pro' ? ' is-featured' : ''}`}>
+                  {'badge' in plan && <span className="rr-price-badge">{plan.badge}</span>}
+                  <h3>{plan.name}</h3>
+                  <div className="rr-price-amount">
+                    {fmtPrice(plan.price)}<span className="rr-price-per">{plan.price === 0 ? 'forever' : '/month'}</span>
+                  </div>
+                  <p>{plan.tagline}</p>
+                  <Link
+                    className={`rr-btn ${plan.id === 'pro' ? 'rr-btn-primary' : plan.id === 'premium' ? 'rr-btn-dark' : 'rr-btn-outline'}`}
+                    to="/?auth=signup"
+                  >
+                    {plan.cta}
+                  </Link>
                 </div>
-                <p>{plan.tagline}</p>
-                <Link
-                  className={`rr-btn ${plan.id === 'pro' ? 'rr-btn-primary' : plan.id === 'premium' ? 'rr-btn-dark' : 'rr-btn-outline'}`}
-                  to="/?auth=signup"
-                >
-                  {plan.cta}
-                </Link>
-              </div>
-            ))}
+              );
+              return plan.id === 'pro' ? <MovingBorder key={plan.id}>{card}</MovingBorder> : <div key={plan.id}>{card}</div>;
+            })}
           </div>
           <p className="rr-price-note" style={{ marginTop: 20, fontSize: 15 }}>
             <strong style={{ color: 'var(--rr-ink)' }}>Train at a partner gym?</strong> Pro is included with your membership — upgrade to Premium for just {fmtPrice(PREMIUM_UPGRADE)}/month.
@@ -166,10 +233,11 @@ export default function Home() {
       </section>
 
       {/* AUDIENCES */}
-      <section className="rr-section rr-section-tint">
+      <section className="fx-section is-soft">
+        <Aurora />
         <div className="rr-container">
-          <div className="rr-head" data-reveal>
-            <span className="rr-eyebrow">Built for two kinds of people</span>
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow">Built for two kinds of people</span>
             <h2>Whether you train or you coach</h2>
             <p>Reprummble is one platform that connects everyday people with the gyms and coaches who can help them.</p>
           </div>
@@ -203,15 +271,29 @@ export default function Home() {
       </section>
 
       {/* REVIEWS + LIVE STATS */}
-      <section className="rr-section">
+      <section className="fx-section">
         <div className="rr-container">
-          <div className="rr-head" data-reveal>
-            <span className="rr-eyebrow"><Users size={14} /> Community</span>
+          <div className="fx-head" data-reveal>
+            <span className="fx-eyebrow"><Users size={14} /> Community</span>
             <h2>Real people. Real reviews.</h2>
             <p>Every number and review here comes straight from our platform — nothing made up.</p>
           </div>
           <div style={{ marginBottom: 40 }}><LiveStats /></div>
           <ReviewsSection />
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="fx-section" style={{ paddingTop: 0 }}>
+        <div className="rr-container">
+          <div className="fx-cta" data-reveal>
+            <Aurora tone="dark" />
+            <h2>Your best shape starts <CountUp to={14} suffix=" days" prefix="with " /> free.</h2>
+            <p>Try Pro free for {PRICING.trialDays} days. No card needed. Cancel anytime.</p>
+            <Magnetic>
+              <Link className="rr-btn rr-btn-white rr-btn-lg" to="/?auth=signup">Start free <ArrowRight size={18} /></Link>
+            </Magnetic>
+          </div>
         </div>
       </section>
     </div>

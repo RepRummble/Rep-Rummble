@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Download } from 'lucide-react';
 import { biz, downloadCsv, useLoad } from './api';
+import { ErrorState, SkeletonPage } from '../../components/states/States';
 
 const RANGES = { 4: 'Last 4 weeks', 8: 'Last 8 weeks', 12: 'Last 12 weeks' } as const;
 type Range = keyof typeof RANGES;
@@ -12,8 +13,8 @@ export default function Reports() {
   const header = (
     <div className="dash-head"><h1>Reports</h1><p>Attendance and progress, based on the workouts your members log in the app. Export any report as CSV.</p></div>
   );
-  if (loading && !data) return <>{header}<p className="dash-muted">Loading…</p></>;
-  if (error || !data) return <>{header}<div className="dash-empty"><p className="dash-error">{error || 'Could not load reports.'}</p><button className="rr-btn rr-btn-outline" onClick={reload}>Try again</button></div></>;
+  if (loading && !data) return <>{header}<SkeletonPage kind="cards" label="Loading reports" /></>;
+  if (error || !data) return <>{header}<ErrorState detail={error} onRetry={reload} /></>;
 
   const series = data.weeklySessions;
   const max = Math.max(...series, 1);

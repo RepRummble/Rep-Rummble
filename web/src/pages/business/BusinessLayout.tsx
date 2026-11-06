@@ -6,6 +6,7 @@ import { supabase } from '../../config/supabase';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { biz, useLoad } from './api';
 import '../../styles/dashboard.css';
+import { SkeletonPage } from '../../components/states/States';
 
 function Gate({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -40,7 +41,7 @@ export default function BusinessLayout() {
     navigate('/?auth=signin');
   };
 
-  if (auth === 'checking' || (auth === 'in' && me.loading)) return <Gate title="Business dashboard"><p>Loading…</p></Gate>;
+  if (auth === 'checking' || (auth === 'in' && me.loading)) return <Gate title="Business dashboard"><SkeletonPage kind="form" label="Checking your business account" /></Gate>;
 
   if (auth === 'out') {
     return (

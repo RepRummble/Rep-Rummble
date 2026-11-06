@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { biz, useLoad, type WorkoutPlan } from './api';
 import { useBusiness } from './useBusiness';
+import { SkeletonPage } from '../../components/states/States';
 
 const EMPTY = { name: '', goal: 'Get stronger', level: 'Beginner' as WorkoutPlan['level'], weeks: 6, daysPerWeek: 3, notes: '' };
 
@@ -65,7 +66,7 @@ export default function WorkoutPlans() {
       )}
       {error && <p className="dash-error" role="alert">{error}</p>}
 
-      {plans.loading ? <p className="dash-muted">Loading…</p> : (
+      {plans.loading ? <SkeletonPage kind="list" label="Loading plans" /> : (
         <div className="dash-cards">
           {plans.data?.map((p) => (
             <article className="dash-card dash-plan" key={p.id}>

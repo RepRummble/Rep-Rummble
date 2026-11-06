@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Watch } from 'lucide-react';
 import api, { apiRequest, type DailyPoint, type Overview } from '../../config/api';
 import { useAccountUser } from './useAccountUser';
+import { EmptyState, ErrorState, SkeletonPage } from '../../components/states/States';
 
 interface Membership {
   business: { name: string };
@@ -91,15 +92,16 @@ export default function Dashboard() {
       ))}
 
       {data === undefined ? (
-        <p className="dash-muted">Loading your analytics…</p>
+        <SkeletonPage kind="cards" label="Loading your analytics" />
       ) : data === null ? (
-        <div className="dash-empty"><p className="dash-error">{error || 'We could not load your analytics.'}</p><button className="rr-btn rr-btn-outline" onClick={() => window.location.reload()}>Try again</button></div>
+        <ErrorState detail={error} onRetry={() => window.location.reload()} />
       ) : !hasActivity ? (
-        <div className="dash-empty">
-          <h2>No activity yet</h2>
-          <p className="dash-muted">Log your first workout or meal in the iPhone or Android app and your stats will show up here automatically.</p>
-          <Link className="rr-btn rr-btn-outline" to="/dashboard/wearables"><Watch size={16} /> Connect a wearable</Link>
-        </div>
+        <EmptyState
+          icon={Watch}
+          title="No activity yet"
+          why="Your stats appear here as soon as you log a workout or meal in the iPhone or Android app, or connect a wearable."
+          action={{ label: 'Connect a wearable', to: '/dashboard/wearables' }}
+        />
       ) : (
         <>
           <div className="dash-kpis">

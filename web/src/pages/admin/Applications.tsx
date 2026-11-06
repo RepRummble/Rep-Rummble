@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { biz, useLoad } from '../business/api';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import '../../styles/dashboard.css';
+import { SkeletonPage } from '../../components/states/States';
 
 /** Review screen for business applications. Only emails listed in ADMIN_EMAILS on the server can use it. */
 export default function Applications() {
@@ -40,7 +41,7 @@ export default function Applications() {
           ))}
         </div>
         {message && <p className="dash-ok" role="status">{message}</p>}
-        {loading ? <p className="dash-muted">Loading…</p> : error ? (
+        {loading ? <SkeletonPage kind="list" label="Loading applications" /> : error ? (
           <p className="dash-error" role="alert">{/admin/i.test(error) ? 'Your account is not listed as a reviewer. Add your email to ADMIN_EMAILS on the server.' : error}</p>
         ) : data && data.length === 0 ? <p className="dash-muted">No {status} applications.</p> : (
           data?.map((a) => (
