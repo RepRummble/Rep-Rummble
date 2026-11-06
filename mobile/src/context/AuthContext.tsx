@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { setSessionExpiredHandler } from '../config/api';
+import { clearCache } from '../config/cache';
 import { User, AuthState, LoginCredentials, RegisterCredentials } from '../types';
 import { DEV_BYPASS_AUTH, DEV_DUMMY_USER } from '../config/devConfig';
 
@@ -42,16 +43,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const [token, userStr] = await AsyncStorage.multiGet([
+      const stored = await AsyncStorage.getMany([
         'rep_rumble_token',
         'rep_rumble_user',
       ]);
+      const token = stored.rep_rumble_token;
+      const userStr = stored.rep_rumble_user;
 
-      if (token[1] && userStr[1]) {
-        const user = JSON.parse(userStr[1]);
+      if (token && userStr) {
+        const user = JSON.parse(userStr);
         setState({
           user,
-          token: token[1],
+          token,
           isLoading: false,
           isAuthenticated: true,
         });
@@ -69,11 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await api.post('/auth/login', credentials);
       const { token, refreshToken, user } = response.data.data;
 
-      await AsyncStorage.multiSet([
-        ['rep_rumble_token', token],
-        ['rep_rumble_refresh', refreshToken || ''],
-        ['rep_rumble_user', JSON.stringify(user)],
-      ]);
+      await AsyncStorage.setMany({ 'rep_rumble_token': token, 'rep_rumble_refresh': refreshToken || '', 'rep_rumble_user': JSON.stringify(user) });
 
       setState({
         user,
@@ -95,11 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const { token, refreshToken, user } = response.data.data;
 
-      await AsyncStorage.multiSet([
-        ['rep_rumble_token', token],
-        ['rep_rumble_refresh', refreshToken || ''],
-        ['rep_rumble_user', JSON.stringify(user)],
-      ]);
+      await AsyncStorage.setMany({ 'rep_rumble_token': token, 'rep_rumble_refresh': refreshToken || '', 'rep_rumble_user': JSON.stringify(user) });
 
       setState({
         user,
@@ -114,13 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await AsyncStorage.multiRemove([
+    await AsyncStorage.removeMany([
       'rep_rumble_token',
       'rep_rumble_refresh',
       'rep_rumble_user',
       'rep_rumble_meals',
       'rep_rumble_workouts',
     ]);
+    await clearCache();
 
     setState({
       user: null,

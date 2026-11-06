@@ -12,6 +12,10 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../config/api';
 import { Meal, Workout, RootStackParamList } from '../../types';
 import ChatFAB from '../../components/chat/ChatFAB';
+import { HomeSkeleton } from '../../components/states/Skeleton';
+import { ErrorState } from '../../components/states/StateViews';
+import StaleNote from '../../components/states/StaleNote';
+import { loadWithCache } from '../../config/cache';
 
 import { colors } from '../../theme/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -78,6 +82,8 @@ export default function HomeScreen() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const tipIdx = useRef(new Date().getHours() % AI_TIPS.length).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -94,15 +100,16 @@ export default function HomeScreen() {
     return () => pulse.stop();
   }, []);
 
+  const [savedAt, setSavedAt] = useState<number | undefined>();
   const fetchData = async () => {
-    try {
-      const [mealsRes, workoutsRes] = await Promise.all([
-        api.get('/meals'),
-        api.get('/workouts'),
-      ]);
-      setMeals(mealsRes.data.data || []);
-      setWorkouts(workoutsRes.data.data || []);
-    } catch {}
+    const r = await loadWithCache('home', async () => {
+      const [mealsRes, workoutsRes] = await Promise.all([api.get('/meals'), api.get('/workouts')]);
+      return { meals: (mealsRes.data.data || []) as Meal[], workouts: (workoutsRes.data.data || []) as Workout[] };
+    });
+    if (r.data) { setMeals(r.data.meals); setWorkouts(r.data.workouts); }
+    setFailed(!r.data);
+    setSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
+    setLoading(false);
   };
 
   const onRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
@@ -173,6 +180,11 @@ export default function HomeScreen() {
             <LinearGradient colors={[colors.brand, colors.brandBright, colors.success]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.xpFill, { width: `${xpPct}%` }]} />
           </View>
 
+          {savedAt !== undefined && <StaleNote savedAt={savedAt} what="Your day is" />}
+          {loading ? <HomeSkeleton /> : failed && meals.length === 0 && workouts.length === 0 ? (
+            <ErrorState onRetry={() => { setLoading(true); fetchData(); }} />
+          ) : (
+          <>
           {/* ── Daily Goals Rings ── */}
           <LinearGradient colors={[colors.surface, colors.surface]} style={s.ringsCard}>
             <View style={s.glowOrb} />
@@ -303,6 +315,8 @@ export default function HomeScreen() {
             ))}
           </LinearGradient>
 
+          </>
+          )}
         </ScrollView>
       </SafeAreaView>
 

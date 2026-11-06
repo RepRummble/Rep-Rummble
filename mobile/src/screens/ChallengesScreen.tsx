@@ -16,6 +16,10 @@ import { challengeService, Challenge, ChallengeProgress } from "../services/chal
 import { useAuth } from "../context/AuthContext";
 
 import { colors } from '../theme/colors';
+import { ListSkeleton } from '../components/states/Skeleton';
+import { EmptyState, ErrorState } from '../components/states/StateViews';
+import StaleNote from '../components/states/StaleNote';
+import { loadWithCache } from '../config/cache';
 const { width: SW } = Dimensions.get("window");
 
 const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: readonly [string, string] }> = {
@@ -47,21 +51,30 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
     Promise.all([loadChallenges(), loadMyChallenges()]).finally(() => setLoading(false));
   }, []);
 
+  const [failed, setFailed] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | undefined>();
+
   const loadChallenges = async () => {
-    try {
+    const r = await loadWithCache("challenges", async () => {
       const res = await challengeService.getChallenges({ status: "active" });
-      if (res.success) setChallenges(res.challenges);
-    } catch {}
+      if (!res.success) throw new Error("failed");
+      return res.challenges;
+    });
+    if (r.data) setChallenges(r.data);
+    setFailed(!r.data);
+    setSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
   };
 
   const loadMyChallenges = async () => {
-    try {
+    const r = await loadWithCache("my-challenges", async () => {
       const res = await challengeService.getMyChallenges();
-      if (res.success) {
-        setMyChallenges(res.challenges);
-        res.challenges.forEach(c => loadProgress(c._id));
-      }
-    } catch {}
+      if (!res.success) throw new Error("failed");
+      return res.challenges;
+    });
+    if (r.data) {
+      setMyChallenges(r.data);
+      r.data.forEach(c => loadProgress(c._id));
+    }
   };
 
   const loadProgress = async (challengeId: string) => {
@@ -196,7 +209,7 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
       <View style={styles.root}>
         <LinearGradient colors={[colors.bg, colors.bg]} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.safeArea}>
-          <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 60 }} />
+          <ListSkeleton rows={4} />
         </SafeAreaView>
       </View>
     );
@@ -247,12 +260,17 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
           keyExtractor={i => i._id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={savedAt !== undefined ? <StaleNote savedAt={savedAt} what="These challenges are" /> : undefined}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="trophy-outline" size={56} color={colors.border} />
-              <Text style={styles.emptyTitle}>{activeTab === "browse" ? "No active challenges" : "You haven't joined any"}</Text>
-              <Text style={styles.emptyHint}>{activeTab === "active" ? "Browse and join a challenge above" : "Check back soon!"}</Text>
-            </View>
+            failed && activeTab === "browse"
+              ? <ErrorState onRetry={() => { setLoading(true); Promise.all([loadChallenges(), loadMyChallenges()]).finally(() => setLoading(false)); }} />
+              : <EmptyState
+                  icon="trophy-outline"
+                  title={activeTab === "browse" ? "No active challenges" : "You haven't joined any"}
+                  why={activeTab === "active" ? "Join one from Browse and your progress will show up here." : "New challenges start every week. Check back soon, or invite a friend to start one."}
+                  actionLabel={activeTab === "active" ? "Browse challenges" : undefined}
+                  onAction={activeTab === "active" ? () => setActiveTab("browse") : undefined}
+                />
           }
         />
       </SafeAreaView>

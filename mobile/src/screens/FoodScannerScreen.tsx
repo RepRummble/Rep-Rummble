@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Linking,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { PaywallModal } from './SubscriptionScreen';
 
 import { colors } from '../theme/colors';
+import { PermissionDenied } from '../components/states/StateViews';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodScanner'>;
 
 export default function FoodScannerScreen() {
@@ -139,18 +141,15 @@ export default function FoodScannerScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.permissionContainer}>
-          <Ionicons name="camera-outline" size={64} color={colors.faint} />
-          <Text style={styles.permissionTitle}>Camera Access Required</Text>
-          <Text style={styles.permissionText}>
-            We need camera access to scan your meals and analyze nutrition.
-          </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.backButtonAlt}
-            onPress={() => navigation.goBack()}
-          >
+          <PermissionDenied
+            why="Reprummble uses the camera only to scan your meal and work out its nutrition. Photos are not stored unless you save the meal."
+            canAskAgain={permission?.canAskAgain ?? true}
+            onRequest={requestPermission}
+            openSettings={() => Linking.openSettings()}
+            alternativeLabel="Search for a food instead"
+            onAlternative={() => navigation.replace('FoodSearch')}
+          />
+          <TouchableOpacity style={styles.backButtonAlt} onPress={() => navigation.goBack()}>
             <Text style={styles.backButtonAltText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -434,7 +433,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   analyzingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',

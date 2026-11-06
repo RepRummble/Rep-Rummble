@@ -16,6 +16,7 @@ import { searchNutrition, saveMeal } from '../services/foodService';
 import { NutritionSearchItem } from '../types';
 
 import { colors } from '../theme/colors';
+import { EmptyState, ErrorState, NoResults } from '../components/states/StateViews';
 const scaleNutrients = (nutrients: NutritionSearchItem['nutrientsPer100g'], grams: number) => {
   const factor = grams / 100;
   const round = (value: number) => Math.round(value * 10) / 10;
@@ -40,18 +41,22 @@ export default function FoodSearchScreen() {
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [searched, setSearched] = useState('');
+  const [searchFailed, setSearchFailed] = useState(false);
 
   const handleSearch = async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
     setIsLoading(true);
     setSelected(null);
+    setSearchFailed(false);
     try {
       const data = await searchNutrition(trimmed, 12);
       setResults(data);
+      setSearched(trimmed);
     } catch (error) {
       console.error('Nutrition search error:', error);
-      Alert.alert('Search Failed', 'Could not search foods. Please try again.');
+      setSearchFailed(true);
     } finally {
       setIsLoading(false);
     }
@@ -152,7 +157,9 @@ export default function FoodSearchScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>Search foods to start tracking.</Text>
+            searchFailed ? <ErrorState onRetry={handleSearch} />
+            : searched ? <NoResults query={searched} suggestions={['Chicken breast', 'Brown rice', 'Eggs', 'Greek yogurt']} onPick={(s) => { setQuery(s); setSearched(''); }} />
+            : <EmptyState icon="restaurant-outline" title="Find a food to log" why="Search the USDA database by name, then pick a serving size. Try “chicken” or “oats”." />
           }
         />
       )}

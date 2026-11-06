@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Animated, Dimensions, Alert,
-} from 'react-native';
+ Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -368,6 +368,21 @@ export default function WearablesScreen() {
                 : `Sample data. ${UNAVAILABLE_COPY[health.availability.reason]}`}
           </Text>
         </View>
+
+        {health.availability.ok && !isLive && health.status !== 'loading' && (
+          <View style={s.healthHelp} accessibilityRole="alert">
+            <Ionicons name="shield-checkmark-outline" size={18} color={colors.brand} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.healthHelpTitle}>No Apple Health data yet</Text>
+              <Text style={s.healthHelpText}>
+                Reprummble reads steps, heart rate and sleep only to build your plan and recovery score. If you tapped Don't Allow, turn it on in Settings → Health → Data Access & Devices → Reprummble, then tap Sync.
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => Linking.openURL('app-settings:')} style={s.healthHelpBtn} accessibilityRole="button">
+              <Text style={s.healthHelpBtnText}>Settings</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ── Tabs ── */}
         <View style={[s.tabRow, { flexDirection: 'row', paddingHorizontal: 12 }]}>
@@ -904,6 +919,11 @@ export default function WearablesScreen() {
 // ════════════════════════════════════════════════════════════
 
 const s = StyleSheet.create({
+  healthHelp: { flexDirection: 'row', gap: 10, alignItems: 'center', marginHorizontal: 16, marginBottom: 10, padding: 12, borderRadius: 14, backgroundColor: colors.brandSoft, borderWidth: 1, borderColor: colors.border },
+  healthHelpTitle: { fontSize: 13.5, fontWeight: '800', color: colors.ink },
+  healthHelpText: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
+  healthHelpBtn: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, backgroundColor: colors.brand },
+  healthHelpBtnText: { color: colors.white, fontWeight: '700', fontSize: 12.5 },
   sourceBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginHorizontal: 16, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 8,

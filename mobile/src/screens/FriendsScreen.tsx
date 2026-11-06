@@ -15,6 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { friendService, Friend, FriendRequest } from "../services/friendService";
 
 import { colors } from '../theme/colors';
+import { ListSkeleton } from '../components/states/Skeleton';
+import StaleNote from '../components/states/StaleNote';
+import { loadWithCache } from '../config/cache';
 const AVATAR_COLORS: readonly [string, string][] = [
   [colors.brand, colors.tealMid],
   [colors.brand, colors.tealMid],
@@ -52,18 +55,25 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
     Promise.all([loadFriends(), loadRequests()]).finally(() => setLoading(false));
   }, []);
 
+  const [savedAt, setSavedAt] = useState<number | undefined>();
+
   const loadFriends = async () => {
-    try {
+    const r = await loadWithCache("friends", async () => {
       const res = await friendService.getFriends();
-      if (res.success) setFriends(res.friends);
-    } catch {}
+      if (!res.success) throw new Error("failed");
+      return res.friends;
+    });
+    if (r.data) setFriends(r.data);
+    setSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
   };
 
   const loadRequests = async () => {
-    try {
+    const r = await loadWithCache("friend-requests", async () => {
       const res = await friendService.getFriendRequests();
-      if (res.success) setRequests(res.requests);
-    } catch {}
+      if (!res.success) throw new Error("failed");
+      return res.requests;
+    });
+    if (r.data) setRequests(r.data);
   };
 
   const handleSearch = async (q: string) => {
@@ -125,7 +135,7 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
       <View style={styles.root}>
         <LinearGradient colors={[colors.bg, colors.bg]} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.safeArea}>
-          <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 40 }} />
+          <ListSkeleton rows={4} />
         </SafeAreaView>
       </View>
     );
@@ -161,6 +171,7 @@ export default function FriendsScreen({ navigation }: { navigation: any }) {
           ))}
         </View>
 
+        {savedAt !== undefined && <StaleNote savedAt={savedAt} what="Your friends list is" />}
         {/* Friends tab */}
         {activeTab === "friends" && (
           <FlatList

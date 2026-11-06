@@ -15,6 +15,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { PaywallModal } from './SubscriptionScreen';
 
 import { colors } from '../theme/colors';
+import { ChatSkeleton } from '../components/states/Skeleton';
 // ── Local AI response engine (dev / offline mode) ───────────────────────────
 
 const AI_BANK: Array<{ keys: string[]; replies: string[] }> = [
@@ -256,7 +257,7 @@ export default function ChatScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={st.container}>
-        <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 60 }} />
+        <ChatSkeleton />
         <Text style={st.loadingText}>Starting AI chat...</Text>
       </SafeAreaView>
     );
@@ -316,7 +317,7 @@ export default function ChatScreen() {
                   </View>
                 </View>
               </View>
-            ) : null
+            ) : undefined
           }
         />
 

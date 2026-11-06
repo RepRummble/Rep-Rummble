@@ -2,6 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { DEV_BYPASS_AUTH, devAdapter } from './devConfig';
+import { setOnline } from './connectivity';
 
 // On a physical phone "localhost" is the phone itself, so in development we point
 // at the computer running Metro (same Wi-Fi). Set EXPO_PUBLIC_API_URL to override,
@@ -56,10 +57,7 @@ async function refreshSession(): Promise<string | null> {
     // A plain axios call: going through `api` would trigger this same interceptor again.
     const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken }, { timeout: 30000 });
     const { token, refreshToken: nextRefresh } = res.data.data;
-    await AsyncStorage.multiSet([
-      ['rep_rumble_token', token],
-      ['rep_rumble_refresh', nextRefresh],
-    ]);
+    await AsyncStorage.setMany({ 'rep_rumble_token': token, 'rep_rumble_refresh': nextRefresh });
     return token;
   } catch (error: any) {
     // Only a clear "no" from the server ends the session. A network hiccup keeps it, so a bad
@@ -70,8 +68,10 @@ async function refreshSession(): Promise<string | null> {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => { setOnline(true); return response; },
   async (error) => {
+    // No response at all means the request never reached the server (offline, or the server is down).
+    setOnline(!!error.response);
     const original = error.config;
     const isAuthCall = /\/auth\/(login|register|refresh)/.test(original?.url || '');
     if (error.response?.status !== 401 || !original || original._retried || isAuthCall) {
@@ -92,7 +92,7 @@ api.interceptors.response.use(
       return Promise.reject(error); // offline or server down: keep the session, fail this request
     }
     // The refresh token is gone or no longer valid: sign out.
-    await AsyncStorage.multiRemove(['rep_rumble_token', 'rep_rumble_refresh', 'rep_rumble_user']);
+    await AsyncStorage.removeMany(['rep_rumble_token', 'rep_rumble_refresh', 'rep_rumble_user']);
     onSessionExpired?.();
     return Promise.reject(error);
   }

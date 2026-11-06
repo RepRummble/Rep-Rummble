@@ -14,6 +14,10 @@ import { useAuth } from '../../context/AuthContext';
 import { LeaderboardEntry } from '../../types';
 
 import { colors } from '../../theme/colors';
+import { ListSkeleton } from '../../components/states/Skeleton';
+import { EmptyState, ErrorState } from '../../components/states/StateViews';
+import StaleNote from '../../components/states/StaleNote';
+import { loadWithCache } from '../../config/cache';
 const MEDAL = [
   { icon: 'trophy', color: colors.gold, bg: [colors.gold, '#d98f00'] as const, glow: colors.gold + '40' },
   { icon: 'medal', color: colors.silver, bg: [colors.silver, '#6b7688'] as const, glow: colors.silver + '40' },
@@ -25,18 +29,17 @@ export default function LeaderboardScreen() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => { fetchLeaderboard(); }, []);
 
+  const [savedAt, setSavedAt] = useState<number | undefined>();
   const fetchLeaderboard = async () => {
-    try {
-      const response = await api.get('/leaderboard');
-      setLeaderboard(response.data.data || []);
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    } finally {
-      setLoading(false);
-    }
+    const r = await loadWithCache('leaderboard', async () => ((await api.get('/leaderboard')).data.data || []) as LeaderboardEntry[]);
+    if (r.data) setLeaderboard(r.data);
+    setFailed(!r.data);
+    setSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
+    setLoading(false);
   };
 
   const onRefresh = async () => {
@@ -160,6 +163,7 @@ export default function LeaderboardScreen() {
           </View>
         )}
 
+        {savedAt !== undefined && <StaleNote savedAt={savedAt} what="These rankings are" />}
         {/* Full list */}
         <FlatList
           data={leaderboard}
@@ -169,13 +173,9 @@ export default function LeaderboardScreen() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
           ListEmptyComponent={
-            !loading ? (
-              <View style={styles.empty}>
-                <Ionicons name="trophy-outline" size={56} color={colors.border} />
-                <Text style={styles.emptyText}>No rankings yet</Text>
-                <Text style={styles.emptyHint}>Start logging workouts to climb!</Text>
-              </View>
-            ) : null
+            loading ? <ListSkeleton rows={5} />
+            : failed ? <ErrorState onRetry={() => { setLoading(true); fetchLeaderboard(); }} />
+            : <EmptyState icon="trophy-outline" title="No rankings yet" why="Rankings appear once people log workouts this week. Log one and you will be on the board." />
           }
         />
       </SafeAreaView>

@@ -28,6 +28,10 @@ import { socialService, SocialPost } from "../services/socialService";
 import { useAuth } from "../context/AuthContext";
 
 import { colors } from '../theme/colors';
+import { ListSkeleton } from '../components/states/Skeleton';
+import { EmptyState, ErrorState } from '../components/states/StateViews';
+import StaleNote from '../components/states/StaleNote';
+import { loadWithCache } from '../config/cache';
 const { width: SW } = Dimensions.get("window");
 
 const POST_TYPES = [
@@ -190,18 +194,24 @@ export default function SocialFeedScreen() {
     }
   }, [viewingStory, viewingMyStatus]);
 
+  const [feedFailed, setFeedFailed] = useState(false);
+  const [feedSavedAt, setFeedSavedAt] = useState<number | undefined>();
   const loadFeed = async (page = 1) => {
-    try {
+    const fetchPage = async () => {
       const res = await socialService.getFeed({ page, limit: 20 });
-      if (res.success) {
-        page === 1 ? setPosts(res.posts) : setPosts(p => [...p, ...res.posts]);
-      }
-    } catch (e) {
-      console.error("Error loading feed:", e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (!res.success) throw new Error("feed failed");
+      return res.posts;
+    };
+    if (page === 1) {
+      const r = await loadWithCache("feed", fetchPage);
+      if (r.data) setPosts(r.data);
+      setFeedFailed(!r.data);
+      setFeedSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
+    } else {
+      try { const more = await fetchPage(); setPosts(p => [...p, ...more]); } catch (e) { console.error("Error loading feed:", e); }
     }
+    setLoading(false);
+    setRefreshing(false);
   };
 
   const requestCameraPermission = async (): Promise<boolean> => {
@@ -210,14 +220,14 @@ export default function SocialFeedScreen() {
     if (!canAskAgain) {
       Alert.alert(
         "Camera Access Required",
-        "Camera permission was denied. Please enable it in Settings to take photos.",
+        "Reprummble only uses your camera to take photos for your posts and statuses. Nothing is saved unless you post it. You can turn it on in Settings, or choose a photo from your library instead.",
         [
           { text: "Cancel", style: "cancel" },
           { text: "Open Settings", onPress: () => Linking.openSettings() },
         ]
       );
     } else {
-      Alert.alert("Camera Access Required", "Please grant camera permission to take photos.");
+      Alert.alert("Camera Access Required", "We use the camera only to take photos for your posts. You can also pick a photo from your library instead.");
     }
     return false;
   };
@@ -228,14 +238,14 @@ export default function SocialFeedScreen() {
     if (!canAskAgain) {
       Alert.alert(
         "Photo Library Required",
-        "Photo access was denied. Please enable it in Settings to pick photos.",
+        "Reprummble only reads the photos you choose to share. You can turn access on in Settings, or take a new photo with the camera instead.",
         [
           { text: "Cancel", style: "cancel" },
           { text: "Open Settings", onPress: () => Linking.openSettings() },
         ]
       );
     } else {
-      Alert.alert("Photo Library Required", "Please grant photo library permission.");
+      Alert.alert("Photo Library Required", "We only read the photos you pick to share. You can also take a new photo with the camera instead.");
     }
     return false;
   };
@@ -332,7 +342,7 @@ export default function SocialFeedScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission Denied", "Enable location access in Settings to tag your post.");
+        Alert.alert("Location is off", "Location is optional and only used to tag a post with where you are. You can post without it, or turn it on in Settings.", [{ text: "Post without it", style: "cancel" }, { text: "Open Settings", onPress: () => Linking.openSettings() }]);
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -625,6 +635,7 @@ export default function SocialFeedScreen() {
           </View>
         </View>
 
+        {feedSavedAt !== undefined && <StaleNote savedAt={feedSavedAt} what="Your feed is" />}
         <FlatList
           data={filteredPosts}
           renderItem={renderPost}
@@ -728,11 +739,9 @@ export default function SocialFeedScreen() {
             </>
           }
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={56} color={colors.border} />
-              <Text style={styles.emptyTitle}>Nothing here yet</Text>
-              <Text style={styles.emptyHint}>Share your fitness journey!</Text>
-            </View>
+            loading ? <ListSkeleton rows={4} />
+            : feedFailed ? <ErrorState onRetry={() => { setLoading(true); loadFeed(1); }} />
+            : <EmptyState icon="people-outline" title="Nothing here yet" why="Be the first to post: a workout, a meal, or a win. Friends see it here." actionLabel="Share something" onAction={() => setShowQuickSnap(true)} />
           }
         />
       </SafeAreaView>
@@ -760,7 +769,7 @@ export default function SocialFeedScreen() {
             <LinearGradient colors={["#120030", "#0a0015", "#050508"]} style={StyleSheet.absoluteFill} />
           )}
           {/* Dark overlay when image present */}
-          {snapImage && <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: colors.black + '55' }} />}
+          {snapImage && <View style={{ ...StyleSheet.absoluteFill, backgroundColor: colors.black + '55' }} />}
 
           {/* Top: sticker row */}
           <View style={{ position: "absolute", top: 60, left: 0, right: 0, zIndex: 10 }}>

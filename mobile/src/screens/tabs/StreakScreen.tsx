@@ -11,6 +11,10 @@ import { useAuth } from '../../context/AuthContext';
 import { Workout } from '../../types';
 
 import { colors } from '../../theme/colors';
+import { ErrorState } from '../../components/states/StateViews';
+import { ListSkeleton } from '../../components/states/Skeleton';
+import StaleNote from '../../components/states/StaleNote';
+import { loadWithCache } from '../../config/cache';
 const { width: SW } = Dimensions.get('window');
 
 // ═══════════════════════════════════════════════════════════
@@ -421,11 +425,15 @@ export default function StreakScreen() {
 
   useEffect(() => { fetchWorkouts(); }, []);
 
+  const [workoutsLoading, setWorkoutsLoading] = useState(true);
+  const [workoutsFailed, setWorkoutsFailed] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | undefined>();
   const fetchWorkouts = async () => {
-    try {
-      const res = await api.get('/workouts');
-      setWorkouts(res.data.data || []);
-    } catch {}
+    const r = await loadWithCache('workouts', async () => ((await api.get('/workouts')).data.data || []) as Workout[]);
+    if (r.data) setWorkouts(r.data);
+    setWorkoutsFailed(!r.data);
+    setSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
+    setWorkoutsLoading(false);
   };
 
   const handleQuickLog = async (ex: typeof QUICK_LOG[0]) => {
@@ -498,6 +506,8 @@ export default function StreakScreen() {
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}>
 
+          {savedAt !== undefined && <StaleNote savedAt={savedAt} what="Your workout log is" />}
+          {workoutsLoading && workouts.length === 0 ? <ListSkeleton rows={2} /> : workoutsFailed && workouts.length === 0 ? <ErrorState onRetry={() => { setWorkoutsLoading(true); fetchWorkouts(); }} /> : null}
           {/* ══════════════════════════════════════
               TAB 0 — TODAY
           ══════════════════════════════════════ */}
@@ -985,7 +995,7 @@ const s = StyleSheet.create({
   quickEmoji: { fontSize: 32, marginBottom: 6 },
   quickName: { fontSize: 12, fontWeight: '700', color: colors.ink, marginBottom: 3, textAlign: 'center' },
   quickMeta: { fontSize: 10, fontWeight: '600' },
-  logOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.black + '70', justifyContent: 'center', alignItems: 'center', borderRadius: 16 },
+  logOverlay: { ...StyleSheet.absoluteFill, backgroundColor: colors.black + '70', justifyContent: 'center', alignItems: 'center', borderRadius: 16 },
   logOverlayText: { color: colors.ink, fontSize: 11, fontWeight: '700' },
 
   miniCard: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: colors.border },

@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#f6f8f9"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -21,7 +16,8 @@
         "NSCameraUsageDescription": "Reprummble needs camera access to scan your meals and track your workout form.",
         "NSPhotoLibraryUsageDescription": "Reprummble needs photo library access to select meal photos for nutrition analysis.",
         "NSLocationWhenInUseUsageDescription": "Reprummble uses your location to tag posts with where you are."
-      }
+      },
+      "appleTeamId": "AH3WPSWX8U"
     },
     "android": {
       "adaptiveIcon": {
@@ -65,6 +61,15 @@
           "NSHealthShareUsageDescription": "Reprummble reads your steps, workouts, heart rate, HRV, sleep, and body measurements from Apple Health to build your training plan and daily recovery score.",
           "NSHealthUpdateUsageDescription": "Reprummble can save workouts you log in the app to Apple Health.",
           "background": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#f6f8f9",
+          "imageWidth": 220
         }
       ]
     ]

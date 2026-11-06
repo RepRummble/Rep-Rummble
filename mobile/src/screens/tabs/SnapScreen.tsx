@@ -11,6 +11,10 @@ import { RootStackParamList, Meal } from '../../types';
 import api from '../../config/api';
 
 import { colors } from '../../theme/colors';
+import { ListSkeleton } from '../../components/states/Skeleton';
+import { EmptyState, ErrorState } from '../../components/states/StateViews';
+import StaleNote from '../../components/states/StaleNote';
+import { loadWithCache } from '../../config/cache';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const SW = Dimensions.get('window').width;
@@ -37,12 +41,16 @@ export default function SnapScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [mealsLoading, setMealsLoading] = useState(true);
+  const [mealsFailed, setMealsFailed] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | undefined>();
 
   const fetchMeals = async () => {
-    try {
-      const res = await api.get('/meals');
-      setMeals((res.data.data || []).slice(0, 10));
-    } catch {}
+    const r = await loadWithCache('meals', async () => ((await api.get('/meals')).data.data || []) as Meal[]);
+    if (r.data) setMeals(r.data.slice(0, 10));
+    setMealsFailed(!r.data);
+    setSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
+    setMealsLoading(false);
   };
 
   // Refresh every time the tab is focused (after a scan)
@@ -185,12 +193,11 @@ export default function SnapScreen() {
             </TouchableOpacity>
           </View>
 
-          {recentMeals.length === 0 ? (
-            <View style={s.emptyCard}>
-              <Ionicons name="restaurant-outline" size={36} color={colors.border} />
-              <Text style={s.emptyText}>No meals logged yet</Text>
-              <Text style={s.emptyHint}>Tap Scan Meal above to add your first</Text>
-            </View>
+          {savedAt !== undefined && <View style={{ marginHorizontal: -20 }}><StaleNote savedAt={savedAt} what="Your meals are" /></View>}
+          {mealsLoading ? <View style={{ marginHorizontal: -20 }}><ListSkeleton rows={3} /></View>
+          : mealsFailed ? <ErrorState onRetry={() => { setMealsLoading(true); fetchMeals(); }} />
+          : recentMeals.length === 0 ? (
+            <EmptyState icon="restaurant-outline" title="No meals logged yet" why="Snap a photo of your plate and we will work out the calories and macros." actionLabel="Scan your first meal" onAction={() => navigation.navigate('FoodScanner')} />
           ) : recentMeals.map((meal, i) => (
             <View key={meal._id || i} style={s.mealRow}>
               <View style={s.mealEmoji}>
