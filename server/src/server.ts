@@ -28,6 +28,7 @@ import reportRoutes from './routes/report.routes'
 import referralRoutes from './routes/referral.routes'
 import billingRoutes from './routes/billing.routes'
 import { checkSupabaseKeys } from './services/supabase.service'
+import { checkAiKeys } from './services/ai-keys.service'
 import { stripeWebhook } from './controllers/billing.controller'
 import analyticsRoutes from './routes/analytics.routes'
 import businessRoutes from './routes/business.routes'
@@ -94,7 +95,7 @@ app.use((req: Request, _res: Response, next: NextFunction) => { if (req.body ===
 
 // Health check endpoint with service status
 app.get("/api/health", async (_req: Request, res: Response) => {
-  const keys = await checkSupabaseKeys()
+  const [keys, aiKeys] = await Promise.all([checkSupabaseKeys(), checkAiKeys()])
   res.json({
     status: "OK",
     message: "Reprummble API is running",
@@ -105,6 +106,8 @@ app.get("/api/health", async (_req: Request, res: Response) => {
       // Whether Supabase accepts our keys. "rejected" explains "Invalid API key" on every sign-in.
       supabaseKeys: keys,
       gemini: process.env.GEMINI_API_KEY ? "configured" : "not configured",
+      // Whether Google and the USDA food database accept our keys ("rejected" = replace the key in the host's settings).
+      aiKeys,
     }
   });
 });

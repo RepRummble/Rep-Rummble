@@ -53,7 +53,7 @@ export default function FoodScannerScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
-        quality: 0.7,
+        quality: 0.4,
         exif: false,
       });
 
@@ -75,7 +75,7 @@ export default function FoodScannerScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'] as ImagePicker.MediaType[],
         base64: true,
-        quality: 0.7,
+        quality: 0.4,
       });
 
       if (!result.canceled && result.assets[0]) {
@@ -95,7 +95,7 @@ export default function FoodScannerScreen() {
       const response = await api.post<FoodAnalysisResponse>('/ai/analyze-food', {
         imageBase64: base64Image,
         mealType: getMealTypeByTime(),
-      });
+      }, { timeout: 90000 }); // AI analysis can take a while; the default 30s is too short
 
       if (response.data.success) {
         navigation.replace('FoodResults', {
@@ -109,7 +109,8 @@ export default function FoodScannerScreen() {
       console.error('Error analyzing food:', error);
       Alert.alert(
         'Analysis Failed',
-        error.response?.data?.message || 'Could not analyze the food. Please try again with a clearer image.',
+        error.response?.data?.message ||
+          (error.code === 'ECONNABORTED' ? 'The analysis took too long. Check your connection and try again.' : 'Could not analyze the food. Please try again with a clearer image.'),
         [
           { text: 'Retry', onPress: () => setCapturedImage(null) },
           { text: 'Cancel', onPress: () => navigation.goBack() },

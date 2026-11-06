@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { GEMINI_MODEL } from '../config/ai'
+import { GEMINI_FALLBACK_MODEL, GEMINI_MODEL, isOverloaded } from '../config/ai'
 
 // Types
 export interface DetectedFood {
@@ -51,6 +51,29 @@ if (process.env.GEMINI_API_KEY) {
 }
 
 /**
+ * Runs one Gemini request. If Google is overloaded or slow we fall back to a lighter model, so a demand spike does not break scans and logging. Other errors (bad key, bad request)
+ * are not retried.
+ */
+async function generate(input: Parameters<ReturnType<GoogleGenerativeAI['getGenerativeModel']>['generateContent']>[0]) {
+  if (!genAI) throw new AiUnavailableError()
+  const attempts = [
+    { model: GEMINI_MODEL, timeout: 20_000 },
+    { model: GEMINI_FALLBACK_MODEL, timeout: 30_000 },
+  ]
+  let lastError: unknown
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      return await genAI.getGenerativeModel({ model: attempts[i].model }, { timeout: attempts[i].timeout }).generateContent(input)
+    } catch (err) {
+      lastError = err
+      if (!isOverloaded(err)) throw err
+      console.warn(`Gemini ${attempts[i].model} busy or slow (attempt ${i + 1}/${attempts.length})`)
+    }
+  }
+  throw lastError
+}
+
+/**
  * Analyze food image using Google Gemini Vision
  * FREE: 1500 requests/day, 60 requests/minute
  */
@@ -63,7 +86,6 @@ export async function analyzeFoodImageWithGemini(
       throw new AiUnavailableError()
     }
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
 
     const prompt = `You are an expert nutritionist. Analyze this food image and provide detailed nutrition information.
 
@@ -104,7 +126,7 @@ Guidelines:
 - Health score: consider protein, fiber, sodium, sugar
 - Provide actionable suggestions`
 
-    const result = await model.generateContent([
+    const result = await generate([
       prompt,
       {
         inlineData: {
@@ -151,7 +173,6 @@ export async function quickLogMealWithGemini(description: string): Promise<FoodA
       throw new AiUnavailableError()
     }
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
 
     const prompt = `You are a nutritionist. Parse this meal description and estimate nutrition.
 
@@ -181,7 +202,7 @@ Return ONLY valid JSON (no markdown):
   "alternatives": []
 }`
 
-    const result = await model.generateContent(prompt)
+    const result = await generate(prompt)
     const response = await result.response
     const text = response.text()
 
@@ -221,7 +242,6 @@ export async function generateWorkoutPlanWithGemini(
       throw new AiUnavailableError()
     }
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
 
     const prompt = `Create a workout plan with these parameters:
 - Goal: ${goal}
@@ -250,7 +270,7 @@ Return ONLY valid JSON:
   "tips": ["tip1", "tip2"]
 }`
 
-    const result = await model.generateContent(prompt)
+    const result = await generate(prompt)
     const response = await result.response
     const text = response.text()
 
@@ -276,7 +296,6 @@ export async function getNutritionInfoWithGemini(foodName: string): Promise<Nutr
       return { calories: 0, protein: 0, carbs: 0, fat: 0 }
     }
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
 
     const prompt = `Provide nutrition info for: "${foodName}" (1 serving)
 
@@ -291,7 +310,7 @@ Return ONLY valid JSON:
   "sodium": number
 }`
 
-    const result = await model.generateContent(prompt)
+    const result = await generate(prompt)
     const response = await result.response
     const text = response.text()
 

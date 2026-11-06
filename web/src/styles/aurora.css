@@ -467,3 +467,6 @@
 .fx-mini-stage .fx-rep-hud .is-metric, .fx-mini-stage .fx-rep-hud .fx-chip:first-child { display: none; }
 .fx-mini-stage .fx-tabs { flex-wrap: wrap; justify-content: center; }
 .fx-mini-stage .fx-tabs button { padding: 8px 12px; min-height: 40px; font-size: 13px; }
+
+/* The spotlight card clips its overflow, so a badge hanging off the top edge was cut off: keep it inside the card. */
+.fx-price .rr-price-badge { position: static; display: inline-block; margin: 0 0 14px; }

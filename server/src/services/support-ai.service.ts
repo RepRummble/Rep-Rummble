@@ -1,5 +1,5 @@
 import { GoogleGenAI, type Content } from '@google/genai'
-import { GEMINI_MODEL } from '../config/ai'
+import { GEMINI_FALLBACK_MODEL, GEMINI_MODEL, isOverloaded } from '../config/ai'
 
 export interface ChatHistoryMessage {
   role: 'user' | 'assistant'
@@ -72,11 +72,11 @@ function toGeminiHistory(history: ChatHistoryMessage[]): Content[] {
   return out
 }
 
-function createChat(history: ChatHistoryMessage[]) {
+function createChat(history: ChatHistoryMessage[], model: string = GEMINI_MODEL) {
   const ai = getClient()
   if (!ai) return null
   return ai.chats.create({
-    model: GEMINI_MODEL,
+    model,
     history: toGeminiHistory(history),
     config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.6, maxOutputTokens: 800 },
   })
@@ -127,7 +127,14 @@ export async function generateAIChatResponse(
   const chat = createChat(history)
   if (chat) {
     try {
-      const res = await chat.sendMessage({ message })
+      let res
+      try {
+        res = await chat.sendMessage({ message })
+      } catch (err) {
+        if (!isOverloaded(err)) throw err
+        console.warn('Gemini chat overloaded — retrying on the fallback model')
+        res = await createChat(history, GEMINI_FALLBACK_MODEL)!.sendMessage({ message })
+      }
       const text = res.text?.trim()
       if (text) return { reply: text, quickReplies: getContextualQuickReplies(message, text) }
     } catch (err) {
@@ -151,7 +158,14 @@ export async function streamAIChatResponse(
   let full = ''
   if (chat) {
     try {
-      const stream = await chat.sendMessageStream({ message })
+      let stream
+      try {
+        stream = await chat.sendMessageStream({ message })
+      } catch (err) {
+        if (!isOverloaded(err)) throw err
+        console.warn('Gemini stream overloaded — retrying on the fallback model')
+        stream = await createChat(history, GEMINI_FALLBACK_MODEL)!.sendMessageStream({ message })
+      }
       for await (const chunk of stream) {
         if (isCancelled()) break
         const t = chunk.text
