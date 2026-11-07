@@ -11,6 +11,14 @@ export interface IDetectedFood {
     width: number
     height: number
   }
+  estimatedCalories?: number
+  estimatedProtein?: number
+  estimatedCarbs?: number
+  estimatedFat?: number
+  description?: string
+  amount?: string
+  grams?: number
+  ingredients?: string[]
 }
 
 // Food alternative suggestion
@@ -120,7 +128,15 @@ const MealSchema = new Schema<IMeal>({
       y: Number,
       width: Number,
       height: Number
-    }
+    },
+    estimatedCalories: Number,
+    estimatedProtein: Number,
+    estimatedCarbs: Number,
+    estimatedFat: Number,
+    description: String,
+    amount: String,
+    grams: Number,
+    ingredients: [String]
   }],
   mealType: {
     type: String,

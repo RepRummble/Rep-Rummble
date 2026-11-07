@@ -36,11 +36,16 @@ import contactRoutes from './routes/contact.routes'
 import chatRoutes from './routes/chat.routes'
 import agentRoutes from './routes/agent.routes'
 import wearableRoutes from "./routes/wearable.routes";
+import deviceRoutes from './routes/devices.routes'
 import challengeRoutes from "./routes/challenge.routes";
 import socialRoutes from "./routes/social.routes";
 import friendRoutes from "./routes/friend.routes";
 import statsRoutes from './routes/stats.routes'
 import progressRoutes from './routes/progress.routes'
+import safetyRoutes from './routes/safety.routes'
+import storyRoutes from './routes/story.routes'
+import messageRoutes from './routes/message.routes'
+import peopleRoutes from './routes/people.routes'
 import reviewRoutes from './routes/review.routes'
 
 // Create Express app and HTTP server
@@ -139,10 +144,15 @@ app.use('/api/contact', contactRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/agent', agentRoutes)
 app.use("/api/wearables", wearableRoutes);
+app.use("/api/devices", deviceRoutes)
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/social", socialRoutes);
 app.use("/api/friends", friendRoutes);
 app.use('/api/progress', progressRoutes)
+app.use('/api/safety', safetyRoutes)
+app.use('/api/stories', storyRoutes)
+app.use('/api/messages', messageRoutes)
+app.use('/api/people', peopleRoutes)
 app.use('/api/public/stats', statsRoutes)
 app.use('/api/reviews', reviewRoutes)
 

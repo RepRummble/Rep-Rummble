@@ -300,7 +300,7 @@ export default function ProfileScreen() {
 
           <Group title="Training and health">
             <Row icon="fitness-outline" color={colors.success} label="Goals and daily targets" sub={goalSummary} onPress={() => open('goals')} />
-            <Row icon="watch-outline" color={colors.info} label="Connected devices" sub="Apple Health, watches and rings" onPress={() => (navigation as any).navigate('Wearables')} />
+            <Row icon="watch-outline" color={colors.info} label="Connected devices" sub="Apple Watch, Galaxy Watch, Fitbit, WHOOP, Oura" onPress={() => (navigation as any).navigate('Devices')} />
             <Row icon="notifications-outline" color={colors.accent} label="Notifications" sub="Reminders and reports" onPress={() => open('notifications')} last />
           </Group>
 

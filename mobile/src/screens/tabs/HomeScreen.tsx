@@ -36,7 +36,7 @@ const WORKOUT_GOAL = GOALS.workouts;
 const QUICK_ACTIONS = [
   { label: 'Scan Meal',    icon: 'camera',        color: colors.success, bg: [colors.successSoft, colors.successSoft] as const, route: 'FoodScanner' },
   { label: 'Log Workout',  icon: 'barbell',       color: colors.brand, bg: [colors.brandSoft, colors.brandSoft] as const, route: 'Streak' },
-  { label: 'Challenges',   icon: 'trophy',        color: colors.warning, bg: [colors.warningSoft, colors.warningSoft] as const, route: 'Challenges' },
+  { label: 'Challenges',   icon: 'trophy',        color: colors.warning, bg: [colors.warningSoft, colors.warningSoft] as const, route: 'Social', params: { screen: 'Challenges' } },
   { label: 'Food Search',  icon: 'search',        color: colors.info, bg: [colors.infoSoft, colors.infoSoft] as const, route: 'FoodSearch' },
 ];
 
@@ -238,7 +238,7 @@ export default function HomeScreen() {
                 key={i}
                 style={s.quickCard}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate(a.route as any)}
+                onPress={() => (navigation as any).navigate(a.route, (a as { params?: object }).params)}
               >
                 <LinearGradient colors={a.bg} style={s.quickCardInner}>
                   <View style={[s.quickIconWrap, { backgroundColor: a.color + '30' }]}>

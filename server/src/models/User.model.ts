@@ -7,6 +7,8 @@ export interface IUser extends Document {
   displayName?: string;
   role: 'user' | 'admin';
   streak: number;
+  /** The sign-in id (UUID) this record belongs to. Lets other people's streaks be worked out from their workouts. */
+  supabaseId?: string;
   xp: number;
   level: number;
   friends: mongoose.Types.ObjectId[];
@@ -54,6 +56,7 @@ const UserSchema = new Schema<IUser>(
       // via a trusted, server-side path (e.g. a seed script or DB console).
       select: true,
     },
+    supabaseId: { type: String, index: true },
     streak: {
       type: Number,
       default: 0,

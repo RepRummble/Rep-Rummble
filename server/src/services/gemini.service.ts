@@ -10,6 +10,14 @@ export interface DetectedFood {
   estimatedProtein?: number
   estimatedCarbs?: number
   estimatedFat?: number
+  /** One plain sentence: what this is, e.g. "Steamed basmati rice". */
+  description?: string
+  /** The amount on the plate, as people say it: "about 1 cup (180 g)". */
+  amount?: string
+  /** The weight in grams the numbers are for. */
+  grams?: number
+  /** What it is made of. */
+  ingredients?: string[]
 }
 
 export interface NutritionData {
@@ -30,6 +38,28 @@ export interface FoodAnalysisResult {
   alternatives: { name: string; calories: number; reason: string }[]
   confidence: number
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+}
+
+const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? Math.round(n * 10) / 10 : undefined }
+const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined)
+
+/** Keeps only well-formed foods from the model's answer: numbers as numbers, short text, at most 12 items. */
+export function cleanFoods(list: unknown): DetectedFood[] {
+  if (!Array.isArray(list)) return []
+  return list.slice(0, 12).flatMap((f: any): DetectedFood[] => {
+    const name = str(f?.name, 80)
+    if (!name) return []
+    const portion = ['small', 'medium', 'large', 'xl'].includes(f?.portion) ? f.portion : 'medium'
+    const conf = Number(f?.confidence)
+    return [{
+      name, portion,
+      confidence: Number.isFinite(conf) ? Math.min(1, Math.max(0, conf)) : 0.8,
+      estimatedCalories: num(f?.estimatedCalories), estimatedProtein: num(f?.estimatedProtein),
+      estimatedCarbs: num(f?.estimatedCarbs), estimatedFat: num(f?.estimatedFat),
+      description: str(f?.description, 160), amount: str(f?.amount, 60), grams: num(f?.grams),
+      ingredients: Array.isArray(f?.ingredients) ? f.ingredients.map((i: unknown) => str(i, 40)).filter(Boolean).slice(0, 6) as string[] : undefined,
+    }]
+  })
 }
 
 /** The AI could not produce a real answer. We say so instead of inventing numbers. */
@@ -99,7 +129,11 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no code 
       "estimatedCalories": number,
       "estimatedProtein": number,
       "estimatedCarbs": number,
-      "estimatedFat": number
+      "estimatedFat": number,
+      "description": "one plain sentence saying exactly what this food is",
+      "amount": "the amount on the plate, e.g. about 1 cup (180 g)",
+      "grams": number,
+      "ingredients": ["main ingredients, at most 6"]
     }
   ],
   "totalNutrition": {
@@ -120,7 +154,9 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no code 
 }
 
 Guidelines:
-- Identify ALL visible food items
+- Identify ALL visible food items and name each one specifically (say "Chicken biryani", not "rice dish")
+- For each item give its own calories and macros for the amount shown, and the weight in grams
+- The item numbers must add up to totalNutrition
 - Be accurate with Indian cuisine (biryani, dosa, curry, etc.)
 - Estimate portion sizes based on visual cues
 - Health score: consider protein, fiber, sodium, sugar
@@ -150,7 +186,7 @@ Guidelines:
     const analysisData = JSON.parse(jsonStr)
 
     return {
-      detectedFoods: analysisData.detectedFoods || [],
+      detectedFoods: cleanFoods(analysisData.detectedFoods),
       totalNutrition: analysisData.totalNutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
       healthScore: analysisData.healthScore || 70,
       suggestions: analysisData.suggestions || [],
@@ -188,14 +224,21 @@ Return ONLY valid JSON (no markdown):
       "estimatedCalories": number,
       "estimatedProtein": number,
       "estimatedCarbs": number,
-      "estimatedFat": number
+      "estimatedFat": number,
+      "description": "one plain sentence saying exactly what this food is",
+      "amount": "e.g. 2 slices (60 g)",
+      "grams": number,
+      "ingredients": ["main ingredients, at most 6"]
     }
   ],
   "totalNutrition": {
     "calories": number,
     "protein": number,
     "carbs": number,
-    "fat": number
+    "fat": number,
+    "fiber": number,
+    "sugar": number,
+    "sodium": number
   },
   "healthScore": 0-100,
   "suggestions": ["tip1", "tip2"],
@@ -215,7 +258,7 @@ Return ONLY valid JSON (no markdown):
     const data = JSON.parse(jsonStr)
 
     return {
-      detectedFoods: data.detectedFoods || [],
+      detectedFoods: cleanFoods(data.detectedFoods),
       totalNutrition: data.totalNutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
       healthScore: data.healthScore || 70,
       suggestions: data.suggestions || [],

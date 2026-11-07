@@ -105,11 +105,16 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   app.use('/api/ai', require(SRC + '/routes/ai.routes').default);
   app.use('/api/progress', require(SRC + '/routes/progress.routes').default);
   app.use('/api/agent', require(SRC + '/routes/agent.routes').default);
+  app.use('/api/safety', require(SRC + '/routes/safety.routes').default);
+  app.use('/api/stories', require(SRC + '/routes/story.routes').default);
+  app.use('/api/messages', require(SRC + '/routes/message.routes').default);
+  app.use('/api/people', require(SRC + '/routes/people.routes').default);
   app.use('/api/meals', require(SRC + '/routes/meal.routes').default);
   app.use('/api/workouts', require(SRC + '/routes/workout.routes').default);
   app.use('/api/social', require(SRC + '/routes/social.routes').default);
   app.use('/api/friends', require(SRC + '/routes/friend.routes').default);
   app.use('/api/challenges', require(SRC + '/routes/challenge.routes').default);
+  app.use('/api/devices', require(SRC + '/routes/devices.routes').default);
   // Unique indexes (e.g. one member per email per business) are built in the background on a fresh
   // database. Wait for them, or a fast test can slip a duplicate in before the index exists.
   await Promise.all(Object.values(require('mongoose').models).map((m) => m.init()));
@@ -982,12 +987,13 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal((await call('maya', 'GET', '/api/challenges')).status, 200);
   });
   await t('a post is saved under the person and appears in their feed with their name', async () => {
-    const made = await call('maya', 'POST', '/api/social/posts', { content: 'First real post', postType: 'workout' });
+    const made = await call('maya', 'POST', '/api/social/posts', { content: 'First real post', postType: 'general' });
     assert.equal(made.status, 201);
     const feed = await call('maya', 'GET', '/api/social/feed');
     assert.equal(feed.body.posts.length, 1);
     assert.equal(feed.body.posts[0].content, 'First real post');
-    assert.equal(feed.body.posts[0].author.email, users.maya.email);
+    assert.equal(feed.body.posts[0].author.email, undefined); // names only: the feed never shows email addresses
+    assert.match(feed.body.posts[0].author._id, /^[0-9a-f]{24}$/);
   });
   await t('login and /auth/me hand the app the id the social features use, so it can tell which posts are the person\'s own', async () => {
     const me = await call('maya', 'GET', '/api/auth/me');
@@ -1107,6 +1113,191 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal(r.status, 400); assert.equal((await call('dash', 'GET', '/api/workouts')).body.count, before);
   });
 
+  console.log('Community: feed, statuses, messages, reports and blocking');
+  const meId = async (as) => (await call(as, 'GET', '/api/auth/me')).body.data._id;
+  const befriend = async (a, b) => {
+    const r = await call(a, 'POST', '/api/friends/request', { friendId: await meId(b) });
+    assert.equal(r.status, 200, 'request: ' + JSON.stringify(r.body));
+    const acc = await call(b, 'POST', '/api/friends/accept/' + r.body.friendship._id);
+    assert.equal(acc.status, 200, 'accept: ' + JSON.stringify(acc.body));
+  };
+  const [A, B, C, D] = ['billB', 'billC', 'billD', 'ownerC'];            // A and B become friends; C and D start as strangers
+  for (const [who, name] of [[A, 'Ava Alpha'], [B, 'Ben Bravo'], [C, 'Cleo Charlie'], [D, 'Dev Delta']]) await call(who, 'PUT', '/api/users/profile', { displayName: name });
+  await befriend(A, B);
+  const tzq = '?tz=0';
+  const feedOf = async (as) => (await call(as, 'GET', '/api/social/feed' + tzq)).body;
+
+  await t('a post reaches friends and yourself, never strangers', async () => {
+    const r = await call(A, 'POST', '/api/social/posts', { content: 'Leg day done <b>done</b>', postType: 'general' });
+    assert.equal(r.status, 201); assert.equal(r.body.post.content, 'Leg day done bdone/b'); assert.equal(r.body.post.author.displayName, 'Ava Alpha'); assert.equal(r.body.post.author.email, undefined);
+    assert.equal((await feedOf(B)).posts.length, 1); assert.equal((await feedOf(A)).posts.length, 1); assert.equal((await feedOf(C)).posts.length, 0);
+  });
+  await t('a client cannot attach media links or fake what a post is made of', async () => {
+    const r = await call(A, 'POST', '/api/social/posts', { content: 'look', mediaUrls: ['https://evil.test/x.png'] });
+    assert.equal(r.status, 201); const f = await feedOf(A); assert.ok(f.posts.every((p) => !p.mediaUrls));
+    assert.equal((await call(A, 'POST', '/api/social/posts', { content: 'x', postType: 'hax' })).status, 400);
+    assert.equal((await call(A, 'POST', '/api/social/posts', { content: '   ' })).status, 400);
+  });
+  await t('sharing a workout copies the facts from the real record, and only your own workout can be shared once', async () => {
+    const w = await call(A, 'POST', '/api/workouts', { exercise: 'Push day', duration: 55, volume: 6200, sets: [{ exercise: 'Bench Press', reps: 8, weight: 80 }, { exercise: 'Bench Press', reps: 5, weight: 90 }] });
+    const share = await call(A, 'POST', '/api/social/posts', { postType: 'workout', workoutId: w.body.data._id, content: 'Felt strong', snapshot: { exercise: 'FAKE', duration: 999 } });
+    assert.equal(share.status, 201); assert.equal(share.body.post.snapshot.exercise, 'Push day'); assert.equal(share.body.post.snapshot.duration, 55); assert.equal(share.body.post.snapshot.topSet.weight, 90); assert.equal(share.body.post.snapshot.setCount, 2);
+    assert.equal((await call(A, 'POST', '/api/social/posts', { postType: 'workout', workoutId: w.body.data._id })).status, 409);
+    assert.equal((await call(C, 'POST', '/api/social/posts', { postType: 'workout', workoutId: w.body.data._id })).status, 404);   // not C's workout
+  });
+  await t('a scanned meal keeps what each food is, how much, and what it contains', async () => {
+    const m = await call(A, 'POST', '/api/meals', { foodName: 'Dal, Rice', calories: 520, protein: 18, carbs: 88, fat: 9, isAIGenerated: true, detectedFoods: [
+      { name: 'Dal', confidence: 0.9, portion: 'medium', estimatedCalories: 180, estimatedProtein: 10, estimatedCarbs: 24, estimatedFat: 5, description: 'Yellow lentil curry', amount: 'about 1 cup (200 g)', grams: 200, ingredients: ['lentils', 'turmeric', 'ghee'] },
+      { name: 'Rice', confidence: 0.85, portion: 'medium', estimatedCalories: 340 } ] });
+    assert.equal(m.status, 201);
+    const f = m.body.data.detectedFoods[0];
+    assert.equal(f.description, 'Yellow lentil curry'); assert.equal(f.estimatedCalories, 180); assert.equal(f.grams, 200); assert.deepEqual([...f.ingredients], ['lentils', 'turmeric', 'ghee']);
+  });
+  await t('sharing a meal copies its nutrition from the real record', async () => {
+    const m = await call(A, 'POST', '/api/meals', { foodName: 'Chicken bowl', calories: 600, protein: 50, carbs: 55, fat: 14, mealType: 'lunch' });
+    const r = await call(A, 'POST', '/api/social/posts', { postType: 'meal', mealId: m.body.data._id, content: 'Lunch' });
+    assert.equal(r.status, 201); assert.equal(r.body.post.snapshot.calories, 600); assert.equal(r.body.post.snapshot.foodName, 'Chicken bowl');
+    assert.equal((await call(C, 'POST', '/api/social/posts', { postType: 'meal', mealId: m.body.data._id })).status, 404);
+  });
+  await t('the post of the day: one a day, the same prompt for everyone, and the feed says whether you posted', async () => {
+    const f0 = await feedOf(B); assert.equal(f0.daily.posted, false); assert.ok(f0.daily.prompt.length > 5);
+    const r = await call(B, 'POST', '/api/social/posts', { postType: 'daily', content: 'Ran my first 10k', tz: 0 });
+    assert.equal(r.status, 201); assert.equal(r.body.post.snapshot.prompt, f0.daily.prompt);
+    assert.equal((await call(B, 'POST', '/api/social/posts', { postType: 'daily', content: 'Another', tz: 0 })).status, 409);
+    assert.equal((await feedOf(B)).daily.posted, true); assert.equal((await feedOf(A)).daily.prompt, f0.daily.prompt);
+  });
+  await t('the feed tells you what you liked, counts, and your friends\' workout streaks', async () => {
+    const f = await feedOf(B); const post = f.posts.find((p) => p.content === 'Ran my first 10k') || f.posts[0];
+    const liked = await call(B, 'POST', `/api/social/posts/${f.posts[0]._id}/like`); assert.equal(liked.status, 200);
+    const f2 = await feedOf(B); assert.equal(f2.posts.find((p) => p._id === f.posts[0]._id).liked, true); assert.ok(f2.posts[0].likeCount >= 0);
+    const fa = await feedOf(B); const avaPost = fa.posts.find((p) => p.author.displayName === 'Ava Alpha'); assert.ok(avaPost.authorStreak >= 1);
+  });
+  await t('comments carry a name, never an email, and a stranger cannot read or write them', async () => {
+    const f = await feedOf(A); const pid = f.posts[0]._id;
+    assert.equal((await call(B, 'POST', `/api/social/posts/${pid}/comments`, { content: 'Nice!' })).status, 201);
+    const list = await call(A, 'GET', `/api/social/posts/${pid}/comments`); assert.equal(list.status, 200); assert.ok(!JSON.stringify(list.body).includes('@'));
+    assert.equal((await call(C, 'GET', `/api/social/posts/${pid}/comments`)).status, 404); assert.equal((await call(C, 'POST', `/api/social/posts/${pid}/comments`, { content: 'hi' })).status, 404);
+    assert.equal((await call(C, 'POST', `/api/social/posts/${pid}/like`)).status, 404);
+  });
+
+  console.log('  Statuses');
+  await t('a status can be text, or built from your real workout, meal or streak', async () => {
+    assert.equal((await call(A, 'POST', '/api/stories', { kind: 'text', text: 'Rest day', theme: 2 })).status, 201);
+    assert.equal((await call(A, 'POST', '/api/stories', { kind: 'text', text: '  ' })).status, 400);
+    const w = (await call(A, 'GET', '/api/workouts')).body.data[0];
+    const sw = await call(A, 'POST', '/api/stories', { kind: 'workout', workoutId: w._id }); assert.equal(sw.status, 201); assert.equal(sw.body.data.snapshot.exercise, w.exercise);
+    assert.equal((await call(A, 'POST', '/api/stories', { kind: 'workout', workoutId: w._id }) ).status, 201);
+    const ss = await call(A, 'POST', '/api/stories', { kind: 'streak', tz: 0 }); assert.equal(ss.status, 201); assert.ok(ss.body.data.snapshot.streak >= 1);
+    assert.equal((await call(C, 'POST', '/api/stories', { kind: 'streak', tz: 0 })).status, 400);                       // no streak, no streak card
+    assert.equal((await call(C, 'POST', '/api/stories', { kind: 'workout', workoutId: w._id })).status, 404);           // not C's workout
+  });
+  await t('friends see your statuses grouped by person, strangers do not, and viewing marks them seen', async () => {
+    const before = (await call(B, 'GET', '/api/stories')).body.data; const ava = before.find((g) => g.author.displayName === 'Ava Alpha');
+    assert.ok(ava && ava.stories.length >= 3); assert.equal(ava.seen, false); assert.equal(before[0].isMe, true === before[0].isMe ? before[0].isMe : false);
+    assert.equal((await call(C, 'GET', '/api/stories')).body.data.some((g) => g.author.displayName === 'Ava Alpha'), false);
+    for (const st of ava.stories) assert.equal((await call(B, 'POST', `/api/stories/${st._id}/view`)).status, 200);
+    const after = (await call(B, 'GET', '/api/stories')).body.data.find((g) => g.author.displayName === 'Ava Alpha'); assert.equal(after.seen, true);
+    assert.equal((await call(C, 'POST', `/api/stories/${ava.stories[0]._id}/view`)).status, 403);
+    const mine = (await call(A, 'GET', '/api/stories')).body.data[0]; assert.equal(mine.isMe, true); assert.equal(mine.stories[0].viewCount, 1);
+    const v = await call(A, 'GET', `/api/stories/${ava.stories[0]._id}/viewers`); assert.equal(v.body.data[0].displayName, 'Ben Bravo');
+    assert.equal((await call(B, 'GET', `/api/stories/${ava.stories[0]._id}/viewers`)).status, 404);                       // only the author
+  });
+  await t('only the author can delete a status, and ten at a time is the limit', async () => {
+    const id = (await call(A, 'GET', '/api/stories')).body.data[0].stories[0]._id;
+    assert.equal((await call(B, 'DELETE', '/api/stories/' + id)).status, 404); assert.equal((await call(A, 'DELETE', '/api/stories/' + id)).status, 200);
+    let last; for (let i = 0; i < 12; i++) last = await call(A, 'POST', '/api/stories', { kind: 'text', text: 'status ' + i });
+    assert.equal(last.status, 429);
+  });
+
+  console.log('  Messages');
+  await t('friends can message each other; strangers cannot; text is cleaned', async () => {
+    const aId = await meId(A), bId = await meId(B), cId = await meId(C);
+    assert.equal((await call(A, 'POST', '/api/messages/' + bId, { text: 'Gym at 6? <script>' })).status, 201);
+    assert.equal((await call(A, 'POST', '/api/messages/' + cId, { text: 'hey' })).status, 403);
+    assert.equal((await call(A, 'POST', '/api/messages/' + bId, { text: '   ' })).status, 400); assert.equal((await call(A, 'POST', '/api/messages/' + aId, { text: 'me' })).status, 403);
+    const th = await call(B, 'GET', '/api/messages/' + aId); assert.equal(th.status, 200); assert.equal(th.body.data.messages[0].text, 'Gym at 6? script'); assert.equal(th.body.data.messages[0].mine, false); assert.equal(th.body.data.with.displayName, 'Ava Alpha');
+    assert.equal((await call(C, 'GET', '/api/messages/' + aId)).status, 403);
+  });
+  await t('the inbox lists conversations with unread counts, and reading clears them', async () => {
+    const aId = await meId(A), bId = await meId(B);
+    await call(A, 'POST', '/api/messages/' + bId, { text: 'Second message' });
+    const inbox = (await call(B, 'GET', '/api/messages')).body.data; assert.equal(inbox.length, 1); assert.equal(inbox[0].unread, 2); assert.equal(inbox[0].lastText, 'Second message'); assert.equal(inbox[0].displayName, 'Ava Alpha');
+    assert.equal((await call(B, 'GET', '/api/messages/unread')).body.data.unread, 2);
+    await call(B, 'POST', `/api/messages/${aId}/read`);
+    assert.equal((await call(B, 'GET', '/api/messages/unread')).body.data.unread, 0); assert.equal((await call(B, 'GET', '/api/messages')).body.data[0].unread, 0);
+    assert.equal((await call(A, 'GET', '/api/messages')).body.data[0].lastFromMe, true);
+  });
+
+  await t('the friends list shows the other person (not you, even if you sent the request), with a streak and no email', async () => {
+    const fa = (await call(A, 'GET', '/api/friends')).body.friends; assert.ok(fa.some((f) => f.displayName === 'Ben Bravo'));
+    assert.ok(fa.every((f) => f.displayName !== 'Ava Alpha')); assert.ok(!JSON.stringify(fa).includes('@')); assert.equal(typeof fa[0].streak, 'number');
+    const fb = (await call(B, 'GET', '/api/friends')).body.friends; assert.equal(fb.length, 1); assert.equal(fb[0].displayName, 'Ava Alpha');
+  });
+  await t('friend requests list incoming and sent requests by name only', async () => {
+    const cId = await meId(C), eId = await meId('ref');
+    const r = await call('ref', 'POST', '/api/friends/request', { friendId: cId }); assert.equal(r.status, 200);
+    const inc = (await call(C, 'GET', '/api/friends/requests')).body; assert.equal(inc.requests.length, 1); assert.ok(!JSON.stringify(inc).includes('@'));
+    const sent = (await call('ref', 'GET', '/api/friends/requests')).body.sent; assert.equal(sent.length, 1); assert.equal(sent[0].recipient.displayName, 'Cleo Charlie');
+    assert.equal((await call(C, 'POST', '/api/friends/decline/' + inc.requests[0].id)).status, 200);
+    assert.equal((await call('ref', 'POST', '/api/friends/request', { friendId: cId })).status, 200);                      // can ask again after a decline
+  });
+
+  console.log('  People and streaks');
+  await t('people can be found by name, without emails, and the board lists you and your friends by streak', async () => {
+    const r = await call(A, 'GET', '/api/people/search?q=' + encodeURIComponent('cleo'));
+    assert.equal(r.body.data.length, 1); assert.equal(r.body.data[0].displayName, 'Cleo Charlie'); assert.equal(r.body.data[0].relation, 'none'); assert.ok(!JSON.stringify(r.body).includes('@'));
+    assert.equal((await call(A, 'GET', '/api/people/search?q=ben')).body.data[0].relation, 'friends'); assert.deepEqual((await call(A, 'GET', '/api/people/search?q=b')).body.data, []);
+    assert.deepEqual((await call(A, 'GET', '/api/people/search?q=' + encodeURIComponent('(a+)+['))).body.data, []);
+    const board = (await call(A, 'GET', '/api/people/streaks?tz=0')).body.data; assert.equal(board.length, 2); assert.equal(board[0].displayName, 'Ava Alpha'); assert.ok(board[0].streak >= 1); assert.equal(board[0].isMe, true);
+  });
+
+  console.log('  Reporting and blocking');
+  await t('reports need a real target and a reason, cannot be filed twice, and you cannot report yourself', async () => {
+    const aPosts = (await feedOf(A)).posts.filter((p) => p.mine); const pid = aPosts[0]._id;
+    assert.equal((await call(B, 'POST', '/api/safety/report', { targetType: 'post', targetId: pid, reason: 'spam' })).status, 200);
+    assert.equal((await call(B, 'POST', '/api/safety/report', { targetType: 'post', targetId: pid, reason: 'spam' })).body.alreadyReported, true);
+    assert.equal((await call(A, 'POST', '/api/safety/report', { targetType: 'post', targetId: pid, reason: 'spam' })).status, 400);
+    assert.equal((await call(B, 'POST', '/api/safety/report', { targetType: 'post', targetId: pid, reason: 'because' })).status, 400);
+    assert.equal((await call(B, 'POST', '/api/safety/report', { targetType: 'post', targetId: 'not-an-id', reason: 'spam' })).status, 400);
+    assert.equal((await call(B, 'POST', '/api/safety/report', { targetType: 'post', targetId: '64b64c8a2f1a2b3c4d5e6f70', reason: 'spam' })).status, 404);
+  });
+  await t('a post reported by three different people disappears from every feed', async () => {
+    const r = await call(A, 'POST', '/api/social/posts', { content: 'Buy followers now' }); const pid = r.body.post._id;
+    for (const who of [B]) await call(who, 'POST', '/api/safety/report', { targetType: 'post', targetId: pid, reason: 'spam' });
+    assert.ok((await feedOf(B)).posts.some((p) => p._id === pid));                                                         // one report: still visible
+    await befriend(A, C); await befriend(A, D);
+    for (const who of [C, D]) await call(who, 'POST', '/api/safety/report', { targetType: 'post', targetId: pid, reason: 'spam' });
+    assert.ok(!(await feedOf(B)).posts.some((p) => p._id === pid)); assert.ok(!(await feedOf(A)).posts.some((p) => p._id === pid));
+  });
+  await t('you can only report a message that was sent to you', async () => {
+    const aId = await meId(A), bId = await meId(B);
+    const sent = (await call(A, 'GET', '/api/messages/' + bId)).body.data.messages[0];
+    assert.equal((await call(A, 'POST', '/api/safety/report', { targetType: 'message', targetId: sent._id, reason: 'harassment' })).status, 404);
+    assert.equal((await call(B, 'POST', '/api/safety/report', { targetType: 'message', targetId: sent._id, reason: 'harassment', details: 'rude' })).status, 200);
+  });
+  await t('reviewers can read the reports, other people cannot', async () => {
+    assert.equal((await call(A, 'GET', '/api/safety/reports')).status, 403);
+    const r = await call('admin', 'GET', '/api/safety/reports'); assert.equal(r.status, 200); assert.ok(r.body.data.length >= 3); assert.ok(r.body.data[0].snippet !== undefined);
+    assert.equal((await call('admin', 'PATCH', '/api/safety/reports/' + r.body.data[0]._id, { status: 'reviewed' })).status, 200);
+  });
+  await t('blocking removes the friendship, and each person disappears from the other\'s feed, statuses, messages and search', async () => {
+    const aId = await meId(A), bId = await meId(B);
+    assert.equal((await call(B, 'POST', '/api/safety/block/' + aId)).status, 200);
+    assert.ok(!(await feedOf(B)).posts.some((p) => p.author.displayName === 'Ava Alpha'));
+    assert.ok(!(await feedOf(A)).posts.some((p) => p.author.displayName === 'Ben Bravo'));
+    assert.equal((await call(B, 'GET', '/api/stories')).body.data.some((g) => g.author.displayName === 'Ava Alpha'), false);
+    assert.equal((await call(A, 'POST', '/api/messages/' + bId, { text: 'hello?' })).status, 403); assert.equal((await call(B, 'GET', '/api/messages')).body.data.length, 0);
+    assert.equal((await call(A, 'GET', '/api/people/search?q=ben')).body.data.length, 0); assert.equal((await call(B, 'GET', '/api/people/search?q=ava')).body.data.length, 0);
+    assert.equal((await call(B, 'GET', '/api/safety/blocks')).body.data[0].displayName, 'Ava Alpha');
+    assert.equal((await call(B, 'POST', '/api/safety/block/' + bId)).status, 400);                                          // not yourself
+  });
+  await t('unblocking does not bring the friendship back; they would have to be friends again', async () => {
+    const aId = await meId(A), bId = await meId(B);
+    assert.equal((await call(B, 'DELETE', '/api/safety/block/' + aId)).status, 200);
+    assert.equal((await call(A, 'POST', '/api/messages/' + bId, { text: 'hi again' })).status, 403);
+    await befriend(A, B); assert.equal((await call(A, 'POST', '/api/messages/' + bId, { text: 'hi again' })).status, 201);
+  });
+
   console.log('Support-agent live chat requires a signed-in agent');
   const { initializeSocket } = require(SRC + '/config/socket');
   initializeSocket(server);
@@ -1160,6 +1351,234 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal(r.status, 413);
   });
   gem.analyzeFoodImageWithGemini = realAnalyze;
+
+
+  console.log('Connected devices (Apple Watch, Galaxy Watch, Fitbit, WHOOP, Oura)');
+  const devCrypto = require(SRC + '/services/devices/crypto');
+  const { DeviceConnection } = require(SRC + '/models/DeviceConnection.model');
+  const { DeviceReading } = require(SRC + '/models/DeviceReading.model');
+  const { mergeDays } = require(SRC + '/services/devices/summary.service');
+  const DA = 'dash', DB = 'twin';
+  const dToday = new Date().toISOString().slice(0, 10), dYesterday = new Date(Date.now() - DAY).toISOString().slice(0, 10);
+  const dJson = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
+
+  // DA stand-in for every provider's servers. Local requests (to our own test server) pass straight through.
+  const realFetchDev = global.fetch;
+  const dHits = []; let whoopRefreshes = 0; let whoopDataStatus = 200; let whoopRefreshStatus = 200; let googleNotLinked = false;
+  global.fetch = async (url, init = {}) => {
+    const u = String(url);
+    if (u.startsWith('http://127.0.0.1')) return realFetchDev(url, init);
+    const body = init.body ? String(init.body) : '';
+    dHits.push({ method: init.method || 'GET', url: u, body, auth: init.headers && init.headers.Authorization });
+    // WHOOP
+    if (u === 'https://api.prod.whoop.com/oauth/oauth2/token') {
+      const f = new URLSearchParams(body);
+      if (f.get('grant_type') === 'authorization_code') return f.get('code') === 'good-code' && f.get('client_secret') === 'whoop-secret' ? dJson({ access_token: 'wA1', refresh_token: 'wR1', expires_in: 3600, scope: 'offline' }) : dJson({ error: 'invalid_grant' }, 400);
+      whoopRefreshes++;
+      return whoopRefreshStatus === 200 && f.get('refresh_token') ? dJson({ access_token: 'wA' + (whoopRefreshes + 1), refresh_token: 'wR' + (whoopRefreshes + 1), expires_in: 3600 }) : dJson({ error: 'invalid_grant' }, 400);
+    }
+    if (u.startsWith('https://api.prod.whoop.com/developer/v2/')) {
+      if (init.method === 'DELETE') return dJson({}, 204 === 204 ? 200 : 200);
+      if (whoopDataStatus !== 200) return dJson({ error: 'unauthorized' }, whoopDataStatus);
+      if (u.includes('/user/profile/basic')) return dJson({ user_id: 4242, first_name: 'Sam', last_name: 'Lee', email: 'sam@private.test' });
+      if (u.includes('/cycle')) return dJson({ records: [{ id: 77, start: dYesterday + 'T22:00:00.000Z', end: null, timezone_offset: '+00:00', score_state: 'SCORED', score: { strain: 12.4, kilojoule: 9000 } }] });
+      if (u.includes('/recovery')) return dJson({ records: [{ cycle_id: 77, score_state: 'SCORED', score: { recovery_score: 81, resting_heart_rate: 52, hrv_rmssd_milli: 64.2, spo2_percentage: 97 } }] });
+      if (u.includes('/activity/sleep')) return dJson({ records: [
+        { nap: false, end: dToday + 'T06:30:00.000Z', timezone_offset: '+00:00', score: { sleep_performance_percentage: 88, stage_summary: { total_light_sleep_time_milli: 3 * 3600000, total_slow_wave_sleep_time_milli: 2 * 3600000, total_rem_sleep_time_milli: 2 * 3600000, total_awake_time_milli: 1800000 } } },
+        { nap: true, end: dToday + 'T14:00:00.000Z', timezone_offset: '+00:00', score: { stage_summary: { total_light_sleep_time_milli: 1800000 } } }] });
+    }
+    // Oura
+    if (u === 'https://api.ouraring.com/oauth/token') return dJson({ access_token: 'oA1', refresh_token: 'oR1', expires_in: 86400 });
+    if (u.startsWith('https://api.ouraring.com/v2/usercollection/daily_activity')) return dJson({ data: [{ day: dToday, steps: 7000, active_calories: 410, score: 80 }] });
+    if (u.startsWith('https://api.ouraring.com/v2/usercollection/daily_readiness')) return dJson({ data: [{ day: dToday, score: 74 }] });
+    if (u.startsWith('https://api.ouraring.com/v2/usercollection/daily_sleep')) return dJson({ data: [{ day: dToday, score: 91 }] });
+    if (u.startsWith('https://api.ouraring.com/v2/usercollection/sleep')) return dJson({ data: [{ day: dToday, type: 'long_sleep', total_sleep_duration: 27000, average_hrv: 48, lowest_heart_rate: 49 }, { day: dToday, type: 'nap', total_sleep_duration: 1200, average_hrv: 10, lowest_heart_rate: 99 }] });
+    if (u.startsWith('https://api.ouraring.com/oauth/revoke')) return dJson({});
+    // Fitbit through Google Health
+    if (u === 'https://oauth2.googleapis.com/token') return dJson({ access_token: 'gA1', refresh_token: 'gR1', expires_in: 3600 });
+    if (u === 'https://oauth2.googleapis.com/revoke') return dJson({});
+    if (u === 'https://health.googleapis.com/v4/users/me/identity') return googleNotLinked ? dJson({ error: { code: 400, status: 'FAILED_PRECONDITION', details: [{ reason: 'ACCOUNT_NOT_LINKED' }] } }, 400) : dJson({ healthUserId: 'h-1', legacyUserId: 'AB12CD' });
+    if (u.includes('/dataTypes/steps/dataPoints:dailyRollUp')) { const d = new Date(); return dJson({ rollupDataPoints: [{ civilStartTime: { date: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }, time: {} }, steps: { countSum: '8430' } }] }); }
+    if (u.includes('/dataTypes/sleep/dataPoints:reconcile')) { const d = new Date(); return dJson({ dataPoints: [{ sleep: { interval: { civilEndTime: { date: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() } } }, summary: { minutesAsleep: '420' } } }, { sleep: { interval: { civilEndTime: { date: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() } } }, summary: { minutesAsleep: '30' } } }] }); }
+    if (u.includes('/daily-resting-heart-rate/')) return dJson({ error: { code: 400 } }, 400); // this person has no such data: skipped, not invented
+    if (u.includes('/daily-heart-rate-variability/')) { const d = new Date(); return dJson({ dataPoints: [{ dailyHeartRateVariability: { date: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }, averageHeartRateVariabilityMilliseconds: 41 } }] }); }
+    return dJson({ error: 'unexpected call to ' + u }, 599);
+  };
+  const dState = (url) => new URL(url).searchParams.get('state');
+  const dCallback = async (provider, query) => { const r = await realFetchDev(`${base}/api/devices/callback/${provider}?${new URLSearchParams(query)}`, { redirect: 'manual' }); return { status: r.status, location: r.headers.get('location') || '' }; };
+  const dConnectUrl = async (as, provider) => (await call(as, 'POST', `/api/devices/${provider}/connect`)).body.data.url;
+  const dListOf = async (as) => Object.fromEntries((await call(as, 'GET', '/api/devices')).body.data.map((d) => [d.id, d]));
+  const dSummaryOf = async (as) => (await call(as, 'GET', '/api/devices/summary?days=3')).body.data;
+  const dTodayOf = async (as) => (await dSummaryOf(as)).find((d) => d.date === dToday) || {};
+
+  await t('the list shows all five devices; cloud ones say honestly when they are not switched on, and nothing is invented', async () => {
+    const r = await call(DA, 'GET', '/api/devices');
+    assert.equal(r.status, 200); assert.deepEqual(r.body.data.map((d) => d.id), ['apple_watch', 'galaxy_watch', 'fitbit', 'whoop', 'oura']);
+    const by = Object.fromEntries(r.body.data.map((d) => [d.id, d]));
+    assert.equal(by.whoop.available, false); assert.equal(by.whoop.unavailableReason, 'not_configured'); assert.equal(by.apple_watch.available, true);
+    assert.ok(r.body.data.every((d) => d.connection === null));
+    assert.equal((await call(null, 'GET', '/api/devices')).status, 401);
+  });
+  await t('connecting an unconfigured service is refused with a clear reason', async () => {
+    const r = await call(DA, 'POST', '/api/devices/whoop/connect');
+    assert.equal(r.status, 503); assert.equal(r.body.code, 'not_configured');
+  });
+
+  process.env.DEVICE_TOKEN_KEY = require('node:crypto').randomBytes(32).toString('base64');
+  Object.assign(process.env, { WHOOP_CLIENT_ID: 'whoop-id', WHOOP_CLIENT_SECRET: 'whoop-secret', OURA_CLIENT_ID: 'oura-id', OURA_CLIENT_SECRET: 'oura-secret', GOOGLE_HEALTH_CLIENT_ID: 'g-id', GOOGLE_HEALTH_CLIENT_SECRET: 'g-secret', PUBLIC_API_URL: 'https://api.reprummble.test' });
+
+  await t('the sign-in address is built for the right service, with the right app id, return address and a one-time state', async () => {
+    const w = new URL(await dConnectUrl(DA, 'whoop'));
+    assert.equal(w.origin + w.pathname, 'https://api.prod.whoop.com/oauth/oauth2/auth');
+    assert.equal(w.searchParams.get('client_id'), 'whoop-id'); assert.equal(w.searchParams.get('redirect_uri'), 'https://api.reprummble.test/api/devices/callback/whoop');
+    assert.equal(w.searchParams.get('state').length, 8); assert.match(w.searchParams.get('scope'), /offline/); assert.match(w.searchParams.get('scope'), /read:recovery/);
+    const g = new URL(await dConnectUrl(DA, 'fitbit'));
+    assert.equal(g.origin, 'https://accounts.google.com'); assert.equal(g.searchParams.get('access_type'), 'offline'); assert.match(g.searchParams.get('scope'), /googlehealth\.sleep\.readonly/);
+    const o = new URL(await dConnectUrl(DA, 'oura')); assert.equal(o.origin + o.pathname, 'https://cloud.ouraring.com/oauth/authorize');
+    assert.equal(w.searchParams.get('client_secret'), null);   // the secret never travels in the browser address
+  });
+  await t('Apple Watch and Galaxy Watch do not use a sign-in; asking for one is a 400', async () => {
+    assert.equal((await call(DA, 'POST', '/api/devices/apple_watch/connect')).status, 400);
+    assert.equal((await call(DA, 'POST', '/api/devices/nonsense/connect')).status, 400);
+  });
+  await t('a return from the sign-in with a wrong, expired or denied state stores nothing', async () => {
+    await dConnectUrl(DB, 'whoop');
+    let r = await dCallback('whoop', { code: 'good-code', state: 'WRONGSTA' });
+    assert.equal(r.status, 302); assert.match(r.location, /^reprummble:\/\/devices\?/); assert.match(r.location, /error=expired/);
+    r = await dCallback('whoop', { error: 'access_denied', state: 'x' }); assert.match(r.location, /error=denied/);
+    r = await dCallback('whoop', {}); assert.match(r.location, /error=invalid/);
+    assert.equal(await DeviceConnection.countDocuments({ userId: users[DB].id }), 0);
+    // DA state made for one service cannot be used on another.
+    const st = dState(await dConnectUrl(DB, 'oura')); r = await dCallback('whoop', { code: 'good-code', state: st }); assert.match(r.location, /error=expired/);
+  });
+  await t('WHOOP: a real sign-in return stores an encrypted connection, syncs real numbers, and the list never reveals tokens', async () => {
+    const st = dState(await dConnectUrl(DA, 'whoop'));
+    const r = await dCallback('whoop', { code: 'good-code', state: st });
+    assert.match(r.location, /connected=1/); assert.match(r.location, /provider=whoop/);
+    const row = await mongoose.connection.db.collection('deviceconnections').findOne({ userId: users[DA].id, provider: 'whoop' });
+    assert.ok(row.accessTokenEnc.startsWith('v1.') && !row.accessTokenEnc.includes('wA1'), 'access token must be encrypted');
+    assert.ok(row.refreshTokenEnc.startsWith('v1.') && !row.refreshTokenEnc.includes('wR1'), 'refresh token must be encrypted');
+    assert.equal(devCrypto.decrypt(row.refreshTokenEnc), 'wR1');
+    const raw = JSON.stringify((await call(DA, 'GET', '/api/devices')).body);
+    for (const secret of ['wA1', 'wR1', 'accessTokenEnc', 'refreshTokenEnc', 'sam@private.test', 'whoop-secret']) assert.ok(!raw.includes(secret), 'leaked ' + secret);
+    const d = (await dListOf(DA)).whoop;
+    assert.equal(d.connection.status, 'connected'); assert.equal(d.connection.label, 'WHOOP · Sam'); assert.ok(d.connection.lastSyncAt);
+    const day = await dTodayOf(DA);
+    assert.deepEqual([day.strain.value, day.recovery.value, day.restingHR.value, day.hrv.value, day.sleepScore.value], [12.4, 81, 52, 64.2, 88]);
+    assert.equal(day.sleepHours.value, 7); assert.equal(day.sleepHours.source, 'whoop');   // light + deep + REM, the nap not added
+  });
+  await t('the same sign-in link cannot be used twice', async () => {
+    const st = dState(await dConnectUrl(DA, 'whoop'));
+    assert.match((await dCallback('whoop', { code: 'good-code', state: st })).location, /connected=1/);
+    assert.match((await dCallback('whoop', { code: 'good-code', state: st })).location, /error=expired/);
+  });
+  await t('a provider that rejects the code ends in a clean failure, with no connection created', async () => {
+    const st = dState(await dConnectUrl(DB, 'whoop'));
+    assert.match((await dCallback('whoop', { code: 'bad-code', state: st })).location, /error=failed/);
+    assert.equal(await DeviceConnection.countDocuments({ userId: users[DB].id }), 0);
+  });
+  await t('Oura: connects and syncs; the main night counts, naps do not, and Oura\'s sleep outranks WHOOP\'s', async () => {
+    assert.match((await dCallback('oura', { code: 'c', state: dState(await dConnectUrl(DA, 'oura')) })).location, /connected=1/);
+    const day = await dTodayOf(DA);
+    assert.equal(day.sleepHours.value, 7.5); assert.equal(day.sleepHours.source, 'oura');
+    assert.deepEqual([day.hrv.value, day.hrv.source, day.restingHR.value], [48, 'oura', 49]);
+    assert.deepEqual([day.recovery.value, day.recovery.source], [81, 'whoop']);   // recovery: WHOOP first
+    assert.deepEqual([day.steps.value, day.steps.source], [7000, 'oura']);
+  });
+  await t('Fitbit (Google Health): connects, reads steps and sleep, skips what Google cannot give instead of inventing it', async () => {
+    assert.match((await dCallback('fitbit', { code: 'c', state: dState(await dConnectUrl(DA, 'fitbit')) })).location, /connected=1/);
+    const reading = await DeviceReading.findOne({ userId: users[DA].id, provider: 'fitbit', date: dToday }).lean();
+    assert.equal(reading.steps, 8430); assert.equal(reading.sleepHours, 7); assert.equal(reading.hrv, 41); assert.equal(reading.restingHR, undefined);
+    assert.equal((await dListOf(DA)).fitbit.connection.label, 'Fitbit');
+  });
+  await t('Fitbit before Google Health is set up: told to link the account, nothing stored', async () => {
+    googleNotLinked = true;
+    const r = await dCallback('fitbit', { code: 'c', state: dState(await dConnectUrl(DB, 'fitbit')) });
+    googleNotLinked = false;
+    assert.match(r.location, /error=not_linked/); assert.equal(await DeviceConnection.countDocuments({ userId: users[DB].id }), 0);
+  });
+  await t('Apple Watch / Galaxy Watch: the phone sends what the watch recorded; bad values are dropped, and steps from a watch outrank a ring', async () => {
+    const r = await call(DA, 'POST', '/api/devices/phone/apple_watch', { label: 'Sam’s Apple Watch', days: [
+      { date: dToday, steps: 9000, activeCalories: 500, restingHR: 55, hrv: 60 }, { date: dYesterday, steps: 9e9 }, { date: 'not-a-date', steps: 1 }, { date: dYesterday, sleepHours: 99 }] });
+    assert.equal(r.status, 200); assert.equal(r.body.data.stored, 1);
+    const d = (await dListOf(DA)).apple_watch.connection; assert.equal(d.label, 'Sam’s Apple Watch'); assert.equal(d.status, 'connected');
+    const day = await dTodayOf(DA); assert.deepEqual([day.steps.value, day.steps.source], [9000, 'apple_watch']); assert.equal(day.activeCalories.source, 'apple_watch');
+    assert.equal((await call(DA, 'POST', '/api/devices/cloud_nope/../phone')).status, 404);
+    assert.equal((await call(DA, 'POST', '/api/devices/phone/whoop', { days: [] })).status, 400);   // cloud devices cannot be faked from the phone
+    assert.equal((await call(DA, 'POST', '/api/devices/phone/galaxy_watch', { label: 'Galaxy Watch 7', days: [] })).status, 200);
+  });
+  await t('an expired access token is refreshed, and the new single-use refresh token replaces the old one', async () => {
+    await DeviceConnection.updateOne({ userId: users[DA].id, provider: 'whoop' }, { expiresAt: new Date(Date.now() - 1000) });
+    const before = whoopRefreshes;
+    const r = await call(DA, 'POST', '/api/devices/whoop/sync');
+    assert.equal(r.status, 200); assert.equal(whoopRefreshes, before + 1);
+    const row = await mongoose.connection.db.collection('deviceconnections').findOne({ userId: users[DA].id, provider: 'whoop' });
+    assert.equal(devCrypto.decrypt(row.refreshTokenEnc), 'wR' + (before + 2));
+    assert.ok(dHits.some((h) => h.url.includes('/developer/v2/cycle') && h.auth === 'Bearer wA' + (before + 2)), 'data call used the new token');
+  });
+  await t('if the person revoked access (refresh fails), the device shows "sign in again" and keeps its old readings', async () => {
+    await DeviceConnection.updateOne({ userId: users[DA].id, provider: 'whoop' }, { expiresAt: new Date(Date.now() - 1000) });
+    whoopRefreshStatus = 400;
+    const r = await call(DA, 'POST', '/api/devices/whoop/sync');
+    whoopRefreshStatus = 200;
+    assert.equal(r.status, 409); assert.equal(r.body.data.error, 'reauth');
+    const c = (await dListOf(DA)).whoop.connection; assert.equal(c.status, 'needs_reauth'); assert.match(c.lastError, /Sign in again/);
+    assert.equal(await DeviceReading.countDocuments({ userId: users[DA].id, provider: 'whoop' }) > 0, true);
+  });
+  await t('signing in again repairs the same connection (no duplicate)', async () => {
+    assert.match((await dCallback('whoop', { code: 'good-code', state: dState(await dConnectUrl(DA, 'whoop')) })).location, /connected=1/);
+    assert.equal(await DeviceConnection.countDocuments({ userId: users[DA].id, provider: 'whoop' }), 1);
+    assert.equal((await dListOf(DA)).whoop.connection.status, 'connected');
+  });
+  await t('syncing everything is throttled, so opening the screen repeatedly does not hammer the providers', async () => {
+    await call(DA, 'POST', '/api/devices/sync');
+    const n = dHits.length; const r = await call(DA, 'POST', '/api/devices/sync');
+    assert.equal(r.status, 200); assert.ok(r.body.data.every((x) => x.skipped), 'second sync skipped'); assert.equal(dHits.length, n);
+  });
+  await t('devices belong to their owner: others see none, and cannot sync, disconnect or read them', async () => {
+    assert.ok(Object.values(await dListOf(DB)).every((d) => d.connection === null));
+    assert.equal((await call(DB, 'POST', '/api/devices/whoop/sync')).status, 404);
+    assert.equal((await call(DB, 'DELETE', '/api/devices/whoop')).status, 404);
+    assert.deepEqual(await dSummaryOf(DB), []);
+    assert.equal(await DeviceConnection.countDocuments({ userId: users[DA].id, provider: 'whoop' }), 1);
+  });
+  await t('disconnecting tells the service to stop, deletes the sign-in and that device\'s readings, and keeps the others', async () => {
+    const r = await call(DA, 'DELETE', '/api/devices/whoop');
+    assert.equal(r.status, 200); assert.ok(r.body.data.removedReadings > 0);
+    assert.ok(dHits.some((h) => h.method === 'DELETE' && h.url === 'https://api.prod.whoop.com/developer/v2/user/access'), 'WHOOP was told to revoke');
+    assert.equal(await DeviceConnection.countDocuments({ userId: users[DA].id, provider: 'whoop' }), 0);
+    assert.equal(await DeviceReading.countDocuments({ userId: users[DA].id, provider: 'whoop' }), 0);
+    const day = await dTodayOf(DA); assert.equal(day.strain, undefined); assert.equal(day.recovery.source, 'oura');   // falls back to the next device, honestly labelled
+    assert.equal((await call(DA, 'DELETE', '/api/devices/whoop')).status, 404);
+    assert.equal((await call(DA, 'DELETE', '/api/devices/apple_watch')).status, 200);
+    assert.equal((await dListOf(DA)).apple_watch.connection, null);
+  });
+  await t('numbers from two devices are never added together; the merge is by priority', () => {
+    const merged = mergeDays([{ provider: 'oura', date: '2026-01-01', steps: 7000, sleepHours: 7 }, { provider: 'apple_watch', date: '2026-01-01', steps: 9000 }, { provider: 'whoop', date: '2026-01-01', sleepHours: 6 }, { provider: 'unknown_thing', date: '2026-01-01', steps: 1 }]);
+    assert.equal(merged.length, 1); assert.deepEqual(merged[0].steps, { value: 9000, source: 'apple_watch' }); assert.deepEqual(merged[0].sleepHours, { value: 7, source: 'oura' });
+  });
+  await t('stored tokens are tamper-evident and unreadable without the key', () => {
+    const blob = devCrypto.encrypt('secret-token');
+    assert.equal(devCrypto.decrypt(blob), 'secret-token');
+    const parts = blob.split('.'); parts[3] = Buffer.from('x' + Buffer.from(parts[3], 'base64url').toString('binary')).toString('base64url');
+    assert.throws(() => devCrypto.decrypt(parts.join('.')));
+    const keep = process.env.DEVICE_TOKEN_KEY; process.env.DEVICE_TOKEN_KEY = 'too-short'; assert.throws(() => devCrypto.encrypt('x')); process.env.DEVICE_TOKEN_KEY = keep;
+  });
+  await t('without the lock key, services are reported unavailable rather than storing tokens in the clear', async () => {
+    const keep = process.env.DEVICE_TOKEN_KEY; delete process.env.DEVICE_TOKEN_KEY;
+    const d = await dListOf(DA); process.env.DEVICE_TOKEN_KEY = keep;
+    assert.equal(d.oura.available, false); assert.equal(d.apple_watch.available, true);
+  });
+  await t('deleting an account also removes its devices, their readings and sign-ins', async () => {
+    const uid = users.newbie2.id;
+    await DeviceConnection.create({ userId: uid, provider: 'oura', kind: 'cloud', label: 'Oura Ring' });
+    await DeviceConnection.create({ userId: uid, provider: 'apple_watch', kind: 'phone', label: 'Watch' });
+    await DeviceReading.create({ userId: uid, provider: 'oura', date: dToday, steps: 100 });
+    const r = await call('newbie2', 'DELETE', '/api/auth/account');
+    assert.equal(r.status, 200);
+    assert.equal(await DeviceConnection.countDocuments({ userId: uid }), 0); assert.equal(await DeviceReading.countDocuments({ userId: uid }), 0);
+  });
+  global.fetch = realFetchDev;
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
   server.close(); await require('mongoose').disconnect(); await mms.stop();

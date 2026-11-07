@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { Friendship } from "../models/Friendship.model";
 import { User } from "../models/User.model";
+import { blockedWith, streaksFor } from "../services/social.service";
 
 export const sendFriendRequest = async (req: AuthRequest, res: Response) => {
   try {
@@ -30,6 +31,10 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    if ((await blockedWith(userId)).has(friendId)) {
+      return res.status(403).json({ error: "You cannot send a request to this person." });
+    }
+
     // Check if friendship already exists
     const existingFriendship = await Friendship.findOne({
       $or: [
@@ -46,6 +51,9 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ error: "Friend request already sent" });
       }
     }
+
+    // A request that was declined can be sent again.
+    if (existingFriendship && existingFriendship.status === "declined") await Friendship.deleteOne({ _id: existingFriendship._id });
 
     // Create new friendship request
     const friendship = new Friendship({
@@ -144,36 +152,22 @@ export const declineFriendRequest = async (req: AuthRequest, res: Response) => {
 export const getFriends = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const friendships = await Friendship.find({
-      $or: [
-        { requester: userId, status: "accepted" },
-        { recipient: userId, status: "accepted" },
-      ],
-    }).populate("requester recipient", "displayName email");
-
-    const friends = friendships.map((friendship) => {
-      const friend = (
-        friendship.requester === userId
-          ? friendship.recipient
-          : friendship.requester
-      ) as any; // Type assertion for populated user
-      return {
-        id: friend._id,
-        displayName: friend.displayName || friend.email,
-        email: friend.email,
-        friendshipId: friendship._id,
-      };
-    });
-
-    res.json({
-      success: true,
-      friends,
-    });
+    const [rows, blocked] = await Promise.all([
+      Friendship.find({ status: "accepted", $or: [{ requester: userId }, { recipient: userId }] }).lean(),
+      blockedWith(userId),
+    ]);
+    const mine = rows
+      .map((r) => ({ friendId: r.requester === userId ? r.recipient : r.requester, friendshipId: String(r._id) }))
+      .filter((r) => !blocked.has(r.friendId));
+    const ids = mine.map((m) => m.friendId);
+    const [users, streaks] = await Promise.all([User.find({ _id: { $in: ids } }).select("displayName").lean(), streaksFor(ids)]);
+    const nameOf = new Map(users.map((u) => [String(u._id), u.displayName || "Member"]));
+    // Names only: other people's email addresses are never sent to the app.
+    const friends = mine.map((m) => ({ id: m.friendId, displayName: nameOf.get(m.friendId) ?? "Member", friendshipId: m.friendshipId, streak: streaks.get(m.friendId) ?? 0 }));
+    friends.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    res.json({ success: true, friends });
   } catch (error) {
     console.error("Error getting friends:", error);
     res.status(500).json({ error: "Failed to get friends" });
@@ -183,33 +177,19 @@ export const getFriends = async (req: AuthRequest, res: Response) => {
 export const getFriendRequests = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const requests = await Friendship.find({
-      recipient: userId,
-      status: "pending",
-    }).populate("requester", "displayName email");
-
-    const formattedRequests = requests.map((request) => {
-      const requester = request.requester as any; // Type assertion for populated user
-      return {
-        id: request._id,
-        requester: {
-          id: requester._id,
-          displayName: requester.displayName || requester.email,
-          email: requester.email,
-        },
-        createdAt: request.createdAt,
-      };
-    });
-
-    res.json({
-      success: true,
-      requests: formattedRequests,
-    });
+    const [rows, blocked] = await Promise.all([
+      Friendship.find({ status: "pending", $or: [{ recipient: userId }, { requester: userId }] }).sort({ createdAt: -1 }).lean(),
+      blockedWith(userId),
+    ]);
+    const kept = rows.filter((r) => !blocked.has(r.requester === userId ? r.recipient : r.requester));
+    const otherIds = kept.map((r) => (r.requester === userId ? r.recipient : r.requester));
+    const names = new Map((await User.find({ _id: { $in: otherIds } }).select("displayName").lean()).map((u) => [String(u._id), u.displayName || "Member"]));
+    const incoming = kept.filter((r) => r.recipient === userId).map((r) => ({ id: String(r._id), requester: { id: r.requester, displayName: names.get(r.requester) ?? "Member" }, createdAt: r.createdAt }));
+    const sent = kept.filter((r) => r.requester === userId).map((r) => ({ id: String(r._id), recipient: { id: r.recipient, displayName: names.get(r.recipient) ?? "Member" }, createdAt: r.createdAt }));
+    // `requests` stays the incoming list, as before.
+    res.json({ success: true, requests: incoming, sent });
   } catch (error) {
     console.error("Error getting friend requests:", error);
     res.status(500).json({ error: "Failed to get friend requests" });

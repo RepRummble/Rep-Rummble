@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
@@ -10,10 +11,12 @@ import {
 } from '../services/healthService';
 import { Eyebrow, GlassCard } from '../features/mission/ui';
 import { STEP_GOAL, hoursLabel, observations, sleepBars, spo2Percent } from '../features/health/healthLogic';
+import { SummaryDay, SOURCE_NAMES, latestDay } from '../features/devices/devicesLogic';
+import { devices, refreshPhoneDevices } from '../services/devicesService';
 
 const UNAVAILABLE: Record<Exclude<HealthAvailability, { ok: true }>['reason'], string> = {
   'expo-go': 'Apple Health needs the Reprummble app build. It cannot run inside Expo Go.',
-  'not-ios': 'Health data comes from Apple Health, which is only on iPhone. Android support through Health Connect is not available yet.',
+  'not-ios': 'Apple Health is only on iPhone. On Android, connect your watch or ring under Devices.',
   'unsupported-device': 'This device does not support Apple Health (some iPads do not).',
   'module-missing': 'The Apple Health module is not in this build. Install the latest build of the app.',
 };
@@ -68,7 +71,33 @@ function Bars({ data, color }: { data: { label: string; value: number }[]; color
   );
 }
 
+/** The newest readings from the watches and rings that are connected, each tagged with the device it came from. */
+function useDeviceReadings() {
+  const [days, setDays] = useState<SummaryDay[] | null>(null);
+  const [count, setCount] = useState(0);
+  useFocusEffect(useCallback(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const list = await devices.list();
+        if (alive) setCount(list.filter((d) => d.connection).length);
+        // Bring connected watches and rings up to date first (the server skips ones synced a moment ago).
+        await refreshPhoneDevices(list);
+        await devices.syncAll().catch(() => {});
+        const sum = await devices.summary(7);
+        if (alive) setDays(sum);
+      } catch { if (alive) setDays((d) => d ?? []); }
+    })();
+    return () => { alive = false; };
+  }, []));
+  return { days, count, latest: days ? latestDay(days) : undefined };
+}
+
+const Tag = ({ source }: { source: string }) => <Text style={s.tag}>{SOURCE_NAMES[source] ?? source}</Text>;
+
 export default function HealthScreen() {
+  const nav = useNavigation<any>();
+  const dev = useDeviceReadings();
   const h = useHealth();
   const t = h.today;
   const [refreshing, setRefreshing] = useState(false);
@@ -80,10 +109,13 @@ export default function HealthScreen() {
     <View style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={s.header}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.title}>Health</Text>
-            <Text style={s.sub}>{t ? `From Apple Health${t.sources.length ? ` · ${t.sources.join(', ')}` : ''}${h.lastSync ? ` · ${timeOf(h.lastSync)}` : ''}` : 'Your readings from Apple Health'}</Text>
+            <Text style={s.sub}>{t ? `From Apple Health${t.sources.length ? ` · ${t.sources.join(', ')}` : ''}${h.lastSync ? ` · ${timeOf(h.lastSync)}` : ''}` : h.availability.ok ? 'Your readings from Apple Health' : 'Readings from your connected devices'}</Text>
           </View>
+          <TouchableOpacity onPress={() => nav.navigate('Devices')} style={[s.sync, { marginRight: 8 }]} accessibilityLabel="Manage devices">
+            <Ionicons name="watch-outline" size={18} color={colors.brandBright} /><Text style={s.syncText}>Devices</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => { if (!h.availability.ok) { Alert.alert('Apple Health unavailable', UNAVAILABLE[h.availability.reason]); return; } h.reload(); }} style={s.sync} accessibilityLabel="Sync Apple Health">
             {h.status === 'loading' ? <ActivityIndicator color={colors.brandBright} /> : <Ionicons name="sync-outline" size={18} color={colors.brandBright} />}
             <Text style={s.syncText}>Sync</Text>
@@ -93,13 +125,41 @@ export default function HealthScreen() {
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await h.reload(); setRefreshing(false); }} tintColor={colors.brand} />}>
 
-          {!h.availability.ok ? (
+          {/* Devices: Apple Watch, Galaxy Watch, Fitbit, WHOOP, Oura. Only real, connected readings. */}
+          <Eyebrow right={dev.count ? `${dev.count} connected` : undefined}>Your devices</Eyebrow>
+          {dev.days === null ? (
+            <GlassCard><ActivityIndicator color={colors.brandBright} /></GlassCard>
+          ) : dev.latest ? (
             <GlassCard glow>
-              <Ionicons name="heart-circle-outline" size={44} color={colors.brandBright} />
-              <Text style={s.cardTitle}>Connect your health data</Text>
-              <Text style={s.cardBody}>{UNAVAILABLE[h.availability.reason]}</Text>
-              <Text style={s.cardBody}>Until then this page stays empty rather than showing numbers that are not yours. Your meals, workouts and missions all work without it.</Text>
+              <View style={s.metrics}>
+                {dev.latest.recovery ? <View style={s.metric}><Ionicons name="battery-charging-outline" size={18} color={colors.success} /><Text style={s.metricV}>{Math.round(dev.latest.recovery.value)}<Text style={s.metricU}> %</Text></Text><Text style={s.metricL}>{dev.latest.recovery.source === 'oura' ? 'readiness' : 'recovery'} <Tag source={dev.latest.recovery.source} /></Text></View> : null}
+                {dev.latest.strain ? <View style={s.metric}><Ionicons name="flash-outline" size={18} color={colors.accent} /><Text style={s.metricV}>{dev.latest.strain.value.toFixed(1)}</Text><Text style={s.metricL}>strain <Tag source={dev.latest.strain.source} /></Text></View> : null}
+                {dev.latest.sleepHours ? <View style={s.metric}><Ionicons name="moon-outline" size={18} color="#7a8cff" /><Text style={s.metricV}>{hoursLabel(dev.latest.sleepHours.value)}</Text><Text style={s.metricL}>sleep <Tag source={dev.latest.sleepHours.source} /></Text></View> : null}
+                {dev.latest.sleepScore ? <View style={s.metric}><Ionicons name="bed-outline" size={18} color="#7a8cff" /><Text style={s.metricV}>{Math.round(dev.latest.sleepScore.value)}</Text><Text style={s.metricL}>sleep score <Tag source={dev.latest.sleepScore.source} /></Text></View> : null}
+                {dev.latest.restingHR ? <View style={s.metric}><Ionicons name="heart-outline" size={18} color={colors.danger} /><Text style={s.metricV}>{Math.round(dev.latest.restingHR.value)}<Text style={s.metricU}> bpm</Text></Text><Text style={s.metricL}>resting <Tag source={dev.latest.restingHR.source} /></Text></View> : null}
+                {dev.latest.hrv ? <View style={s.metric}><Ionicons name="analytics-outline" size={18} color={colors.info} /><Text style={s.metricV}>{Math.round(dev.latest.hrv.value)}<Text style={s.metricU}> ms</Text></Text><Text style={s.metricL}>HRV <Tag source={dev.latest.hrv.source} /></Text></View> : null}
+                {dev.latest.steps ? <View style={s.metric}><Ionicons name="footsteps-outline" size={18} color={colors.brandBright} /><Text style={s.metricV}>{Math.round(dev.latest.steps.value).toLocaleString('en-US')}</Text><Text style={s.metricL}>steps <Tag source={dev.latest.steps.source} /></Text></View> : null}
+                {dev.latest.activeCalories ? <View style={s.metric}><Ionicons name="flame-outline" size={18} color={colors.accent} /><Text style={s.metricV}>{Math.round(dev.latest.activeCalories.value)}</Text><Text style={s.metricL}>active kcal <Tag source={dev.latest.activeCalories.source} /></Text></View> : null}
+              </View>
+              <TouchableOpacity onPress={() => nav.navigate('Devices')} style={s.link}><Text style={s.linkText}>Manage devices</Text></TouchableOpacity>
             </GlassCard>
+          ) : (
+            <GlassCard glow>
+              <Ionicons name="watch-outline" size={40} color={colors.brandBright} />
+              <Text style={s.cardTitle}>{dev.count ? 'Waiting for readings' : 'Connect a watch or ring'}</Text>
+              <Text style={s.cardBody}>{dev.count ? 'Your device is connected but has not reported any numbers yet. Wear it for a while, then pull down to sync.' : 'Apple Watch, Samsung Galaxy Watch, Fitbit, WHOOP and Oura Ring. Only readings your device really reports are shown here, never made-up numbers.'}</Text>
+              <TouchableOpacity onPress={() => nav.navigate('Devices')} style={s.link}><Text style={s.linkText}>{dev.count ? 'Manage devices' : 'Add a device'}</Text></TouchableOpacity>
+            </GlassCard>
+          )}
+
+          {!h.availability.ok ? (
+            h.availability.reason === 'not-ios' ? null : (
+              <GlassCard>
+                <Ionicons name="heart-circle-outline" size={44} color={colors.brandBright} />
+                <Text style={s.cardTitle}>Apple Health</Text>
+                <Text style={s.cardBody}>{UNAVAILABLE[h.availability.reason]}</Text>
+              </GlassCard>
+            )
           ) : !t ? (
             <GlassCard glow>
               {h.status === 'loading' ? <ActivityIndicator color={colors.brandBright} /> : <Ionicons name="heart-circle-outline" size={44} color={colors.brandBright} />}
@@ -188,10 +248,6 @@ export default function HealthScreen() {
             </>
           )}
 
-          <Eyebrow>Watches and rings</Eyebrow>
-          <GlassCard>
-            <Text style={s.cardBody}>Apple Watch, Oura, Whoop, Garmin, Fitbit and Polar share their data through Apple Health. Connect your device's own app to Apple Health, allow it to write, and the readings appear here.</Text>
-          </GlassCard>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -202,6 +258,7 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12 },
   title: { fontSize: 28, fontWeight: '900', color: colors.ink, letterSpacing: -0.5 }, sub: { fontSize: 12, color: colors.muted, marginTop: 2, maxWidth: 250 },
   sync: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, backgroundColor: 'rgba(255,122,26,0.12)', borderWidth: 1, borderColor: 'rgba(255,122,26,0.35)' },
+  tag: { fontSize: 10.5, fontWeight: '800', color: colors.brandBright, letterSpacing: 0.3 },
   syncText: { color: colors.ink, fontWeight: '800', fontSize: 13 },
   cardTitle: { fontSize: 20, fontWeight: '900', color: colors.ink, marginTop: 10 }, cardBody: { fontSize: 14, lineHeight: 21, color: colors.muted, marginTop: 8 },
   link: { marginTop: 14, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.brand }, linkText: { color: '#fff', fontWeight: '800' },

@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import api from '../config/api';
 import { DEV_BYPASS_AUTH } from '../config/devConfig';
+import { isAppleWatchSource, localDayKey } from '../features/devices/devicesLogic';
 
 export type HealthAvailability =
   | { ok: true }
@@ -199,10 +200,13 @@ export async function getTodayHealth(): Promise<HealthToday | null> {
   };
 }
 
-export async function getLast7Days(): Promise<HealthDay[]> {
+/** One local calendar day of readings, keyed YYYY-MM-DD. */
+export interface DailyRow { date: string; steps: number; activeCalories: number; sleepHours: number; restingHR: number }
+
+export async function getDailyRows(days = 7): Promise<DailyRow[]> {
   const mod = loadHealthKit();
   if (!mod) return [];
-  const anchor = daysAgo(6);
+  const anchor = daysAgo(days - 1);
   const range = { startDate: anchor, endDate: new Date() };
   const [steps, cal, hr, sleep] = await Promise.all([
     mod.queryStatisticsCollectionForQuantity('HKQuantityTypeIdentifierStepCount', ['cumulativeSum'], anchor, { day: 1 }, { unit: 'count', filter: { date: range } }),
@@ -214,7 +218,7 @@ export async function getLast7Days(): Promise<HealthDay[]> {
     }),
   ]);
 
-  const key = (d: Date) => startOfDay(d).toDateString();
+  const key = (d: Date) => localDayKey(d);
   const sleepByDay = new Map<string, number>();
   for (const s of sleep) {
     const v = Number(s.value);
@@ -230,17 +234,34 @@ export async function getLast7Days(): Promise<HealthDay[]> {
   };
   const stepsM = byDay(steps), calM = byDay(cal), hrM = byDay(hr);
 
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = daysAgo(6 - i);
-    const k = key(d);
-    return {
-      day: d.toLocaleDateString('en-US', { weekday: 'short' }),
-      steps: Math.round(stepsM.get(k) ?? 0),
-      cal: Math.round(calM.get(k) ?? 0),
-      sleep: round(sleepByDay.get(k) ?? 0, 1),
-      hr: Math.round(hrM.get(k) ?? 0),
-    };
+  return Array.from({ length: days }, (_, i) => {
+    const k = key(daysAgo(days - 1 - i));
+    return { date: k, steps: Math.round(stepsM.get(k) ?? 0), activeCalories: Math.round(calM.get(k) ?? 0), sleepHours: round(sleepByDay.get(k) ?? 0, 1), restingHR: Math.round(hrM.get(k) ?? 0) };
   });
+}
+
+export async function getLast7Days(): Promise<HealthDay[]> {
+  const rows = await getDailyRows(7);
+  return rows.map((r) => ({
+    day: new Date(`${r.date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short' }),
+    steps: r.steps, cal: r.activeCalories, sleep: r.sleepHours, hr: r.restingHR,
+  }));
+}
+
+/**
+ * Looks in Apple Health for data written by an Apple Watch (steps and heart rate of the last week).
+ * Returns the watch's name, or null when only the iPhone (or other apps) has written anything.
+ */
+export async function detectAppleWatch(): Promise<string | null> {
+  const mod = loadHealthKit();
+  if (!mod) return null;
+  const filter = { date: { startDate: daysAgo(7), endDate: new Date() } };
+  const [steps, hr] = await Promise.all([
+    mod.queryStatisticsForQuantity('HKQuantityTypeIdentifierStepCount', ['cumulativeSum'], { unit: 'count' as never, filter }),
+    mod.queryStatisticsForQuantity('HKQuantityTypeIdentifierHeartRate', ['mostRecent'], { unit: 'count/min' as never, filter }),
+  ]);
+  const names = [...steps.sources, ...hr.sources].map((s) => s.name);
+  return names.find(isAppleWatchSource) ?? null;
 }
 
 // Returns null when skipped: with the dev login bypass there is no real account to save to.

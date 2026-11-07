@@ -8,12 +8,19 @@ export interface ISocialPost extends Document {
     | "meal"
     | "challenge"
     | "milestone"
+    | "daily"
     | "general";
   content: string;
   mediaUrls?: string[]; // Array of image/video URLs
   workoutId?: mongoose.Types.ObjectId;
   challengeId?: mongoose.Types.ObjectId;
   isPublic?: boolean;
+  /** Facts about the shared workout or meal, copied from the real record by the server. */
+  snapshot?: Record<string, unknown>;
+  /** Set when several people reported it; hidden posts are left out of every feed. */
+  hidden?: boolean;
+  /** For the post of the day: the author's local day, so there is only one per day. */
+  dayKey?: string;
   likes: mongoose.Types.ObjectId[]; // User IDs who liked
   comments: {
     author: mongoose.Types.ObjectId;
@@ -40,6 +47,7 @@ const SocialPostSchema = new Schema<ISocialPost>(
         "meal",
         "challenge",
         "milestone",
+        "daily",
         "general",
       ],
       default: "general",
@@ -68,6 +76,9 @@ const SocialPostSchema = new Schema<ISocialPost>(
       type: Boolean,
       default: false,
     },
+    snapshot: { type: Schema.Types.Mixed },
+    hidden: { type: Boolean, default: false },
+    dayKey: { type: String },
     likes: [
       {
         type: Schema.Types.ObjectId,
@@ -110,6 +121,10 @@ const SocialPostSchema = new Schema<ISocialPost>(
 SocialPostSchema.index({ author: 1, createdAt: -1 });
 SocialPostSchema.index({ isPublic: 1, createdAt: -1 });
 SocialPostSchema.index({ postType: 1, createdAt: -1 });
+
+// One post of the day per person per day.
+SocialPostSchema.index({ author: 1, dayKey: 1 }, { unique: true, partialFilterExpression: { dayKey: { $type: 'string' } } });
+SocialPostSchema.index({ createdAt: -1 });
 
 export const SocialPost = mongoose.model<ISocialPost>(
   "SocialPost",

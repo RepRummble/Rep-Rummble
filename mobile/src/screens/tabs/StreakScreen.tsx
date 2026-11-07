@@ -3,7 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, RefreshCon
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import api from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { Workout } from '../../types';
@@ -29,6 +29,7 @@ const QUICK_LOG = [
 ];
 
 export default function TrainScreen() {
+  const navigation = useNavigation<any>();
   const { user } = useAuth();
   const [tab, setTab] = useState(0);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -67,7 +68,11 @@ export default function TrainScreen() {
       setWorkouts((w) => [res.data.data, ...w]);
       await clearCache();
       setPlaying(null);
-      Alert.alert('Workout saved', 'Collect your daily mission XP on the Home screen.');
+      const saved = res.data.data as Workout;
+      Alert.alert('Workout saved', 'Collect your daily mission XP on the Home screen. Share your results with your friends?', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Share', onPress: () => navigation.navigate('Social', { screen: 'Compose', params: { mode: 'post', attach: { kind: 'workout', id: saved._id, label: `${saved.exercise} · ${saved.duration} min` } } }) },
+      ]);
     } catch (e: any) { Alert.alert('Could not save', e?.response?.data?.message || 'Check your connection and try again. Your sets are still here.'); }
     finally { setSaving(false); }
   };

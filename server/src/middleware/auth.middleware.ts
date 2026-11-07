@@ -1,3 +1,4 @@
+import { User } from '../models/User.model'
 import { ensureLegacyUser } from '../services/legacy-user.service'
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
@@ -243,6 +244,7 @@ export const withLegacyUser = async (req: AuthRequest, res: Response, next: Next
   }
   try {
     const doc = await ensureLegacyUser(user.email, user.displayName)
+    if (doc.supabaseId !== user.id) User.updateOne({ _id: doc._id }, { $set: { supabaseId: user.id } }).catch(() => {})
     req.user = { ...user, supabaseId: user.id, id: doc._id.toString() }
     next()
   } catch (error) {

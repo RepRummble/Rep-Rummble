@@ -2,7 +2,15 @@ import { Business, BusinessFood, BusinessMealPlan, BusinessMember, BusinessPlan,
 import { Challenge } from '../models/Challenge.model'
 import { ChallengeParticipant } from '../models/ChallengeParticipant.model'
 import { Contact } from '../models/Contact.model'
+import { DeviceConnection } from '../models/DeviceConnection.model'
+import { DeviceReading } from '../models/DeviceReading.model'
+import { OAuthState } from '../models/OAuthState.model'
+import { revokeUpstream } from './devices/sync.service'
+import { Block } from '../models/Block.model'
+import { DirectMessage } from '../models/DirectMessage.model'
 import { Friendship } from '../models/Friendship.model'
+import { Report } from '../models/Report.model'
+import { Story } from '../models/Story.model'
 import { Lead } from '../models/Lead.model'
 import { Meal } from '../models/Meal.model'
 import { Referral, ReferralCredit, ReferralProfile } from '../models/Referral.model'
@@ -57,6 +65,11 @@ export async function deleteAccountData(userId: string, email?: string): Promise
   count('workouts', await Workout.deleteMany({ userId: eq(userId) }))
   count('meals', await Meal.deleteMany({ userId: eq(userId) }))
   count('wearableData', await WearableData.deleteMany({ userId: eq(userId) }))
+  // Connected devices: tell each provider to stop sharing, then delete the sign-ins and everything they gave us.
+  for (const conn of await DeviceConnection.find({ userId: eq(userId) })) await revokeUpstream(conn)
+  count('deviceConnections', await DeviceConnection.deleteMany({ userId: eq(userId) }))
+  count('deviceReadings', await DeviceReading.deleteMany({ userId: eq(userId) }))
+  await OAuthState.deleteMany({ userId: eq(userId) })
   count('referralProfile', await ReferralProfile.deleteMany({ userId: eq(userId) }))
   count('referralCredits', await ReferralCredit.deleteMany({ userId: eq(userId) }))
   count('referrals', await Referral.deleteMany({ $or: [{ referrerId: eq(userId) }, { referredId: eq(userId) }] }))
@@ -88,6 +101,12 @@ export async function deleteAccountData(userId: string, email?: string): Promise
     count('workoutSessions', await WorkoutSession.deleteMany({ userId: legacy._id }))
     count('reviews', await Review.deleteMany({ userId: legacy._id }))
     count('socialPosts', await SocialPost.deleteMany({ author: legacy._id }))
+    // Statuses, private messages, blocks and reports they made.
+    count('stories', await Story.deleteMany({ author: legacy._id }))
+    await Story.updateMany({}, { $pull: { viewers: legacy._id } })
+    count('messages', await DirectMessage.deleteMany({ $or: [{ from: legacy._id }, { to: legacy._id }] }))
+    count('blocks', await Block.deleteMany({ $or: [{ blocker: legacy._id }, { blocked: legacy._id }] }))
+    count('reports', await Report.deleteMany({ reporter: legacy._id }))
     await SocialPost.updateMany({}, { $pull: { likes: legacy._id, comments: { author: legacy._id } } })
     count('legacyUser', await User.deleteOne({ _id: legacy._id }))
   }

@@ -41,6 +41,17 @@ export interface DetectedFood {
   name: string;
   confidence: number;
   portion: 'small' | 'medium' | 'large' | 'xl';
+  /** The AI's estimate for this food alone, for the amount on the plate. */
+  estimatedCalories?: number;
+  estimatedProtein?: number;
+  estimatedCarbs?: number;
+  estimatedFat?: number;
+  /** One plain sentence: what this food is. */
+  description?: string;
+  /** The amount, as people say it: "about 1 cup (180 g)". */
+  amount?: string;
+  grams?: number;
+  ingredients?: string[];
   boundingBox?: {
     x: number;
     y: number;
@@ -67,6 +78,10 @@ export interface NutritionData {
   protein: number;
   carbs: number;
   fat: number;
+  /** The server sends these flat; older results nested them under micronutrients. */
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
   micronutrients?: Micronutrients;
 }
 
@@ -132,6 +147,7 @@ export interface FoodAnalysisResponse {
     suggestions: string[];
     alternatives: FoodAlternative[];
     confidence: number;
+    mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   };
 }
 
@@ -203,6 +219,7 @@ export type RootStackParamList = {
   };
   Chat: { conversationId?: string } | undefined;
   Subscription: undefined;
+  Devices: undefined;
 };
 
 export type MainTabParamList = {
@@ -215,8 +232,14 @@ export type MainTabParamList = {
   Profile: undefined;
 };
 
+export type ShareAttach = { kind: 'workout' | 'meal'; id: string; label: string } | { kind: 'streak'; label: string };
 export type SocialStackParamList = {
   SocialFeed: undefined;
-  Friends: undefined;
+  Compose: { mode?: 'post' | 'status' | 'daily'; attach?: ShareAttach; prompt?: string } | undefined;
+  Messages: undefined;
+  Thread: { userId: string; name: string };
+  NewMessage: undefined;
+  Streaks: undefined;
+  People: { tab?: 'friends' | 'requests' | 'find' } | undefined;
   Challenges: undefined;
 };
