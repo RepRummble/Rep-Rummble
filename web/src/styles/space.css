@@ -215,3 +215,52 @@ body.rr-space .rr-devices-glass { background: rgba(12, 20, 42, .84) !important; 
 body.rr-space .rr-devices-label { color: var(--rr-ink-2); }
 body.rr-space .rr-devices .rr-marquee .rr-device { background: #eef2f9 !important; border-color: rgba(255, 255, 255, .6) !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
 body.rr-space .rr-devices .rr-device-name, body.rr-space .rr-devices .rr-device .rr-device-text { color: #0b1220 !important; }
+
+/* ── Business dashboard (/business, /admin): same look as the public pages ─────────────── */
+body.rr-space .dash-page { background: transparent; }
+body.rr-space .dash-page::before, body.rr-space .dash-page::after { display: none; }
+body.rr-space .dash-gate { background: transparent; }
+body.rr-space :is(.dash-card, .dash-kpi, .dash-tabs, .dash-gate-card, .dash-chip, .dash-plan-opt, .dash-modal > div, .pf-panel, .pf-nav, .pf-modal, .dash-search) {
+  background: rgba(12, 20, 42, .84) !important; border: 1px solid var(--rr-line) !important; color: var(--rr-ink);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 20px 50px -24px rgba(0, 0, 0, .8) !important;
+}
+body.rr-space .dash-modal { background: rgba(3, 5, 11, .72); }
+/* Cards inside cards stay flat */
+body.rr-space :is(.dash-card, .pf-panel) :is(.dash-card, .dash-kpi, .dash-chip, .dash-plan-opt) { background: rgba(255, 255, 255, .04) !important; box-shadow: none !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.rr-space .dash-head h1, body.rr-space .dash-card h2, body.rr-space .dash-gate-card h1 { color: var(--rr-ink); }
+body.rr-space .dash-head p, body.rr-space .dash-muted, body.rr-space .dash-top-label { color: var(--rr-muted); }
+body.rr-space .dash-kpi strong { color: var(--rr-ink); }
+/* Forms */
+body.rr-space :is(.dash-search, .dash-page select, .dash-page input, .dash-page textarea, .pf-field input, .pf-field select, .dash-modal input, .dash-modal select, .dash-modal textarea) {
+  background: rgba(255, 255, 255, .06) !important; color: var(--rr-ink) !important; border: 1px solid var(--rr-line) !important;
+}
+body.rr-space :is(.dash-page input, .dash-page textarea, .dash-modal input, .dash-modal textarea)::placeholder { color: var(--rr-muted); }
+body.rr-space :is(.dash-page input, .dash-page select, .dash-page textarea):focus { border-color: #ff7a1a !important; box-shadow: 0 0 0 3px rgba(255, 122, 26, .22) !important; outline: none; }
+body.rr-space .dash-page select option { background: #0a1226; color: var(--rr-ink); }
+body.rr-space .dash-page label { color: var(--rr-ink-2); }
+/* Tabs, chips, pills */
+body.rr-space .dash-tabs button { color: var(--rr-ink-2); background: transparent; }
+body.rr-space .dash-tabs button.is-on, body.rr-space .dash-tabs button[aria-selected='true'] { background: linear-gradient(135deg, #d62839, #ff7a1a) !important; color: #fff !important; }
+body.rr-space .dash-chip.is-on, body.rr-space .dash-plan-opt.is-on { border-color: #ff7a1a !important; background: rgba(255, 122, 26, .14) !important; }
+body.rr-space .dash-pill { background: rgba(255, 255, 255, .08); color: var(--rr-ink-2); }
+body.rr-space .dash-pill.is-active, body.rr-space .dash-pill.is-ok { background: rgba(30, 201, 138, .16); color: #7ff0c3; }
+body.rr-space .dash-pill.is-inactive, body.rr-space .dash-pill.is-warn { background: rgba(255, 122, 26, .16); color: #ffb37a; }
+/* Tables */
+body.rr-space .dash-page table { color: var(--rr-ink-2); }
+body.rr-space .dash-page th { background: rgba(255, 255, 255, .05) !important; color: var(--rr-ink) !important; }
+body.rr-space .dash-page td, body.rr-space .dash-page th { border-color: var(--rr-line) !important; }
+body.rr-space .dash-page tr:hover td { background: rgba(255, 255, 255, .03); }
+body.rr-space .dash-page :is(.rr-btn-outline, .dash-btn) { background: rgba(255, 255, 255, .06); color: var(--rr-ink); border-color: rgba(255, 255, 255, .2); }
+body.rr-space .dash-page .rr-link-arrow { color: #ff8a4a; }
+body.rr-space .dash-bar { background: transparent; }
+body.rr-space .dash-bar i { background: linear-gradient(180deg, #ff7a1a, #e63946); }
+body.rr-space .dash-meter { background: rgba(255, 255, 255, .1); }
+body.rr-space .dash-meter i { background: linear-gradient(90deg, #ff7a1a, #e63946); }
+/* App bar avatar / menu */
+body.rr-space .rr-avatar, body.rr-space .rr-account-btn { background: rgba(230, 57, 70, .2); color: #fff; border-color: rgba(255, 90, 70, .5); }
+body.rr-space .rr-popover { background: rgba(10, 18, 38, .96); border: 1px solid var(--rr-line); color: var(--rr-ink); box-shadow: 0 20px 50px -16px rgba(0, 0, 0, .85); }
+
+/* Dashboards: the equipment stays but stays out of the way of tables and numbers */
+body.rr-datapage .sp-gear { opacity: .3 !important; }
+body.rr-datapage .sp-gear.z3 { opacity: .18 !important; }

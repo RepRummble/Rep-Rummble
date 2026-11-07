@@ -149,12 +149,14 @@ export default function Layout() {
     document.documentElement.classList.toggle('theme-light', isLight);
   }, [isLight]);
 
-  // The public pages get the space look; the signed-in dashboards keep their own.
-  const isSpace = !isAppPath(location.pathname);
+  // Public pages and the business dashboard (/business, /admin) get the space look; the member dashboard keeps its own.
+  const isSpace = !isAppPath(location.pathname) || location.pathname.startsWith('/business') || location.pathname.startsWith('/admin');
   useLayoutEffect(() => {
     document.body.classList.toggle('rr-space', isSpace);
-    return () => document.body.classList.remove('rr-space');
-  }, [isSpace]);
+    // Data-heavy pages (the business dashboard) keep the gear, but quieter.
+    document.body.classList.toggle('rr-datapage', isSpace && isAppPath(location.pathname));
+    return () => document.body.classList.remove('rr-space', 'rr-datapage');
+  }, [isSpace, location.pathname]);
 
   useLayoutEffect(() => {
     if ('scrollRestoration' in window.history) {
