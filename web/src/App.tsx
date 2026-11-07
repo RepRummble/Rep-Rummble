@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
@@ -32,11 +32,17 @@ import BusinessNutrition from './pages/business/Nutrition';
 import BusinessReports from './pages/business/Reports';
 import BusinessSettings from './pages/business/Settings';
 
+// Preview of the Originkit hero, on its own page (no site header around it).
+const Hero19 = lazy(() => import('./components/originkit/hero-19'));
+const Hero11 = lazy(() => import('./components/originkit/hero-11'));
+
 function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ReferralClaimer />
       <Routes>
+        <Route path="/hero-11" element={<div className="ok-scope"><Suspense fallback={null}><Hero11 /></Suspense></div>} />
+        <Route path="/hero-19" element={<div className="ok-scope"><Suspense fallback={null}><Hero19 /></Suspense></div>} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="features" element={<Features />} />

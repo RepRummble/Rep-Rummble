@@ -1,4 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Syne:wght@500;600;700;800&display=swap');
+@layer theme, base, components, utilities;
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500&family=Inter:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Audiowide&family=DM+Mono:wght@400;500&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Hedvig+Letters+Serif:opsz@12..24&family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=Lato:wght@400;700&family=Manrope:wght@400;500;600;700&family=Monda:wght@400;500;600;700&family=Outfit:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&family=Red+Hat+Display:wght@400;500;600;700&family=Rethink+Sans:wght@400;500;600;700&family=Tillana:wght@400;500;600;700&family=Urbanist:wght@400;500;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Roboto+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Syne:wght@500;600;700;800&display=swap');
+
+/* Tailwind for the Originkit sections: theme tokens and utilities only. The global reset ("preflight") is left out
+   on purpose, so the rest of the site keeps its own styles. All @import lines must stay together at the top. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./originkit-section-themes.css";
+@import "./originkit-section-theme.css";
 
 :root {
   font-family: 'Figtree', 'Segoe UI', sans-serif;
@@ -41,7 +52,8 @@
   background-color: var(--paper);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* In the base layer so Tailwind utilities (used by the Originkit sections) are not flattened by this reset. */
+@layer base { * { margin: 0; padding: 0; box-sizing: border-box; } }
 
 html, body, #root { width: 100%; min-height: 100%; }
 html, body { overflow-x: clip; }
@@ -97,5 +109,18 @@ body::after {
 
 #root { position: relative; z-index: 1; }
 
-button, input, textarea, select { font-family: inherit; }
-button { border: none; background: transparent; color: inherit; }
+@layer base {
+  button, input, textarea, select { font-family: inherit; }
+  button { border: none; background: transparent; color: inherit; }
+}
+
+/* The little part of the reset the Originkit sections rely on, applied only inside .ok-scope and kept in the
+   base layer so Tailwind utilities still win. */
+@layer base {
+  .ok-scope *, .ok-scope *::before, .ok-scope *::after { box-sizing: border-box; border: 0 solid; }
+  .ok-scope h1, .ok-scope h2, .ok-scope h3, .ok-scope p, .ok-scope ul { margin: 0; padding: 0; font-size: inherit; font-weight: inherit; }
+  .ok-scope ul { list-style: none; }
+  .ok-scope a { color: inherit; text-decoration: none; }
+  .ok-scope img, .ok-scope svg, .ok-scope canvas { display: block; }
+  .ok-scope button { background: none; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+}

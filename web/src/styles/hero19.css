@@ -1,0 +1,102 @@
+/* ── Home hero: black-navy with blood red and orange, and real motion ──────────
+   Everything is scoped to .h19, so no other page changes. Motion: drifting red and orange light,
+   a slow rotating beam behind the phone, a grid that glides, a spotlight that follows the pointer,
+   a headline that rises in word by word, a colour-shifting key word, and a pulsing main button. */
+.h19 {
+  --red: #d62839; --red-hot: #ff2e4d; --orange: #ff7a1a; --amber: #ffb02e;
+  --ink: #05070d; --navy: #0a1428; --navy-2: #101d3a;
+  --text: #f3f7ff; --text-2: #b4c2de; --text-3: #7f90b3;
+  --edge: rgba(255, 255, 255, 0.1);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: radial-gradient(120% 90% at 20% 0%, #0d1a36 0%, #060a16 55%, #04060b 100%);
+  color: var(--text-2);
+  font-family: 'Inter', var(--rr-font-body);
+  --mx: 70%; --my: 40%;
+}
+.h19 .fx-aurora { display: none; }
+
+/* Drifting light */
+.h19-blob { position: absolute; z-index: 0; border-radius: 50%; filter: blur(90px); opacity: .55; pointer-events: none; will-change: transform; }
+.h19-blob.b1 { width: 560px; height: 560px; left: -140px; top: -120px; background: radial-gradient(circle, var(--red) 0%, transparent 70%); animation: h19-drift-a 16s ease-in-out infinite alternate; }
+.h19-blob.b2 { width: 520px; height: 520px; right: -120px; top: 40px; background: radial-gradient(circle, var(--orange) 0%, transparent 70%); opacity: .4; animation: h19-drift-b 19s ease-in-out infinite alternate; }
+.h19-blob.b3 { width: 620px; height: 620px; left: 30%; bottom: -320px; background: radial-gradient(circle, #1f6fff 0%, transparent 70%); opacity: .35; animation: h19-drift-c 22s ease-in-out infinite alternate; }
+@keyframes h19-drift-a { to { transform: translate(180px, 120px) scale(1.15); } }
+@keyframes h19-drift-b { to { transform: translate(-200px, 140px) scale(.9); } }
+@keyframes h19-drift-c { to { transform: translate(-160px, -90px) scale(1.2); } }
+
+/* A grid that glides, fading out toward the edges */
+.h19-glow { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 64px 64px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 64px 64px;
+  animation: h19-grid 10s linear infinite;
+  -webkit-mask-image: radial-gradient(75% 75% at 62% 42%, #000 20%, transparent 100%);
+  mask-image: radial-gradient(75% 75% at 62% 42%, #000 20%, transparent 100%); }
+@keyframes h19-grid { to { background-position: 0 64px, 64px 0; } }
+
+/* A slow rotating beam behind the phone */
+.h19-beam { position: absolute; z-index: 0; right: -6%; top: 50%; width: 900px; height: 900px; margin-top: -450px; pointer-events: none; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 62%, rgba(255, 46, 77, .0) 62%, rgba(255, 46, 77, .28) 74%, rgba(255, 122, 26, .30) 82%, transparent 90%);
+  -webkit-mask-image: radial-gradient(closest-side, transparent 18%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(closest-side, transparent 18%, #000 40%, transparent 100%);
+  filter: blur(6px); animation: h19-spin 14s linear infinite; }
+@keyframes h19-spin { to { transform: rotate(360deg); } }
+
+/* The pointer's spotlight */
+.h19-spot { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(360px circle at var(--mx) var(--my), rgba(255, 46, 77, 0.16), rgba(255, 122, 26, 0.07) 45%, transparent 70%); }
+
+/* Words rise in one after another */
+.h19 .fx-hero-grid > div:first-child > * { animation: h19-rise .9s var(--ease) both; }
+.h19 .fx-hero-grid > div:first-child > :nth-child(1) { animation-delay: .05s; }
+.h19 .fx-hero-grid > div:first-child > :nth-child(2) { animation-delay: .18s; }
+.h19 .fx-hero-grid > div:first-child > :nth-child(3) { animation-delay: .32s; }
+.h19 .fx-hero-grid > div:first-child > :nth-child(4) { animation-delay: .46s; }
+.h19 .fx-hero-grid > div:first-child > :nth-child(5) { animation-delay: .6s; }
+@keyframes h19-rise { from { opacity: 0; transform: translateY(26px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+
+.h19 h1 { font-family: 'Inter', var(--rr-font-head); font-weight: 600; letter-spacing: -0.05em; line-height: 1; color: #fff;
+  text-shadow: 0 0 40px rgba(255, 46, 77, .18); }
+.h19 .fx-hero-lead { color: var(--text-2); line-height: 1.6; }
+/* The key word shifts through red, orange and amber */
+.h19 .fx-flip-word { background: linear-gradient(100deg, var(--red-hot), var(--orange), var(--amber), var(--red-hot)); background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: fx-flip-in .6s var(--fx-ease) both, h19-shift 5s linear infinite; }
+@keyframes h19-shift { to { background-position: 250% 50%; } }
+
+/* The label above the headline: mono, with a pulsing red dot */
+.h19 .h19-tag { background: rgba(255, 255, 255, .05); border: 1px solid var(--edge); color: var(--text-2);
+  font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: .02em; box-shadow: inset 0 .5px 0 rgba(255,255,255,.12); }
+.h19 .fx-dot { background: var(--red-hot); box-shadow: 0 0 0 0 rgba(255, 46, 77, .6); animation: h19-ping 1.8s ease-out infinite; }
+@keyframes h19-ping { 70% { box-shadow: 0 0 0 9px rgba(255, 46, 77, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 46, 77, 0); } }
+
+/* Buttons */
+.h19 .rr-btn { border-radius: 9999px; font-weight: 600; }
+.h19 .fx-btn-glow { background: linear-gradient(135deg, var(--red), var(--orange)) !important; color: #fff !important; border: 0;
+  box-shadow: 0 14px 36px -10px rgba(255, 46, 77, .65), inset 0 .5px 0 rgba(255,255,255,.4) !important; animation: h19-pulse 2.6s ease-in-out infinite; }
+.h19 .fx-btn-glow::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); }
+.h19 .fx-btn-glow:hover { filter: brightness(1.1); }
+@keyframes h19-pulse { 50% { box-shadow: 0 18px 46px -8px rgba(255, 122, 26, .75), inset 0 .5px 0 rgba(255,255,255,.4); } }
+.h19 .rr-btn-outline { background: rgba(255, 255, 255, .04); color: #fff; border: 1px solid rgba(255, 255, 255, .18); box-shadow: none;
+  transition: background-color .22s var(--ease), border-color .22s var(--ease); }
+.h19 .rr-btn-outline:hover { background: rgba(255, 255, 255, .09); border-color: var(--orange); }
+.h19 .rr-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+.h19 .fx-trust { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+.h19 .fx-trust svg { color: var(--orange); }
+
+/* The phone and its floating notes */
+.h19 .fx-stage .rr-phone { box-shadow: 0 50px 100px -30px rgba(0, 0, 0, .8), 0 0 70px -10px rgba(255, 46, 77, .35), 0 0 0 1px rgba(255, 255, 255, .12); animation: h19-glow-pulse 4s ease-in-out infinite; }
+@keyframes h19-glow-pulse { 50% { box-shadow: 0 50px 100px -30px rgba(0, 0, 0, .8), 0 0 110px -5px rgba(255, 122, 26, .5), 0 0 0 1px rgba(255, 255, 255, .16); } }
+.h19 .fx-float { background: rgba(10, 20, 40, .72) !important; border: 1px solid rgba(255, 255, 255, .12) !important; border-radius: 14px;
+  box-shadow: 0 16px 40px -14px rgba(0, 0, 0, .7), 0 0 28px -8px rgba(255, 46, 77, .35) !important; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.h19 .fx-float strong { color: #fff; font-weight: 600; }
+.h19 .fx-float span.sub { color: var(--text-3); font-family: var(--mono); font-size: 11px; }
+.h19 .fx-float .ic { background: linear-gradient(135deg, rgba(214,40,57,.35), rgba(255,122,26,.3)) !important; color: #fff !important; border-radius: 10px; }
+
+@media (max-width: 860px) { .h19-beam { width: 600px; height: 600px; margin-top: -300px; right: -30%; } .h19-blob { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) {
+  .h19-blob, .h19-glow, .h19-beam, .h19 .fx-hero-grid > div:first-child > *, .h19 .fx-flip-word, .h19 .fx-dot,
+  .h19 .fx-btn-glow, .h19 .fx-stage .rr-phone, .h19 .fx-float { animation: none !important; }
+}

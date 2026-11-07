@@ -34,11 +34,23 @@ export default function Home() {
   return (
     <div className="rr-page">
       {/* HERO */}
-      <section className="fx-hero">
+      <section
+        className="fx-hero h19"
+        onPointerMove={(e) => {
+          // The red spotlight follows the pointer; the numbers are read by the CSS.
+          const r = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+          e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+        }}
+      >
         <Aurora />
+        <span className="h19-glow" aria-hidden="true" />
+        <i className="h19-blob b1" aria-hidden="true" /><i className="h19-blob b2" aria-hidden="true" /><i className="h19-blob b3" aria-hidden="true" />
+        <span className="h19-beam" aria-hidden="true" />
+        <span className="h19-spot" aria-hidden="true" />
         <div className="rr-container fx-hero-grid">
           <div>
-            <span className="fx-eyebrow"><span className="fx-dot" /> Now on web, iOS & Android</span>
+            <span className="fx-eyebrow h19-tag"><span className="fx-dot" /> Now on web, iOS &amp; Android</span>
             <h1>
               Fitness that fits <br />
               <FlipWords words={['every budget.', 'every body.', 'every goal.', 'every day.']} />

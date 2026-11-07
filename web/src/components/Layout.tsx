@@ -11,8 +11,11 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { biz, can, type BusinessInfo, type Role } from '../pages/business/api';
 import { BUSINESS_NAV, MEMBER_NAV, isAppPath, type NavItem } from '../config/appNav';
 import SiteFooter from './site/SiteFooter';
+import SpaceStage from './fx/SpaceStage';
 import '../styles/site.css';
 import '../styles/aurora.css';
+import '../styles/hero19.css';
+import '../styles/space.css';
 import { FieldMessage, OfflineBanner } from './states/States';
 
 const LIGHT_ROUTES = ['/', '/features', '/pricing', '/collaborate', '/faq', '/contact', '/privacy', '/terms', '/oauth/consent'];
@@ -145,6 +148,13 @@ export default function Layout() {
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('theme-light', isLight);
   }, [isLight]);
+
+  // The public pages get the space look; the signed-in dashboards keep their own.
+  const isSpace = !isAppPath(location.pathname);
+  useLayoutEffect(() => {
+    document.body.classList.toggle('rr-space', isSpace);
+    return () => document.body.classList.remove('rr-space');
+  }, [isSpace]);
 
   useLayoutEffect(() => {
     if ('scrollRestoration' in window.history) {
@@ -643,6 +653,7 @@ export default function Layout() {
         </div>
       )}
 
+      {isSpace && <SpaceStage path={location.pathname} />}
       <main className="page" key={location.pathname}>
         {location.pathname === '/' && (!sessionChecked || (isLoggedIn && !account.ready)) ? null : <Outlet />}
       </main>

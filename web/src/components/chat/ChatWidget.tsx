@@ -1,6 +1,27 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { OPEN_CHAT_EVENT } from './openChat'
 import './ChatWidget.css'
+import './ChatSpaceship.css'
+
+/** A little rocket for the launch button and the send button. */
+const Rocket = ({ size = 22 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 2c3.2 2.4 5 5.6 5 9.4 0 1.6-.4 3.1-1.1 4.6H8.1C7.4 14.5 7 13 7 11.4 7 7.6 8.8 4.4 12 2z" />
+    <circle cx="12" cy="9.5" r="1.7" />
+    <path d="M8.1 16c-1.7.6-2.8 2-3.1 4 1.6-.3 3-1 3.9-2.2M15.9 16c1.7.6 2.8 2 3.1 4-1.6-.3-3-1-3.9-2.2M10.5 18.5 12 22l1.5-3.5" />
+  </svg>
+)
+
+/** Rumi: a round-helmet pilot with a glowing visor. */
+const Pilot = ({ size = 28 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <circle cx="16" cy="16" r="14" fill="#0b1226" stroke="url(#rm-rim)" strokeWidth="1.6" />
+    <rect x="7.5" y="10.5" width="17" height="11" rx="5.5" fill="#05070d" stroke="#ff7a1a" strokeWidth="1.2" />
+    <circle cx="12.5" cy="16" r="1.7" fill="#ff7a1a" /><circle cx="19.5" cy="16" r="1.7" fill="#ff7a1a" />
+    <path d="M16 3.5V7" stroke="#ff4d4d" strokeWidth="1.6" strokeLinecap="round" /><circle cx="16" cy="3" r="1.4" fill="#ff4d4d" />
+    <defs><linearGradient id="rm-rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ff4d4d" /><stop offset="1" stopColor="#4da3ff" /></linearGradient></defs>
+  </svg>
+)
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 const TEASER_KEY = 'rr-chat-teaser-seen'
@@ -18,7 +39,7 @@ interface Message {
 const WELCOME: Message = {
   id: 'welcome',
   role: 'assistant',
-  text: "Hey! 👋 I'm **Rumi**, Reprummble's assistant. Ask me anything about training, nutrition, recovery, or our plans.\n\nWhat can I help you with today?",
+  text: "Hey, commander! 🚀 I'm **Rumi**, your co-pilot at Reprummble. Ask me anything about training, nutrition, recovery, or our plans.\n\nWhere shall we fly today?",
   quickReplies: ['Pricing & plans', 'Which workout should I start with?', 'Does it sync across devices?', 'Talk to a person'],
   ts: Date.now(),
 }
@@ -207,19 +228,21 @@ export default function ChatWidget() {
     <div className="chat-widget">
       {/* Chat window */}
       {isOpen && (
-        <div className="chat-window">
+        <div className="chat-window ship">
+          <i className="ship-stars" aria-hidden="true" />
           {/* Header */}
           <div className="chat-header">
             <div className="chat-header-info">
-              <div className="chat-avatar">✨</div>
+              <div className="chat-avatar ship-porthole"><Pilot size={34} /></div>
               <div>
                 <div className="chat-header-title">Reprummble Support</div>
                 <div className="chat-status">
-                  <span className="chat-status-dot" style={{ backgroundColor: '#22d3bb' }} />
+                  <span className="chat-status-dot" />
                   Rumi · AI Assistant
                 </div>
               </div>
             </div>
+            <div className="ship-signal" aria-label="Comms link stable" title="Comms link stable"><i /><i /><i /><i /></div>
             <button className="chat-close-btn" onClick={() => setIsOpen(false)} aria-label="Close chat">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -232,7 +255,7 @@ export default function ChatWidget() {
             {messages.map(msg => (
               <div key={msg.id} className={`chat-message ${msg.role === 'user' ? 'user' : 'other'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="chat-message-avatar ai">✨</div>
+                  <div className="chat-message-avatar ai"><Pilot size={30} /></div>
                 )}
                 <div className={`chat-bubble ${msg.role === 'user' ? 'user' : 'other'}`}>
                   {msg.role === 'assistant' && (
@@ -240,7 +263,7 @@ export default function ChatWidget() {
                   )}
                   {msg.streaming && !msg.text ? (
                     <div className="chat-typing-dots" aria-label="Rumi is typing">
-                      <span /><span /><span />
+                      <span /><span /><span /><em>transmitting</em>
                     </div>
                   ) : (
                     <div className="chat-message-text">
@@ -272,7 +295,7 @@ export default function ChatWidget() {
               ref={inputRef}
               type="text"
               className="chat-input"
-              placeholder="Ask me anything..."
+              placeholder="Transmit a message…"
               value={input}
               onChange={e => setInput(e.target.value)}
               disabled={loading}
@@ -283,10 +306,7 @@ export default function ChatWidget() {
               disabled={!input.trim() || loading}
               aria-label="Send"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
+              <Rocket size={18} />
             </button>
           </form>
         </div>
@@ -295,24 +315,23 @@ export default function ChatWidget() {
       {teaser && !isOpen && (
         <div className="chat-teaser" role="status">
           <button type="button" className="chat-teaser-body" onClick={() => { setTeaser(false); setIsOpen(true) }}>
-            <strong>Questions? Ask Rumi 👋</strong>
-            <span>Plans, workouts, or getting started — I reply instantly.</span>
+            <strong>Mission control online 🚀</strong>
+            <span>Questions? Ask Rumi. Plans, workouts, getting started — I reply instantly.</span>
           </button>
           <button type="button" className="chat-teaser-close" onClick={() => setTeaser(false)} aria-label="Dismiss">×</button>
         </div>
       )}
 
       {/* FAB */}
-      <button className="chat-fab" onClick={() => { setTeaser(false); setIsOpen(o => !o) }} aria-label={isOpen ? 'Close support chat' : 'Open support chat'}>
+      <button className="chat-fab ship-fab" onClick={() => { setTeaser(false); setIsOpen(o => !o) }} aria-label={isOpen ? 'Close support chat' : 'Open support chat'}>
         {isOpen ? (
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
           <>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+            <span className="ship-orbit" aria-hidden="true"><i /></span>
+            <Rocket size={26} />
             {unread > 0 && <span className="chat-unread-badge">{unread}</span>}
           </>
         )}
