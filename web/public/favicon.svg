@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs>
+<linearGradient id="bg5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07091a"/><stop offset=".6" stop-color="#1a0b22"/><stop offset="1" stop-color="#3a0d18"/></linearGradient>
+<radialGradient id="moon5" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd9a8"/><stop offset=".55" stop-color="#ff8a4a"/><stop offset="1" stop-color="#e0213a"/></radialGradient>
+<radialGradient id="halo5" cx=".5" cy=".5" r=".5"><stop offset=".5" stop-color="#ff6a3a" stop-opacity=".5"/><stop offset="1" stop-color="#ff6a3a" stop-opacity="0"/></radialGradient>
+<linearGradient id="kb5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d344a"/><stop offset=".6" stop-color="#0d111c"/><stop offset="1" stop-color="#05070d"/></linearGradient>
+</defs><clipPath id="tile"><rect width="1024" height="1024" rx="230"/></clipPath><g clip-path="url(#tile)"><rect width="1024" height="1024" fill="url(#bg5)"/><g transform="translate(512 512) scale(1.12) translate(-512 -560)"><circle cx="512" cy="470" r="420" fill="url(#halo5)"/>
+<circle cx="512" cy="470" r="300" fill="url(#moon5)"/>
+<path d="M392 470 C392 300 632 300 632 470" fill="none" stroke="#05070d" stroke-width="84" stroke-linecap="round"/>
+<circle cx="512" cy="640" r="238" fill="url(#kb5)"/>
+<path d="M392 470 C392 300 632 300 632 470" fill="none" stroke="url(#kb5)" stroke-width="64" stroke-linecap="round"/>
+<path d="M330 560 A200 200 0 0 1 470 430" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="22" stroke-linecap="round"/></g></g></svg>

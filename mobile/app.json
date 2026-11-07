@@ -22,7 +22,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#7a1224"
+        "backgroundColor": "#07091a"
       },
       "package": "com.reprumble.app",
       "permissions": [
@@ -69,7 +69,7 @@
           "image": "./assets/splash.png",
           "resizeMode": "contain",
           "backgroundColor": "#050a14",
-          "imageWidth": 220
+          "imageWidth": 240
         }
       ],
       "expo-web-browser"
