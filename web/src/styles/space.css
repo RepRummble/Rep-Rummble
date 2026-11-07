@@ -268,3 +268,47 @@ body.rr-datapage .sp-gear.z3 { opacity: .18 !important; }
 /* In the space theme the new page flies in out of the depth, like the public pages do */
 body.rr-space .rr-section-in { animation-name: rr-section-fly; animation-duration: .7s; }
 @keyframes rr-section-fly { from { opacity: 0; transform: perspective(1100px) translateZ(-180px) translateY(10px) scale(.96); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* ── Member dashboard (/dashboard, profile, billing, reports, wearables, referral) ───────────
+   Most of it is covered by the dashboard rules above; these are the teal pieces that still need the red-orange palette. */
+body.rr-space .pf-hero, body.rr-space .bl-hero { background: linear-gradient(135deg, #8f1d2a 0%, #4a0e1a 52%, #0a1226 125%) !important; border: 1px solid rgba(255, 110, 80, .28) !important; box-shadow: 0 30px 70px -30px rgba(255, 70, 60, .55), inset 0 1px 0 rgba(255, 255, 255, .1) !important; }
+body.rr-space .pf-hero::before, body.rr-space .pf-hero::after, body.rr-space .bl-hero::before { background: radial-gradient(circle, rgba(255, 122, 26, .4), transparent 70%) !important; }
+body.rr-space .bl-hero::after { background: radial-gradient(circle, rgba(77, 163, 255, .22), transparent 70%) !important; }
+body.rr-space .pf-avatar { background: rgba(255, 255, 255, .1); color: #fff; backdrop-filter: blur(6px); }
+body.rr-space .pf-avatar::after { background: conic-gradient(from var(--fx-angle), #ff4d4d, #ff7a1a, #4da3ff, #ff4d4d); }
+body.rr-space .pf-hero circle[stroke='#5eead4'] { stroke: #ff9a4d; }
+body.rr-space .bl-hero .bl-eyebrow, body.rr-space .bl-hero small, body.rr-space .bl-hero .bl-price small, body.rr-space .bl-hero .bl-line, body.rr-space .bl-hero .pf-row small, body.rr-space .bl-hero .pf-row small *, body.rr-space .bl-meter span { color: #ffd5c4 !important; }
+body.rr-space .bl-hero .bl-line svg { color: #ff9a4d; }
+body.rr-space .bl-meter-track i { background: linear-gradient(90deg, #ff7a1a, #ff4d4d); }
+body.rr-space .bl-switch { background: rgba(255, 255, 255, .22); }
+body.rr-space .bl-switch.on, body.rr-space .bl-hero .bl-switch.on { background: #ff7a1a; }
+body.rr-space .bl-switch:focus-visible { outline-color: rgba(255, 122, 26, .5); }
+body.rr-space .bl-plan-icon { background: rgba(255, 255, 255, .1); border: 1px solid var(--rr-line); }
+body.rr-space .bl-plan.is-pro .bl-plan-icon { color: #4da3ff; }
+body.rr-space .bl-plan.is-pro { background: linear-gradient(160deg, rgba(120, 20, 34, .5), rgba(12, 20, 42, .88)) !important; }
+body.rr-space .pf-badge, body.rr-space .pf-panel .pf-badge, body.rr-space .pf-row .pf-badge { background: rgba(255, 255, 255, .1); color: var(--rr-ink-2); }
+body.rr-space .pf-panel .pf-badge.is-ok, body.rr-space .pf-row .pf-badge.is-ok { background: rgba(30, 201, 138, .16); color: #7ff0c3; }
+body.rr-space .pf-hero .pf-badge, body.rr-space .bl-hero .pf-badge { background: rgba(255, 255, 255, .16); color: #fff; }
+body.rr-space .pf-nav button, body.rr-space .pf-nav a { color: var(--rr-ink-2); }
+body.rr-space .pf-nav button.is-on, body.rr-space .pf-nav a.is-on { background: rgba(230, 57, 70, .2); color: #fff; }
+body.rr-space .pf-row { border-color: var(--rr-line); }
+
+/* Profile goal and diet choices */
+body.rr-space .pf-choice { background: rgba(255, 255, 255, .05) !important; color: var(--rr-ink-2) !important; border: 1px solid var(--rr-line) !important; }
+body.rr-space .pf-choice:hover { border-color: #ff7a1a !important; }
+body.rr-space .pf-choice.on, body.rr-space .pf-choice.is-on, body.rr-space .pf-choice[aria-pressed='true'], body.rr-space .pf-choice[aria-checked='true'] { background: rgba(230, 57, 70, .2) !important; color: #fff !important; border-color: #ff5a5a !important; }
+
+/* Profile: active tab, goal chips and the delete-account area */
+body.rr-space .pf-nav-item { color: var(--rr-ink-2); }
+body.rr-space .pf-nav-item.active { background: rgba(230, 57, 70, .2); color: #fff; }
+body.rr-space .pf-nav-item.is-danger { color: #ff8a8a; }
+body.rr-space .pf-nav-item.is-danger.active { background: rgba(230, 57, 70, .24); color: #ffb3b3; }
+body.rr-space .pf-choice.active { background: rgba(230, 57, 70, .2) !important; color: #fff !important; border-color: #ff5a5a !important; }
+body.rr-space .pf-panel.is-danger { border-color: rgba(255, 90, 90, .45) !important; }
+body.rr-space .pf-panel.is-danger .pf-panel-head h2 { color: #ff8a8a; }
+body.rr-space .pf-warning { background: rgba(230, 57, 70, .14); color: #ffb3b3; border: 1px solid rgba(255, 90, 90, .3); }
+body.rr-space .pf-warning strong { color: #ffd0d0; }
+body.rr-space .pf-warning p { color: #ffc2c2 !important; }
+body.rr-space .rr-btn.pf-btn-danger, body.rr-space .dash-btn-danger { background: #c4263a; border-color: #c4263a; color: #fff; }
+body.rr-space .rr-btn.pf-btn-danger:disabled { background: rgba(196, 38, 58, .35); border-color: transparent; }
+body.rr-space .dash-danger { border-color: rgba(255, 90, 90, .45) !important; }

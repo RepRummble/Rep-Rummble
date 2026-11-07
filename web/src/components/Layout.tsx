@@ -150,8 +150,8 @@ export default function Layout() {
     document.documentElement.classList.toggle('theme-light', isLight);
   }, [isLight]);
 
-  // Public pages and the business dashboard (/business, /admin) get the space look; the member dashboard keeps its own.
-  const isSpace = !isAppPath(location.pathname) || location.pathname.startsWith('/business') || location.pathname.startsWith('/admin');
+  // Every page, public or signed in, has the space look. Data-heavy ones (the dashboards) get a quieter background.
+  const isSpace = true;
   useLayoutEffect(() => {
     document.body.classList.toggle('rr-space', isSpace);
     // Data-heavy pages (the business dashboard) keep the gear, but quieter.
