@@ -46,9 +46,23 @@ export const can = (role: Role, area: Area, mode: 'read' | 'write') => {
 const send = <T>(method: string, path: string, body?: unknown) =>
   apiRequest<T>(`/api/business${path}`, { method, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
+// "Who am I, and do I run a business?" is asked by the top bar and by the dashboard at the same moment, and again if a
+// page asks later. Asking once is enough, so the answer is shared for a few seconds. Anything that changes the answer
+// (saving the profile, applying, signing out) calls biz.invalidate().
+const shared = new Map<string, { at: number; promise: Promise<unknown> }>();
+const once = <T>(key: string, fn: () => Promise<T>): Promise<T> => {
+  const hit = shared.get(key);
+  if (hit && Date.now() - hit.at < 8000) return hit.promise as Promise<T>;
+  const promise = fn();
+  shared.set(key, { at: Date.now(), promise });
+  promise.then((r) => { if ((r as { error?: string })?.error) shared.delete(key); });
+  return promise;
+};
+
 export const biz = {
-  me: () => send<{ business: BusinessInfo | null; role?: Role }>('GET', '/me'),
-  apply: (body: Record<string, string>) => send('POST', '/apply', body),
+  invalidate: () => shared.clear(),
+  me: () => once('me', () => send<{ business: BusinessInfo | null; role?: Role }>('GET', '/me')),
+  apply: (body: Record<string, string>) => { shared.clear(); return send('POST', '/apply', body); },
   stats: (weeks: number) => send<Stats>('GET', `/stats?weeks=${weeks}`),
   members: {
     list: () => send<Member[]>('GET', '/members'),
@@ -76,13 +90,13 @@ export const biz = {
     create: (body: Omit<Staff, 'id'>) => send('POST', '/staff', body),
     remove: (id: string) => send('DELETE', `/staff/${id}`),
   },
-  updateProfile: (body: { name: string; type: string; city: string; contactEmail: string }) => send('PATCH', '/profile', body),
+  updateProfile: (body: { name: string; type: string; city: string; contactEmail: string }) => { shared.clear(); return send('PATCH', '/profile', body); },
   admin: {
     list: (status: 'pending' | 'approved' | 'rejected') => send<Application[]>('GET', `/admin/applications?status=${status}`),
-    approve: (id: string) => send('POST', `/admin/applications/${id}/approve`),
-    reject: (id: string, reason: string) => send('POST', `/admin/applications/${id}/reject`, { reason }),
-    revoke: (id: string, reason: string) => send('POST', `/admin/applications/${id}/revoke`, { reason }),
-    status: () => send<{ isAdmin: boolean; pending?: number }>('GET', '/admin/status'),
+    approve: (id: string) => { shared.clear(); return send('POST', `/admin/applications/${id}/approve`); },
+    reject: (id: string, reason: string) => { shared.clear(); return send('POST', `/admin/applications/${id}/reject`, { reason }); },
+    revoke: (id: string, reason: string) => { shared.clear(); return send('POST', `/admin/applications/${id}/revoke`, { reason }); },
+    status: () => once('admin-status', () => send<{ isAdmin: boolean; pending?: number }>('GET', '/admin/status')),
   },
 };
 

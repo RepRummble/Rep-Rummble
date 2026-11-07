@@ -104,6 +104,7 @@ export default function Layout() {
   // Find out whether this person runs an approved business (and whether they review applications).
   useEffect(() => {
     if (!isLoggedIn) {
+      biz.invalidate(); // whoever signs in next must not see this person's business
       setAccount({ ready: false, business: null, isAdmin: false, pending: 0 });
       return;
     }
@@ -656,7 +657,9 @@ export default function Layout() {
       )}
 
       {isSpace && <SpaceStage path={location.pathname} />}
-      <main className="page" key={location.pathname}>
+      {/* Inside the signed-in app the layout (and its sign-in check) stays mounted while you move between its pages, so
+          nothing flashes a "checking your account" screen; the pages themselves fade in (see .rr-section-in). */}
+      <main className="page" key={isAppPath(location.pathname) ? `/${location.pathname.split('/')[1]}` : location.pathname}>
         {location.pathname === '/' && (!sessionChecked || (isLoggedIn && !account.ready)) ? null : <Outlet />}
       </main>
 

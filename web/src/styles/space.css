@@ -264,3 +264,7 @@ body.rr-space .rr-popover { background: rgba(10, 18, 38, .96); border: 1px solid
 /* Dashboards: the equipment stays but stays out of the way of tables and numbers */
 body.rr-datapage .sp-gear { opacity: .3 !important; }
 body.rr-datapage .sp-gear.z3 { opacity: .18 !important; }
+
+/* In the space theme the new page flies in out of the depth, like the public pages do */
+body.rr-space .rr-section-in { animation-name: rr-section-fly; animation-duration: .7s; }
+@keyframes rr-section-fly { from { opacity: 0; transform: perspective(1100px) translateZ(-180px) translateY(10px) scale(.96); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }

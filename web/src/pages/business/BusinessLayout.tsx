@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { DEV_BYPASS_AUTH } from '../../config/devAuth';
 import { supabase } from '../../config/supabase';
@@ -24,6 +24,7 @@ function Gate({ title, children }: { title: string; children: React.ReactNode })
 export default function BusinessLayout() {
   usePageMeta({ title: 'Business dashboard', canonical: '/business' });
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [auth, setAuth] = useState<'checking' | 'in' | 'out'>(DEV_BYPASS_AUTH ? 'in' : 'checking');
   const [signedInAs, setSignedInAs] = useState('');
 
@@ -104,7 +105,7 @@ export default function BusinessLayout() {
     <div className="dash-page">
       <div className="rr-container dash-content">
         <p className="dash-top-label">{role} · {business.name}</p>
-        <Outlet context={{ business, role }} />
+        <div key={pathname} className="rr-section-in"><Outlet context={{ business, role }} /></div>
       </div>
     </div>
   );

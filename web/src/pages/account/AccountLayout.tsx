@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { DEV_BYPASS_AUTH } from '../../config/devAuth';
 import { supabase } from '../../config/supabase';
 import { usePageMeta } from '../../hooks/usePageMeta';
@@ -10,6 +10,7 @@ import '../../styles/dashboard.css';
 export default function AccountLayout() {
   usePageMeta({ title: 'Your dashboard', canonical: '/dashboard' });
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [user, setUser] = useAccountUserLoader();
   const [auth, setAuth] = useState<'checking' | 'in' | 'out'>(DEV_BYPASS_AUTH ? 'in' : 'checking');
 
@@ -34,7 +35,7 @@ export default function AccountLayout() {
   return (
     <div className="dash-page">
       <div className="rr-container dash-content">
-        <Outlet context={{ user, setUser }} />
+        <div key={pathname} className="rr-section-in"><Outlet context={{ user, setUser }} /></div>
       </div>
     </div>
   );
