@@ -142,6 +142,8 @@ export interface Workout {
   exercise: string;
   duration: number;
   calories?: number;
+  volume?: number;
+  sets?: { exercise: string; reps: number; weight: number }[];
   completed: boolean;
   timestamp: string;
 }

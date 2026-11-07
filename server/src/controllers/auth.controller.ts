@@ -7,6 +7,7 @@ import { isDBConnected } from "../config/database"
 import { sendMail } from "../services/mail.service"
 import { deleteAccountData } from "../services/account-deletion.service"
 import * as supabaseService from "../services/supabase.service"
+import { computeStreak, levelFromXp } from "../services/progress.service"
 import { User } from "../models/User.model"
 import { ensureLegacyUser } from "../services/legacy-user.service"
 import { JWT_SECRET } from "../config/security"
@@ -200,9 +201,9 @@ export const getMe = async (req: AuthRequest, res: Response) => {
       _id: mongoUser?._id?.toString(),
       email: supabaseResult.user?.email,
       displayName: supabaseResult.user?.user_metadata?.displayName || mongoUser?.displayName,
-      streak: mongoUser?.streak || 0,
+      streak: await computeStreak(userId, 0),
       xp: mongoUser?.xp || 0,
-      level: mongoUser?.level || 1,
+      level: levelFromXp(mongoUser?.xp || 0),
       // What the person chose on the website or in the app, so both show the same goals and preferences.
       profile: {
         goal: supabaseResult.user?.user_metadata?.goal ?? null,

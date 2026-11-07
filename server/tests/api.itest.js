@@ -103,6 +103,10 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   app.use('/api/wearables', require(SRC + '/routes/wearable.routes').default);
   app.use('/api/users', require(SRC + '/routes/user.routes').default);
   app.use('/api/ai', require(SRC + '/routes/ai.routes').default);
+  app.use('/api/progress', require(SRC + '/routes/progress.routes').default);
+  app.use('/api/agent', require(SRC + '/routes/agent.routes').default);
+  app.use('/api/meals', require(SRC + '/routes/meal.routes').default);
+  app.use('/api/workouts', require(SRC + '/routes/workout.routes').default);
   app.use('/api/social', require(SRC + '/routes/social.routes').default);
   app.use('/api/friends', require(SRC + '/routes/friend.routes').default);
   app.use('/api/challenges', require(SRC + '/routes/challenge.routes').default);
@@ -997,9 +1001,9 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   });
 
   console.log('Profile, XP and AI for Supabase accounts');
-  await t('saving XP works for a Supabase account (this used to be a 500 that made "save meal" fail)', async () => {
-    const r = await call('maya', 'PUT', '/api/users/profile', { xp: 25 });
-    assert.equal(r.status, 200); assert.equal(r.body.data.xp, 25);
+  await t('a person can rename themselves but cannot give themselves XP, a level or a streak', async () => {
+    const r = await call('maya', 'PUT', '/api/users/profile', { displayName: 'Maya Chen', xp: 99999, level: 50, streak: 400 });
+    assert.equal(r.status, 200); assert.equal(r.body.data.displayName, 'Maya Chen'); assert.equal(r.body.data.xp, 0); assert.equal(r.body.data.level, 1); assert.equal(r.body.data.streak, 0);
     assert.equal((await call('maya', 'GET', '/api/users/profile')).status, 200);
   });
   await t('food photo analysis says so when the AI is unavailable, instead of inventing nutrition numbers', async () => {
@@ -1028,6 +1032,134 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal(me.status, 200);
     assert.deepEqual(me.body.data.profile, { goal: null, activity: null, diets: [], notifications: null });
   });
+
+  console.log('Daily missions, XP and streak (decided by the server)');
+  const prog = require(SRC + '/services/progress.service');
+  const today = () => new Date().toISOString().slice(0, 10);
+  const q = (extra = {}) => new URLSearchParams({ day: today(), tz: '0', glasses: '0', ...extra }).toString();
+  await t('streak counting: consecutive days ending today or yesterday, nothing after a gap', () => {
+    const d = (n) => new Date(Date.UTC(2026, 10, 7 - n)).toISOString().slice(0, 10);
+    assert.equal(prog.streakFromDays(new Set([d(0), d(1), d(2), d(4)]), d(0)), 3);
+    assert.equal(prog.streakFromDays(new Set([d(1), d(2)]), d(0)), 2);            // today still open
+    assert.equal(prog.streakFromDays(new Set([d(2), d(3)]), d(0)), 0);            // a missed day ends it
+    assert.equal(prog.streakFromDays(new Set(), d(0)), 0);
+  });
+  await t('a day is the person\'s own local day, not UTC', () => {
+    // 23:30 UTC on Nov 7 is already Nov 8 in Sydney (UTC+11: tz offset -660) and still Nov 7 in New York (tz 300)
+    const now = new Date(Date.UTC(2026, 10, 7, 23, 30));
+    assert.equal(prog.localDay(now, -660), '2026-11-08'); assert.equal(prog.localDay(now, 300), '2026-11-07');
+    const w = prog.dayWindow('2026-11-08', -660); assert.equal(w.start.toISOString(), '2026-11-07T13:00:00.000Z');
+  });
+  await t('missions start empty and only complete from things really logged', async () => {
+    const r = await call('maya', 'GET', '/api/progress/missions?' + q());
+    assert.equal(r.status, 200); assert.equal(r.body.data.missions.length, 5); assert.ok(r.body.data.missions.every((m) => !m.done)); assert.equal(r.body.data.claimableXp, 0); assert.equal(r.body.data.xp, 0);
+    await call('maya', 'POST', '/api/meals', { foodName: 'Chicken bowl', calories: 600, protein: 55, carbs: 50, fat: 15 });
+    const r2 = await call('maya', 'GET', '/api/progress/missions?' + q());
+    assert.deepEqual(r2.body.data.missions.filter((m) => m.done).map((m) => m.id), ['log-meal']); assert.equal(r2.body.data.claimableXp, 20);
+  });
+  await t('collecting pays once, and the same request many times at once still pays once', async () => {
+    const body = { day: today(), tz: 0, glasses: 0, ids: ['log-meal'] };
+    const results = await Promise.all(Array.from({ length: 6 }, () => call('maya', 'POST', '/api/progress/missions/claim', body)));
+    assert.ok(results.every((r) => r.status === 200));
+    assert.equal(results.reduce((s, r) => s + (r.body.data.awarded || 0), 0), 20);
+    const after = await call('maya', 'GET', '/api/progress/missions?' + q());
+    assert.equal(after.body.data.xp, 20); assert.equal(after.body.data.missions.find((m) => m.id === 'log-meal').claimed, true); assert.equal(after.body.data.claimableXp, 0);
+    const again = await call('maya', 'POST', '/api/progress/missions/claim', body); assert.equal(again.body.data.awarded, 0); assert.equal(again.body.data.xp, 20);
+  });
+  await t('asking for a mission that is not complete pays nothing', async () => {
+    const r = await call('maya', 'POST', '/api/progress/missions/claim', { day: today(), tz: 0, glasses: 0, ids: ['train', 'protein', 'not-a-mission'] });
+    assert.equal(r.status, 200); assert.equal(r.body.data.awarded, 0); assert.equal(r.body.data.xp, 20);
+  });
+  await t('water and targets: a hydration mission completes at the person\'s own target, and targets are kept sensible', async () => {
+    const r = await call('maya', 'GET', '/api/progress/missions?' + q({ glasses: '6', water: '6' }));
+    assert.equal(r.body.data.missions.find((m) => m.id === 'hydrate').done, true);
+    const silly = await call('maya', 'GET', '/api/progress/missions?' + q({ protein: '1', calories: '99999' }));
+    const prot = silly.body.data.missions.find((m) => m.id === 'protein'); assert.equal(prot.target, 20);                  // protein target clamped to 20 g
+    assert.equal(silly.body.data.missions.find((m) => m.id === 'calories').target, 6000);
+  });
+  await t('only today can be read or collected, and the request must be well formed', async () => {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    assert.equal((await call('maya', 'GET', '/api/progress/missions?' + q({ day: yesterday }))).status, 400);
+    assert.equal((await call('maya', 'GET', '/api/progress/missions?day=banana&tz=0')).status, 400);
+    assert.equal((await call('maya', 'POST', '/api/progress/missions/claim', { day: today(), tz: 0, ids: [] })).status, 400);
+    assert.equal((await call(null, 'GET', '/api/progress/missions?' + q())).status, 401);
+  });
+  await t('the streak is counted from real workouts: today and yesterday make 2, a gap breaks it', async () => {
+    const now = Date.now(), day = 86400000;
+    await call('newbie', 'POST', '/api/workouts', { exercise: 'Run', duration: 30, timestamp: new Date(now).toISOString() });
+    await call('newbie', 'POST', '/api/workouts', { exercise: 'Squat', duration: 30, timestamp: new Date(now - day).toISOString() });
+    await call('newbie', 'POST', '/api/workouts', { exercise: 'Old', duration: 30, timestamp: new Date(now - 5 * day).toISOString() });
+    const r = await call('newbie', 'GET', '/api/progress/missions?' + q());
+    assert.equal(r.status, 200); assert.equal(r.body.data.streak, 2);
+    const me = await call('newbie', 'GET', '/api/auth/me'); assert.equal(me.status, 200); assert.ok(me.body.data.streak >= 1 && me.body.data.streak <= 2);
+  });
+
+  console.log('Workouts with sets');
+  await t('a workout keeps its sets and volume, and only known fields are taken from the request', async () => {
+    const r = await call('dash', 'POST', '/api/workouts', { exercise: 'Push day', duration: 52, completed: true, volume: 5400, sets: [{ exercise: 'Bench Press', reps: 8, weight: 80 }, { exercise: 'Bench Press', reps: 6, weight: 85 }], userId: 'someone-else', hacked: true });
+    assert.equal(r.status, 201); assert.equal(r.body.data.sets.length, 2); assert.equal(r.body.data.volume, 5400);
+    assert.notEqual(r.body.data.userId, 'someone-else'); assert.equal(r.body.data.hacked, undefined);
+    const list = await call('dash', 'GET', '/api/workouts'); assert.equal(list.body.data[0].sets[1].weight, 85);
+  });
+  await t('absurd sets are refused with a clear error, and nothing is saved', async () => {
+    const before = (await call('dash', 'GET', '/api/workouts')).body.count;
+    const r = await call('dash', 'POST', '/api/workouts', { exercise: 'x', duration: 5, sets: [{ exercise: 'Bench', reps: 8, weight: 99999 }] });
+    assert.equal(r.status, 400); assert.equal((await call('dash', 'GET', '/api/workouts')).body.count, before);
+  });
+
+  console.log('Support-agent live chat requires a signed-in agent');
+  const { initializeSocket } = require(SRC + '/config/socket');
+  initializeSocket(server);
+  const { io: ioClient } = require('socket.io-client');
+  const tryAgentSocket = (token) => new Promise((resolve) => {
+    const sock = ioClient(base + '/agent', { transports: ['websocket'], auth: token === undefined ? {} : { token }, reconnection: false, timeout: 4000 });
+    const done = (r) => { sock.close(); resolve(r); };
+    sock.on('connect_error', (e) => done({ ok: false, message: e.message }));
+    sock.on('agent_ready', (d) => done({ ok: true, ...d }));
+  });
+  await t('someone who is not signed in cannot connect to the agent queue', async () => {
+    assert.deepEqual(await tryAgentSocket(undefined), { ok: false, message: 'Not authorized' });
+    assert.deepEqual(await tryAgentSocket('not-a-token'), { ok: false, message: 'Not authorized' });
+  });
+  await t('a signed-in person who is not a support agent is refused too', async () => {
+    assert.deepEqual(await tryAgentSocket('maya'), { ok: false, message: 'Agent access required' });
+  });
+  await t('a real support agent connects, and is identified by their account, not by anything they send', async () => {
+    const { ensureLegacyUser } = require(SRC + '/services/legacy-user.service');
+    const { SupportAgent } = require(SRC + '/models/SupportAgent.model');
+    const acct = await ensureLegacyUser(users.coach.email, 'Casey Coach');
+    const agent = await SupportAgent.create({ userId: acct._id, displayName: 'Casey', email: users.coach.email });
+    const r = await tryAgentSocket('coach');
+    assert.equal(r.ok, true); assert.equal(r.agentId, agent._id.toString()); assert.equal(r.agentName, 'Casey');
+    assert.equal((await call('coach', 'GET', '/api/agent/dashboard')).status !== 403, true);
+  });
+
+  console.log('AI allowances (cost protection)');
+  const gem = require(SRC + '/services/gemini.service');
+  const realAnalyze = gem.analyzeFoodImageWithGemini; let aiMode = 'ok';
+  gem.analyzeFoodImageWithGemini = async () => { if (aiMode === 'down') throw new gem.AiUnavailableError(); return { detectedFoods: [], totalNutrition: { calories: 100, protein: 5, carbs: 10, fat: 2 }, healthScore: 70, suggestions: [], alternatives: [], confidence: 0.9, mealType: 'lunch' }; };
+  const photo = { imageBase64: 'A'.repeat(300) };
+  await t('a Free account gets 3 photo scans a day, counted on the server; the 4th is refused with a clear message', async () => {
+    for (let i = 0; i < 3; i++) assert.equal((await call('oldtimer', 'POST', '/api/ai/analyze-food', photo)).status, 200);
+    const r = await call('oldtimer', 'POST', '/api/ai/analyze-food', photo);
+    assert.equal(r.status, 429); assert.equal(r.body.code, 'quota_exceeded'); assert.equal(r.body.limit, 3); assert.match(r.body.message, /free photo scans/);
+  });
+  await t('scans that fail (AI down, bad photo) are not counted against the allowance', async () => {
+    aiMode = 'down';
+    for (let i = 0; i < 5; i++) assert.equal((await call('ref', 'POST', '/api/ai/analyze-food', photo)).status, 503);
+    assert.equal((await call('ref', 'POST', '/api/ai/analyze-food', { imageBase64: 'short' })).status, 400);
+    aiMode = 'ok';
+    for (let i = 0; i < 3; i++) assert.equal((await call('ref', 'POST', '/api/ai/analyze-food', photo)).status, 200);
+    assert.equal((await call('ref', 'POST', '/api/ai/analyze-food', photo)).status, 429);
+  });
+  await t('one person\'s allowance does not affect another\'s', async () => {
+    assert.equal((await call('lateReal', 'POST', '/api/ai/analyze-food', photo)).status, 200);
+  });
+  await t('a photo that is far too large is refused before it reaches the AI', async () => {
+    const r = await call('lateReal', 'POST', '/api/ai/analyze-food', { imageBase64: 'A'.repeat(8_100_000) });
+    assert.equal(r.status, 413);
+  });
+  gem.analyzeFoodImageWithGemini = realAnalyze;
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
   server.close(); await require('mongoose').disconnect(); await mms.stop();

@@ -1,4 +1,7 @@
 import { Request, Response } from 'express'
+import { AiUsage } from '../models/AiUsage.model'
+import { AI_DAILY_LIMITS, utcDay } from '../middleware/aiQuota.middleware'
+import { getBillingView } from '../services/billing.service'
 import { AiUnavailableError, analyzeFoodImageWithGemini, quickLogMealWithGemini } from '../services/gemini.service'
 import { searchFoods } from '../services/usda.service'
 
@@ -17,6 +20,11 @@ export const analyzeFood = async (req: Request, res: Response) => {
         success: false,
         message: 'Image data is required'
       })
+    }
+
+    // About 6 MB of picture is plenty for a meal photo; anything larger is refused before it reaches the AI
+    if (typeof imageBase64 === 'string' && imageBase64.length > 8_000_000) {
+      return res.status(413).json({ success: false, message: 'That photo is too large. Try a smaller one.' })
     }
 
     // Validate base64 format (basic check)
@@ -194,5 +202,21 @@ export const searchNutrition = async (req: Request, res: Response) => {
       success: false,
       message: error.message || 'Failed to search nutrition info'
     })
+  }
+}
+
+// @desc    How many AI calls the person has left today
+// @route   GET /api/ai/usage
+export const getAiUsage = async (req: any, res: Response) => {
+  try {
+    const userId = req.user!.id as string
+    let paid = false
+    try { paid = (await getBillingView(userId)).effectivePlan !== 'free' } catch { /* treated as Free */ }
+    const doc = await AiUsage.findOne({ userId, day: utcDay() }).lean()
+    const limits = AI_DAILY_LIMITS[paid ? 'paid' : 'free']
+    const used = { scan: doc?.counts?.scan ?? 0, quicklog: doc?.counts?.quicklog ?? 0, search: doc?.counts?.search ?? 0 }
+    return res.json({ success: true, data: { plan: paid ? 'paid' : 'free', limits, used } })
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Could not read your usage.' })
   }
 }

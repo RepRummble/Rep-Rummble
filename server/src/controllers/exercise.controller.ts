@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import { Exercise } from '../models/Exercise.model'
 import { WorkoutPlan } from '../models/WorkoutPlan.model'
 import { WorkoutSession } from '../models/WorkoutSession.model'
-import { generateExerciseWithAI, generateWorkoutPlan, seedExercises } from '../services/exercise.service'
+import { seedExercises } from '../services/exercise.service'
 import { analyzeForm, generateFormFeedback } from '../services/pose.service'
 
 /**
@@ -69,44 +69,8 @@ export const getExercise = async (req: Request, res: Response) => {
   }
 }
 
-/**
- * @route   POST /api/exercises/generate
- * @desc    Generate a new exercise using AI
- * @access  Private (Admin)
- */
-export const generateExercise = async (req: Request, res: Response) => {
-  try {
-    const { name, category, difficulty, muscleGroups, equipment } = req.body
-
-    if (!name || !category || !difficulty || !muscleGroups) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: name, category, difficulty, muscleGroups'
-      })
-    }
-
-    const exerciseData = await generateExerciseWithAI({
-      name,
-      category,
-      difficulty,
-      muscleGroups,
-      equipment
-    })
-
-    const exercise = new Exercise(exerciseData)
-    await exercise.save()
-
-    return res.status(201).json({
-      success: true,
-      data: exercise
-    })
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to generate exercise'
-    })
-  }
-}
+export const NOT_AVAILABLE = (_req: Request, res: Response) =>
+  res.status(501).json({ success: false, code: 'not_available', message: 'Automatic plan and exercise generation is not available yet.' })
 
 /**
  * @route   POST /api/exercises/seed
@@ -190,56 +154,7 @@ export const getWorkoutPlan = async (req: Request, res: Response) => {
   }
 }
 
-/**
- * @route   POST /api/workout-plans/generate
- * @desc    Generate a personalized workout plan using AI
- * @access  Private
- */
-export const generateWorkoutPlanController = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user._id
-    const {
-      goal,
-      fitnessLevel,
-      durationWeeks,
-      daysPerWeek,
-      minutesPerWorkout,
-      availableEquipment,
-      focusAreas,
-      injuries
-    } = req.body
-
-    // Validate required fields
-    if (!goal || !fitnessLevel) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: goal, fitnessLevel'
-      })
-    }
-
-    const plan = await generateWorkoutPlan({
-      userId: userId.toString(),
-      goal,
-      fitnessLevel,
-      durationWeeks: durationWeeks || 4,
-      daysPerWeek: daysPerWeek || 3,
-      minutesPerWorkout: minutesPerWorkout || 45,
-      availableEquipment: availableEquipment || ['bodyweight'],
-      focusAreas,
-      injuries
-    })
-
-    return res.status(201).json({
-      success: true,
-      data: plan
-    })
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to generate workout plan'
-    })
-  }
-}
+export const generateWorkoutPlanController = NOT_AVAILABLE
 
 /**
  * @route   DELETE /api/workout-plans/:id

@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Dimensions, Alert, Modal,
+  Dimensions, Alert, Modal, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useSubscription, PLAN_PRICES } from '../context/SubscriptionContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { PlanId } from '../types';
 
 import { colors } from '../theme/colors';
@@ -149,46 +149,16 @@ export function PaywallModal({
 
 export default function SubscriptionScreen() {
   const navigation = useNavigation();
-  const { plan: currentPlan, setPlan } = useSubscription();
-  const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
+  const { plan: currentPlan, prices, includedBy, refresh } = useSubscription();
   const [selected, setSelected] = useState<PlanId>(currentPlan === 'free' ? 'pro' : currentPlan);
 
-  const handleSubscribe = (planId: PlanId) => {
-    if (planId === 'free') {
-      Alert.alert('Downgrade', 'Downgrade to Free plan?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Downgrade', style: 'destructive', onPress: () => { setPlan('free'); (navigation as any).goBack(); } },
-      ]);
-      return;
-    }
-
-    const plan = PLANS.find(p => p.id === planId)!;
-    const price = billing === 'monthly' ? PLAN_PRICES[planId].monthly : PLAN_PRICES[planId].annual;
-    const period = billing === 'monthly' ? '/month' : '/year';
-
-    Alert.alert(
-      `Subscribe to ${plan.name}`,
-      `$${price}${period}\n\nThis is a demo — no real payment is processed.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Subscribe', onPress: () => {
-            setPlan(planId);
-            Alert.alert('Welcome to ' + plan.name + '!', 'Your plan has been activated.', [
-              { text: 'Awesome!', onPress: () => (navigation as any).goBack() },
-            ]);
-          },
-        },
-      ]
-    );
+  // Plans are bought and managed on the website, with this same account, and apply here as soon as they start.
+  // (No purchase happens inside the app, so nothing here can unlock a plan without paying.)
+  const handleSubscribe = (_planId: PlanId) => {
+    Linking.openURL('https://www.reprummble.com/dashboard/billing').catch(() => Alert.alert('Could not open the website', 'Go to reprummble.com/dashboard/billing in your browser.'));
   };
 
-  const savings = (planId: PlanId) => {
-    if (planId === 'free') return null;
-    const m = PLAN_PRICES[planId].monthly * 12;
-    const a = PLAN_PRICES[planId].annual;
-    return Math.round(((m - a) / m) * 100);
-  };
+  useEffect(() => { refresh(); }, [refresh]);
 
   return (
     <View style={st.root}>
@@ -224,33 +194,13 @@ export default function SubscriptionScreen() {
             </View>
           </View>
 
-          {/* Billing toggle */}
-          <View style={st.billingToggle}>
-            {(['monthly', 'annual'] as const).map(b => (
-              <TouchableOpacity
-                key={b}
-                style={[st.billingBtn, billing === b && st.billingBtnActive]}
-                onPress={() => setBilling(b)}
-              >
-                <Text style={[st.billingBtnText, billing === b && st.billingBtnTextActive]}>
-                  {b === 'monthly' ? 'Monthly' : 'Annual'}
-                </Text>
-                {b === 'annual' && (
-                  <View style={st.savingsBadge}>
-                    <Text style={st.savingsBadgeText}>Save up to 33%</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text style={st.heroSub}>{includedBy ? `Pro is included with your gym, ${includedBy}.` : 'Plans are managed on reprummble.com with this same account, and apply here straight away.'}</Text>
 
           {/* Plan Cards */}
           {PLANS.map(plan => {
-            const price = PLAN_PRICES[plan.id];
-            const shown = billing === 'monthly' ? price.monthly : price.annual;
+            const shown = plan.id === 'free' ? 0 : (prices[plan.id] ?? null);
             const isSelected = selected === plan.id;
             const isCurrent = currentPlan === plan.id;
-            const save = savings(plan.id);
 
             return (
               <TouchableOpacity
@@ -283,7 +233,9 @@ export default function SubscriptionScreen() {
 
                     {/* Price */}
                     <View style={{ alignItems: 'flex-end' }}>
-                      {shown === 0 ? (
+                      {shown === null ? (
+                        <Text style={[st.planPricePer]}>See website</Text>
+                      ) : shown === 0 ? (
                         <Text style={[st.planPrice, { color: plan.textColor }]}>Free</Text>
                       ) : (
                         <>
@@ -291,13 +243,8 @@ export default function SubscriptionScreen() {
                             <Text style={[st.planPriceDollar, { color: plan.textColor }]}>$</Text>
                             <Text style={[st.planPrice, { color: plan.textColor }]}>{shown}</Text>
                           </View>
-                          <Text style={st.planPricePer}>/{billing === 'monthly' ? 'mo' : 'yr'}</Text>
+                          <Text style={st.planPricePer}>/mo</Text>
                         </>
-                      )}
-                      {billing === 'annual' && save && (
-                        <View style={[st.saveTag, { backgroundColor: plan.border + '30' }]}>
-                          <Text style={[st.saveTagText, { color: plan.textColor }]}>Save {save}%</Text>
-                        </View>
                       )}
                     </View>
                   </View>
@@ -325,7 +272,7 @@ export default function SubscriptionScreen() {
                       </View>
                     ) : plan.id === 'free' ? (
                       <View style={[st.ctaOutline, { borderColor: colors.borderStrong }]}>
-                        <Text style={[st.ctaOutlineText, { color: colors.faint }]}>Downgrade to Free</Text>
+                        <Text style={[st.ctaOutlineText, { color: colors.faint }]}>Manage on the website</Text>
                       </View>
                     ) : (
                       <LinearGradient
@@ -333,7 +280,7 @@ export default function SubscriptionScreen() {
                         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                         style={st.ctaBtn}
                       >
-                        <Text style={st.ctaBtnText}>Get {plan.name}</Text>
+                        <Text style={st.ctaBtnText}>Get {plan.name} on the website</Text>
                         <Ionicons name="arrow-forward" size={16} color={colors.white} />
                       </LinearGradient>
                     )}

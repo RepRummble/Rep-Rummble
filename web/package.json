@@ -16,7 +16,6 @@
     "@stripe/stripe-js": "^10.0.0",
     "@supabase/supabase-js": "^2.93.3",
     "@tailwindcss/postcss": "^4.3.5",
-    "firebase": "^12.8.0",
     "lucide-react": "^0.563.0",
     "motion": "^14.10.1",
     "postcss": "^8.5.32",

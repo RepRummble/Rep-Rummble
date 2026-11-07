@@ -62,20 +62,9 @@ export default function FoodResultsScreen() {
 
       await api.post('/meals', mealData);
 
-      // The meal is saved at this point. XP is a bonus, so a failure here must not look like a failed save.
-      if (user) {
-        const newXp = (user.xp || 0) + 5;
-        try {
-          await api.put('/users/profile', { xp: newXp });
-          updateUser({ xp: newXp });
-        } catch (xpError) {
-          console.warn('XP update failed:', xpError);
-        }
-      }
-
       Alert.alert(
         'Meal Logged!',
-        'Your meal has been saved. +5 XP earned!',
+        'Your meal has been saved. Collect your daily mission XP on the Home screen.',
         [{ text: 'Great!', onPress: () => navigation.navigate('Main' as never) }]
       );
     } catch (error) {

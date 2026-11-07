@@ -11,7 +11,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.reprumble.app",
+      "bundleIdentifier": "com.reprummble.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Reprummble needs camera access to scan your meals and track your workout form.",
         "NSPhotoLibraryUsageDescription": "Reprummble needs photo library access to select meal photos for nutrition analysis.",
@@ -24,7 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#07091a"
       },
-      "package": "com.reprumble.app",
+      "package": "com.reprummble.app",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

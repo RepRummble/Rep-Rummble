@@ -52,34 +52,39 @@
 
 ---
 
-## Planned
+## Done in the trust-and-safety pass (November 2026)
 
-### Phase 1 — Core completeness
-- [ ] Wearable data sync (HealthKit / Google Fit live pull)
-- [ ] Recovery score live calculation and display
-- [ ] Mobile app store submission (iOS + Android)
+- [x] Mobile Train and Health screens show only the person's real logs and Apple Health readings (no sample data)
+- [x] XP, level, streak and daily missions decided by the server; clients cannot set them
+- [x] Server-side daily AI allowances (free vs paid) and a per-person burst limit; photo size cap
+- [x] In-app plan upgrade removed: plans are read from the server and bought on the website
+- [x] Support-agent live chat requires a signed-in agent (the socket was open to anyone)
+- [x] Mock plan/exercise generators, Oracle code, Firebase and the template hero pages removed
+- [x] `server/.env` no longer tracked (see docs/ROTATE_SECRETS.md: the old values must still be rotated)
+- [x] Guided workout player that records real sets; personal records computed from them
+- [x] Mission Control home (rank, missions, hydration, briefing, achievements), real Profile actions, password reset email
 
-### Phase 2 — Social and engagement
-- [ ] Buddy challenges (1-on-1 direct challenge)
-- [ ] Group workouts
-- [ ] Achievement badges and XP system
+## Next
 
-### Phase 3 — AI and analytics
-- [ ] Predictive progress analytics (ML model)
-- [ ] Adaptive training plan — auto-adjusts based on recovery score
-- [ ] AI-powered meal swap suggestions in real time
+### Needed before a public launch
+- [ ] Rotate the secrets listed in docs/ROTATE_SECRETS.md, then purge `server/.env` from git history
+- [ ] Report and block for the social feed (App Store requirement for user-generated content)
+- [ ] Real in-app purchases, or keep buying on the website only (decide, then follow store rules)
+- [x] Bundle ID chosen: `com.reprummble.app` (iOS and Android)
+- [ ] EAS project, store listings and screenshots
+- [ ] Error monitoring (Sentry) and basic product analytics
+- [ ] Staging environment; paid Render plan (no cold starts)
 
-### Phase 4 — Scale and polish
-- [ ] Offline mode (service worker caching for mobile)
-- [ ] Performance optimisation (code splitting, lazy routes)
-- [ ] End-to-end test suite (Playwright for web, Detox for mobile)
-- [ ] Multi-language support (ES, PT, FR)
+### Features users expect
+- [ ] Push notifications and reminders (preferences are saved; nothing sends yet)
+- [ ] Personal calorie and protein targets worked out from age, weight, height, sex and goal
+- [ ] First-run setup for new accounts
+- [ ] Weight and measurement tracking with progress charts
+- [ ] Food: barcode scan, saved meals, edit or delete a logged meal
+- [ ] Android: Health Connect
+- [ ] Website parity: log meals and workouts on the website; social on the website
+- [ ] Units (metric/imperial), languages (ES, PT, FR), offline logging queue, deep links for invites
 
----
-
-## Implementation priorities
-
-1. Wearable sync — unlocks recovery score and health ecosystem features
-2. Mobile app store release — biggest growth channel
-3. Buddy challenges — core differentiator for Gen Z retention
-4. Adaptive training AI — deepens daily engagement
+### Quality
+- [ ] Tests for the mobile app and the website (server has 127 integration checks; the e2e suite is a separate repo)
+- [ ] Accessibility pass on the mobile app

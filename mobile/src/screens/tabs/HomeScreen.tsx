@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
   TouchableOpacity, Dimensions, Animated, Alert,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../config/api';
@@ -23,9 +23,11 @@ import MissionsCard from '../../features/mission/MissionsCard';
 import WaterCard from '../../features/mission/WaterCard';
 import BriefingCard from '../../features/mission/BriefingCard';
 import BadgesRow from '../../features/mission/BadgesRow';
-import { GOALS, badgesFor, claimableXp, dayKey, insightsFor, levelFromXp, missionsFor } from '../../features/mission/missionLogic';
-import { loadClaimed, loadWater, saveClaimed, saveWater } from '../../features/mission/missionStore';
+import { GOALS, Mission, badgesFor, dayKey, insightsFor, levelFromXp } from '../../features/mission/missionLogic';
+import { loadWater, saveWater } from '../../features/mission/missionStore';
 import { useTargets } from '../../features/profile/targetsStore';
+interface ServerProgress { xp: number; level: number; streak: number; missions: (Mission & { claimed: boolean })[]; claimableXp: number; awarded?: number }
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const { width: SW } = Dimensions.get('window');
 
@@ -87,19 +89,27 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [water, setWater] = useState(0);
-  const [claimed, setClaimed] = useState<string[]>([]);
+  // XP, level, streak and the daily missions are decided by the server, from what has really been logged.
+  const [progress, setProgress] = useState<ServerProgress | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Water and collected missions are saved per calendar day on this phone.
+  // Water is saved per calendar day on this phone (and sent to the server when it checks the hydration mission).
   const uid = user?._id || user?.email || 'me';
-  useEffect(() => {
-    const day = dayKey();
-    loadWater(uid, day).then(setWater);
-    loadClaimed(uid, day).then(setClaimed);
-  }, [uid]);
+  useEffect(() => { loadWater(uid, dayKey()).then(setWater); }, [uid]);
+
+  const loadProgress = useCallback(async (glasses = water) => {
+    try {
+      const res = await api.get('/progress/missions', { params: { day: dayKey(), tz: new Date().getTimezoneOffset(), calories: targets.calories, protein: targets.protein, water: targets.water, glasses } });
+      const snap = res.data?.data as ServerProgress;
+      setProgress(snap);
+      updateUser({ xp: snap.xp, level: snap.level, streak: snap.streak });
+    } catch { /* offline: the missions card simply waits until we are back */ }
+  }, [water, targets.calories, targets.protein, targets.water, updateUser]);
+
+  // Whenever you come back to Home (after logging a meal or a workout, say) the day is read again.
+  useFocusEffect(useCallback(() => { fetchData(); loadProgress(); }, [loadProgress]));
 
   useEffect(() => {
-    fetchData();
     // Pulse animation for streak
     const pulse = Animated.loop(
       Animated.sequence([
@@ -123,7 +133,7 @@ export default function HomeScreen() {
     setLoading(false);
   };
 
-  const onRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
+  const onRefresh = async () => { setRefreshing(true); await Promise.all([fetchData(), loadProgress()]); setRefreshing(false); };
 
   const today = new Date().toDateString();
   const todayMeals = meals.filter(m => new Date(m.timestamp).toDateString() === today);
@@ -139,34 +149,32 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const currentXP = user?.xp || 0;
+  const currentXP = progress?.xp ?? user?.xp ?? 0;
+  const streak = progress?.streak ?? user?.streak ?? 0;
 
   // Missions, briefing and medals are all worked out from what has really been logged.
-  const missions = missionsFor({ mealsLogged: todayMeals.length, calories: totalCalories, protein: totalProtein, workouts: todayWorkouts.length, water }, goals);
+  const missions: Mission[] = progress?.missions ?? [];
+  const claimed = missions.filter(m => (m as any).claimed).map(m => m.id);
   const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
   const workoutsLast7 = workouts.filter(w => new Date(w.timestamp).getTime() >= weekAgo).length;
   const daysWithMealsLast7 = new Set(meals.filter(m => new Date(m.timestamp).getTime() >= weekAgo).map(m => dayKey(new Date(m.timestamp)))).size;
-  const insights = insightsFor({ todayCalories: totalCalories, todayProtein: totalProtein, todayWorkouts: todayWorkouts.length, todayMeals: todayMeals.length, streak: user?.streak || 0, hour, workoutsLast7, daysWithMealsLast7 }, goals);
-  const badges = badgesFor({ meals: meals.length, workouts: workouts.length, streak: user?.streak || 0, level: levelFromXp(currentXP) });
+  const insights = insightsFor({ todayCalories: totalCalories, todayProtein: totalProtein, todayWorkouts: todayWorkouts.length, todayMeals: todayMeals.length, streak, hour, workoutsLast7, daysWithMealsLast7 }, goals);
+  const badges = badgesFor({ meals: meals.length, workouts: workouts.length, streak, level: levelFromXp(currentXP) });
 
-  const changeWater = (n: number) => { setWater(n); saveWater(uid, dayKey(), n); };
+  const changeWater = (n: number) => { setWater(n); saveWater(uid, dayKey(), n); loadProgress(n); };
 
-  // Collect XP for finished missions: saved to the account first, and only marked as collected once that worked.
+  // Collect XP: the server checks the missions are really complete, pays each one once, and answers with the new totals.
   const claimMissions = async (ids: string[]): Promise<boolean> => {
-    const gain = claimableXp(missions.filter(m => ids.includes(m.id)), claimed);
-    if (gain <= 0) return false;
-    const newXp = currentXP + gain;
     try {
-      await api.put('/users/profile', { xp: newXp, level: levelFromXp(newXp) });
-    } catch {
-      Alert.alert('Could not collect XP', 'Check your connection and try again. Your mission is still complete.');
+      const res = await api.post('/progress/missions/claim', { day: dayKey(), tz: new Date().getTimezoneOffset(), targets, glasses: water, ids });
+      const snap = res.data?.data as ServerProgress;
+      setProgress(snap);
+      updateUser({ xp: snap.xp, level: snap.level, streak: snap.streak });
+      return (snap.awarded ?? 0) > 0;
+    } catch (e: any) {
+      Alert.alert('Could not collect XP', e?.response?.data?.message || 'Check your connection and try again. Your mission is still complete.');
       return false;
     }
-    updateUser({ xp: newXp, level: levelFromXp(newXp) });
-    const next = [...claimed, ...ids.filter(i => !claimed.includes(i))];
-    setClaimed(next);
-    await saveClaimed(uid, dayKey(), next);
-    return true;
   };
 
   const recentActivity = [
@@ -193,7 +201,7 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <RankCard xp={currentXP} streak={user?.streak || 0} />
+          <RankCard xp={currentXP} streak={streak} />
 
           {savedAt !== undefined && <StaleNote savedAt={savedAt} what="Your day is" />}
           {loading ? <HomeSkeleton /> : failed && meals.length === 0 && workouts.length === 0 ? (
@@ -244,7 +252,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Missions, hydration and briefing ── */}
-          <MissionsCard missions={missions} claimed={claimed} onClaim={claimMissions} />
+          {progress ? <MissionsCard missions={missions} claimed={claimed} onClaim={claimMissions} /> : null}
           <WaterCard glasses={water} goal={goals.water} onChange={changeWater} />
           <BriefingCard insights={insights} onAsk={() => navigation.navigate('Chat')} />
 

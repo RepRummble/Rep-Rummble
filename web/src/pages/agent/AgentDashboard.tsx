@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { supabase } from '../../config/supabase';
 import './AgentDashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -36,19 +37,37 @@ export default function AgentDashboard() {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // For demo purposes, using a mock agent ID
-  const agentId = 'demo-agent-001';
-  const agentName = 'Support Agent';
+  // Who the agent is comes from the server, from their sign-in. Nothing here is a made-up agent.
+  const [agentName, setAgentName] = useState('Support agent');
+  const tokenRef = useRef<string>('');
 
   useEffect(() => {
-    // Initialize socket connection
-    const newSocket = io(`${API_URL}/agent`, {
-      transports: ['websocket'],
+    let alive = true;
+    let newSocket: Socket | null = null;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!alive) return;
+      if (!session) { setError('Sign in with your support-agent account to use this page.'); setIsLoading(false); return; }
+      tokenRef.current = session.access_token;
+      newSocket = io(`${API_URL}/agent`, { transports: ['websocket'], auth: { token: session.access_token } });
+      attach(newSocket);
+      setSocket(newSocket);
+    })();
+    return () => { alive = false; newSocket?.emit('agent_leave'); newSocket?.disconnect(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const attach = (newSocket: Socket) => {
+    newSocket.on('connect', () => {
+      newSocket.emit('agent_join');
+      setAgentStatus('online');
     });
 
-    newSocket.on('connect', () => {
-      newSocket.emit('agent_join', { agentId });
-      setAgentStatus('online');
+    newSocket.on('agent_ready', (data: { agentName?: string }) => { if (data.agentName) setAgentName(data.agentName); });
+
+    newSocket.on('connect_error', (err: Error) => {
+      setError(err.message === 'Agent access required' ? 'This account is not a support agent.' : 'Could not connect. Sign in again with your support-agent account.');
+      setIsLoading(false);
     });
 
     newSocket.on('disconnect', () => {
@@ -78,14 +97,7 @@ export default function AgentDashboard() {
       setError(err.message);
     });
 
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.emit('agent_leave', { agentId });
-      newSocket.disconnect();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -94,7 +106,7 @@ export default function AgentDashboard() {
   const handleClaimChat = async (conversation: Conversation) => {
     if (!socket) return;
 
-    socket.emit('claim_chat', { agentId, conversationId: conversation._id });
+    socket.emit('claim_chat', { conversationId: conversation._id });
 
     // Fetch messages for this conversation
     try {
@@ -102,7 +114,7 @@ export default function AgentDashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // In production, add auth token here
+          Authorization: `Bearer ${tokenRef.current}`,
         },
       });
 
@@ -123,7 +135,6 @@ export default function AgentDashboard() {
     if (!inputValue.trim() || !socket || !selectedChat) return;
 
     socket.emit('agent_message', {
-      agentId,
       conversationId: selectedChat._id,
       content: inputValue.trim(),
     });
@@ -144,7 +155,7 @@ export default function AgentDashboard() {
   const handleResolveChat = () => {
     if (!socket || !selectedChat) return;
 
-    socket.emit('resolve_chat', { agentId, conversationId: selectedChat._id });
+    socket.emit('resolve_chat', { conversationId: selectedChat._id });
     setActiveChats((prev) => prev.filter((c) => c._id !== selectedChat._id));
     setSelectedChat(null);
     setMessages([]);

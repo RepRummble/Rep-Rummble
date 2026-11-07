@@ -9,12 +9,13 @@ import {
   getAnalytics,
   getAgentConversation
 } from '../controllers/agent.controller'
-import { protect, agentOnly } from '../middleware/auth.middleware'
+import { protect, withLegacyUser, agentOnly } from '../middleware/auth.middleware'
 
 const router = Router()
 
 // All agent routes require authentication and agent role
 router.use(protect)
+router.use(withLegacyUser) // agents are records keyed by the account record, not by the sign-in id
 router.use(agentOnly)
 
 // Dashboard and stats

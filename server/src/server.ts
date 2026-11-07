@@ -40,6 +40,7 @@ import challengeRoutes from "./routes/challenge.routes";
 import socialRoutes from "./routes/social.routes";
 import friendRoutes from "./routes/friend.routes";
 import statsRoutes from './routes/stats.routes'
+import progressRoutes from './routes/progress.routes'
 import reviewRoutes from './routes/review.routes'
 
 // Create Express app and HTTP server
@@ -141,6 +142,7 @@ app.use("/api/wearables", wearableRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/social", socialRoutes);
 app.use("/api/friends", friendRoutes);
+app.use('/api/progress', progressRoutes)
 app.use('/api/public/stats', statsRoutes)
 app.use('/api/reviews', reviewRoutes)
 

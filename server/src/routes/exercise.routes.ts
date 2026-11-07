@@ -2,7 +2,7 @@ import { Router } from 'express'
 import {
   getExercises,
   getExercise,
-  generateExercise,
+  NOT_AVAILABLE,
   seedDefaultExercises,
   analyzeExerciseForm,
   getFormFeedback
@@ -23,7 +23,7 @@ router.get('/', getExercises)
 router.post('/seed', seedDefaultExercises)
 
 // POST /api/exercises/generate - Generate new exercise with AI
-router.post('/generate', generateExercise)
+router.post('/generate', NOT_AVAILABLE)
 
 // POST /api/exercises/analyze-form - Analyze form from pose data
 router.post('/analyze-form', analyzeExerciseForm)

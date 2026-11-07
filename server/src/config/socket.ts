@@ -4,6 +4,8 @@ import { SupportConversation } from '../models/SupportConversation.model'
 import { SupportMessage } from '../models/SupportMessage.model'
 import { SupportAgent } from '../models/SupportAgent.model'
 import { generateSupportResponse } from '../services/support-ai.service'
+import { verifyToken } from '../services/supabase.service'
+import { ensureLegacyUser } from '../services/legacy-user.service'
 
 let io: Server | null = null
 
@@ -194,12 +196,35 @@ export function initializeSocket(httpServer: HttpServer) {
   // Agent dashboard namespace
   const agentNamespace = io.of('/agent')
 
+  // Only signed-in support agents may connect: the queue holds other people's messages and email addresses.
+  // Who the agent is comes from their sign-in, never from anything the browser claims.
+  agentNamespace.use(async (socket, next) => {
+    try {
+      const token = (socket.handshake.auth as { token?: unknown } | undefined)?.token
+      if (typeof token !== 'string' || !token) return next(new Error('Not authorized'))
+      const result = await verifyToken(token)
+      if (!result.success || !result.user) return next(new Error('Not authorized'))
+      const email = result.user.email
+      if (!email || !result.user.email_confirmed_at) return next(new Error('Not authorized'))
+      const account = await ensureLegacyUser(email, result.user.user_metadata?.displayName)
+      const agent = await SupportAgent.findOne({ userId: account._id })
+      if (!agent) return next(new Error('Agent access required'))
+      socket.data.agentId = agent._id.toString()
+      socket.data.agentName = agent.displayName
+      next()
+    } catch (error) {
+      console.error('Agent socket auth failed:', error instanceof Error ? error.message : error)
+      next(new Error('Not authorized'))
+    }
+  })
+
   agentNamespace.on('connection', (socket: Socket) => {
     console.log('Agent connected:', socket.id)
+    socket.emit('agent_ready', { agentId: socket.data.agentId, agentName: socket.data.agentName })
 
     // Agent comes online
-    socket.on('agent_join', async (data: { agentId: string }) => {
-      const { agentId } = data
+    socket.on('agent_join', async () => {
+      const agentId = socket.data.agentId as string
 
       agentSockets.set(agentId, socket)
       socket.join('agents') // Join agents room for broadcast
@@ -220,9 +245,10 @@ export function initializeSocket(httpServer: HttpServer) {
     })
 
     // Agent claims a conversation
-    socket.on('claim_chat', async (data: { agentId: string, conversationId: string }) => {
+    socket.on('claim_chat', async (data: { conversationId: string }) => {
       try {
-        const { agentId, conversationId } = data
+        const { conversationId } = data
+        const agentId = socket.data.agentId as string
 
         const conversation = await SupportConversation.findByIdAndUpdate(
           conversationId,
@@ -283,12 +309,12 @@ export function initializeSocket(httpServer: HttpServer) {
 
     // Agent sends message
     socket.on('agent_message', async (data: {
-      agentId: string
       conversationId: string
       content: string
     }) => {
       try {
-        const { agentId, conversationId, content } = data
+        const { conversationId, content } = data
+        const agentId = socket.data.agentId as string
 
         const agent = await SupportAgent.findById(agentId)
 
@@ -320,9 +346,9 @@ export function initializeSocket(httpServer: HttpServer) {
     })
 
     // Agent typing
-    socket.on('agent_typing', (data: { conversationId: string, agentName: string }) => {
+    socket.on('agent_typing', (data: { conversationId: string }) => {
       chatNamespace.to(`conversation:${data.conversationId}`).emit('agent_typing', {
-        agentName: data.agentName
+        agentName: socket.data.agentName
       })
     })
 
@@ -331,9 +357,10 @@ export function initializeSocket(httpServer: HttpServer) {
     })
 
     // Resolve conversation
-    socket.on('resolve_chat', async (data: { agentId: string, conversationId: string }) => {
+    socket.on('resolve_chat', async (data: { conversationId: string }) => {
       try {
-        const { agentId, conversationId } = data
+        const { conversationId } = data
+        const agentId = socket.data.agentId as string
 
         await SupportConversation.findByIdAndUpdate(conversationId, {
           status: 'resolved',
@@ -366,10 +393,11 @@ export function initializeSocket(httpServer: HttpServer) {
     })
 
     // Agent goes offline
-    socket.on('agent_leave', async (data: { agentId: string }) => {
-      agentSockets.delete(data.agentId)
+    socket.on('agent_leave', async () => {
+      const agentId = socket.data.agentId as string
+      agentSockets.delete(agentId)
 
-      await SupportAgent.findByIdAndUpdate(data.agentId, {
+      await SupportAgent.findByIdAndUpdate(agentId, {
         status: 'offline',
         isAvailable: false
       })

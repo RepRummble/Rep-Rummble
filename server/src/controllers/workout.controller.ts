@@ -32,8 +32,11 @@ export const getWorkouts = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const createWorkout = async (req: AuthRequest, res: Response) => {
   try {
+    // Only these fields are taken from the request: a client cannot set anything else on the record.
+    const { exercise, duration, calories, completed, timestamp, volume, sets } = req.body || {}
     const workoutData = {
-      ...req.body,
+      exercise, duration, calories, completed, volume, sets,
+      ...(timestamp ? { timestamp } : {}),
       userId: req.user!.id
     }
 
@@ -44,6 +47,9 @@ export const createWorkout = async (req: AuthRequest, res: Response) => {
       data: workout
     })
   } catch (error) {
+    if ((error as { name?: string }).name === 'ValidationError') {
+      return res.status(400).json({ success: false, message: (error as Error).message })
+    }
     const err = error as ApiError
     return res.status(500).json({
       success: false,

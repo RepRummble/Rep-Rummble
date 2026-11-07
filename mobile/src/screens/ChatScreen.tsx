@@ -10,7 +10,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import api from '../config/api';
 import chatSocket, { ChatMessage } from '../services/chatSocket';
-import { DEV_BYPASS_AUTH } from '../config/devConfig';
 import { useSubscription } from '../context/SubscriptionContext';
 import { PaywallModal } from './SubscriptionScreen';
 
@@ -18,108 +17,6 @@ import { colors } from '../theme/colors';
 import { ChatSkeleton } from '../components/states/Skeleton';
 import SpaceBackground from '../components/fx/SpaceBackground';
 import Pilot from '../components/fx/Pilot';
-// ── Local AI response engine (dev / offline mode) ───────────────────────────
-
-const AI_BANK: Array<{ keys: string[]; replies: string[] }> = [
-  {
-    keys: ['workout', 'exercise', 'train', 'gym', 'lift', 'squat', 'bench', 'deadlift', 'push', 'pull'],
-    replies: [
-      "For effective workouts, focus on progressive overload — add weight or reps each week. The big 3 compound lifts (squat, bench, deadlift) give the most bang for your buck. Log your sets in the Workout tab to track PRs!",
-      "Consistency beats perfection. A 20-minute workout you actually do beats the perfect 90-minute plan you skip. Use the Workout tab to log today's session and keep your streak alive 🔥",
-      "Warm up for 5-10 minutes before lifting and cool down after. This reduces injury risk by up to 50%. Your body will thank you the next morning!",
-    ],
-  },
-  {
-    keys: ['protein', 'macro', 'carb', 'fat', 'calorie', 'keto', 'diet', 'eat', 'food', 'meal', 'nutrition'],
-    replies: [
-      "Aim for 1.6–2.2g of protein per kg of bodyweight daily for muscle growth. Spread it across 3–5 meals. Use the Snap tab to scan your plate for instant macro tracking — it's faster than manually logging!",
-      "Carbs aren't the enemy! They're your muscles' primary fuel source. Time them around workouts — eat complex carbs (oats, rice, sweet potato) 1–2 hours before training for peak energy.",
-      "Meal timing matters less than total daily intake. Focus on hitting your protein and calorie goals first. Use our AI scanner to make tracking effortless.",
-    ],
-  },
-  {
-    keys: ['sleep', 'recover', 'rest', 'tired', 'fatigue', 'overtraining'],
-    replies: [
-      "Sleep is when your muscles actually grow! Aim for 7–9 hours. Poor sleep drops testosterone by 15%, spikes cortisol, and tanks recovery. Prioritize sleep as much as your training.",
-      "Recovery days aren't wasted days — they're growth days. Active recovery (light walk, stretching, yoga) accelerates muscle repair better than complete rest. Take them seriously!",
-    ],
-  },
-  {
-    keys: ['streak', 'habit', 'motivat', 'consist', 'discipline', 'goal'],
-    replies: [
-      "Streaks rewire your brain's reward circuitry. Your dopamine system fires when you maintain the chain — making the habit self-reinforcing over time. Even a 10-minute session keeps your streak alive. Never break the chain! 🔥",
-      "Motivation is unreliable — systems are not. Build your workouts into your schedule like meetings you can't cancel. The first 30 days are the hardest; after that, skipping feels worse than going.",
-    ],
-  },
-  {
-    keys: ['weight loss', 'lose weight', 'fat loss', 'cut', 'shred', 'lean', 'slim'],
-    replies: [
-      "For fat loss: create a 300–500 calorie deficit, keep protein high (2g/kg) to preserve muscle, and combine strength training with cardio. Slow and steady — 0.5–1kg/week is sustainable and more likely to stick.",
-      "The scale isn't everything! Muscle weighs more than fat by volume. Measure progress with photos, clothing fit, and energy levels too. Use the macros tracker to stay in your calorie target.",
-    ],
-  },
-  {
-    keys: ['bulk', 'gain muscle', 'mass', 'hypertrophy', 'big'],
-    replies: [
-      "For muscle gain: eat in a 200–300 calorie surplus, hit 1.8–2.2g protein/kg, and focus on progressive overload in your lifts. Train each muscle 2x per week for optimal hypertrophy. Patience is key — muscle takes months, not weeks.",
-    ],
-  },
-  {
-    keys: ['water', 'hydrat', 'drink'],
-    replies: [
-      "Hydration is underrated! Aim for 35ml per kg of bodyweight daily. Even 2% dehydration cuts performance by up to 20%. Drink 500ml of water first thing in the morning before coffee — it kickstarts metabolism and rehydrates you after 8 hours of sleep.",
-    ],
-  },
-  {
-    keys: ['challenge', 'compete', 'leaderboard', 'rank', 'friend'],
-    replies: [
-      "Challenges and friendly competition can boost fitness adherence by up to 40%! Head to the Challenges tab to join active ones or create your own. Nothing beats competing with friends to stay accountable.",
-    ],
-  },
-  {
-    keys: ['stress', 'mental', 'anxiety', 'mood', 'depress', 'burnout'],
-    replies: [
-      "Exercise is one of the most powerful mental health tools available. It reduces cortisol by 26%, boosts serotonin and dopamine naturally. Even a 10-minute walk shifts your mood. If you're burned out, scale back intensity but don't stop moving completely.",
-    ],
-  },
-  {
-    keys: ['beginner', 'start', 'new', 'first time', 'never', 'how to'],
-    replies: [
-      "Welcome to your fitness journey! Start simple: 3 days/week of strength training (full-body workouts work great for beginners) + daily walks. Focus on learning movement patterns before adding heavy weight. Consistency over the first 3 months matters more than anything else.",
-      "As a beginner, the most important thing is showing up consistently. Don't worry about the perfect program — any program done consistently beats the perfect plan done sporadically. Log your first workout in the Workout tab now!",
-    ],
-  },
-  {
-    keys: ['scan', 'camera', 'snap', 'photo', 'ai'],
-    replies: [
-      "The Snap feature uses AI Vision to instantly recognize food and calculate nutrition from a photo. Just tap the Snap tab → Scan Meal → point your camera at your plate. It works best with good lighting and when all food items are visible!",
-    ],
-  },
-  {
-    keys: ['hello', 'hi', 'hey', 'sup', 'greet'],
-    replies: [
-      "Hey! I'm your Rep Rummble AI coach 💪 I can help with workout advice, nutrition tips, or anything about the app. What are you working on today?",
-      "Hi there! Ready to crush your fitness goals? Ask me anything about training, nutrition, recovery, or how to use any feature in the app!",
-    ],
-  },
-];
-
-const FALLBACKS = [
-  "Great question! For personalized advice, I'd need a bit more context. What's your main fitness goal right now — muscle gain, fat loss, endurance, or general health?",
-  "I'm your AI fitness coach! Ask me about workouts, nutrition, recovery, sleep, or any feature in the app. I'm here to help you level up 💪",
-  "That's interesting! To give you the best advice, could you share what your current fitness routine looks like and what you're trying to improve?",
-];
-
-function aiReply(text: string): string {
-  const lower = text.toLowerCase();
-  for (const group of AI_BANK) {
-    if (group.keys.some(k => lower.includes(k))) {
-      return group.replies[Math.floor(Math.random() * group.replies.length)];
-    }
-  }
-  return FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
@@ -134,7 +31,8 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const [status, setStatus] = useState<string>('active');
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [offlineMode, setOfflineMode] = useState(false);
+  // Set when the support server cannot be reached. We say so, rather than pretending to answer.
+  const [unavailable, setUnavailable] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const { canChat, recordChat } = useSubscription();
 
@@ -159,27 +57,23 @@ export default function ChatScreen() {
         setMessages([welcomeMessage]);
       }
 
-      // In dev/offline bypass mode the socket has no real server — use local AI
-      if (DEV_BYPASS_AUTH) {
-        setOfflineMode(true);
-      } else {
-        chatSocket.connect();
-        chatSocket.joinConversation(sessionId, conversation._id);
-        chatSocket.onMessage((msg) => setMessages(prev => [...prev, msg]));
-        chatSocket.onTyping((data) => {
-          setIsTyping(true);
-        });
-        chatSocket.onStopTyping(() => setIsTyping(false));
-        chatSocket.onConversationResolved(() => setStatus('resolved'));
-      }
+      setUnavailable(false);
+      chatSocket.connect();
+      chatSocket.joinConversation(sessionId, conversation._id);
+      chatSocket.onMessage((msg) => setMessages(prev => [...prev, msg]));
+      chatSocket.onTyping(() => {
+        setIsTyping(true);
+      });
+      chatSocket.onStopTyping(() => setIsTyping(false));
+      chatSocket.onConversationResolved(() => setStatus('resolved'));
     } catch {
-      setOfflineMode(true);
+      setUnavailable(true);
       setMessages([{
-        _id: 'offline-welcome',
-        conversationId: 'offline',
-        senderType: 'ai',
-        senderName: 'AI Coach',
-        content: "Hey! I'm your Rep Rummble AI coach 💪 I can help with workouts, nutrition, recovery and anything about the app. What can I help you with?",
+        _id: 'unavailable',
+        conversationId: 'none',
+        senderType: 'system',
+        senderName: 'Reprummble',
+        content: "We could not reach Rumi right now. Check your connection and tap send to try again, or email support@reprummble.com.",
         contentType: 'text',
         createdAt: new Date().toISOString(),
       }]);
@@ -189,6 +83,7 @@ export default function ChatScreen() {
   };
 
   const handleSend = async () => {
+    if (unavailable) { setIsLoading(true); setMessages([]); await initializeChat(); return; }
     if (!inputText.trim() || isSending) return;
     if (!canChat()) { setShowPaywall(true); return; }
     const text = inputText.trim();
@@ -207,22 +102,7 @@ export default function ChatScreen() {
     };
     setMessages(prev => [...prev, userMsg]);
 
-    if (offlineMode) {
-      setIsTyping(true);
-      const delay = 700 + Math.random() * 600;
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages(prev => [...prev, {
-          _id: `ai-${Date.now()}`,
-          conversationId: conversationId || 'offline',
-          senderType: 'ai',
-          senderName: 'AI Coach',
-          content: aiReply(text),
-          contentType: 'text',
-          createdAt: new Date().toISOString(),
-        }]);
-      }, delay);
-    } else {
+    {
       chatSocket.sendMessage(text, user?.displayName || user?.email?.split('@')[0], user?.email);
     }
 

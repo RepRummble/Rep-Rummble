@@ -31,7 +31,8 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const allowed = ['displayName', 'streak', 'xp', 'level']
+    // XP, level and streak are worked out by the server from what was really logged; a client cannot set them.
+    const allowed = ['displayName']
     const updates: Record<string, any> = {}
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key]

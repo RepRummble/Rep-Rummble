@@ -6,17 +6,31 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://reprummble-api.onrender.com" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://reprummble-api.onrender.com"
+      },
       "distribution": "internal",
-      "ios": { "resourceClass": "m-medium" }
+      "ios": {
+        "resourceClass": "m-medium"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://reprummble-api.onrender.com" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://reprummble-api.onrender.com"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://reprummble-api.onrender.com" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://reprummble-api.onrender.com"
+      }
     }
   },
   "submit": {
