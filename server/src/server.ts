@@ -37,6 +37,8 @@ import chatRoutes from './routes/chat.routes'
 import agentRoutes from './routes/agent.routes'
 import wearableRoutes from "./routes/wearable.routes";
 import deviceRoutes from './routes/devices.routes'
+import dayChallengeRoutes from './routes/dayChallenge.routes'
+import coachRoutes from './routes/coach.routes'
 import challengeRoutes from "./routes/challenge.routes";
 import socialRoutes from "./routes/social.routes";
 import friendRoutes from "./routes/friend.routes";
@@ -145,6 +147,8 @@ app.use('/api/chat', chatRoutes)
 app.use('/api/agent', agentRoutes)
 app.use("/api/wearables", wearableRoutes);
 app.use("/api/devices", deviceRoutes)
+app.use("/api/day-challenges", dayChallengeRoutes)
+app.use("/api/coach", coachRoutes)
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/social", socialRoutes);
 app.use("/api/friends", friendRoutes);

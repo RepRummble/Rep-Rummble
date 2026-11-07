@@ -14,7 +14,11 @@ import StaleNote from '../../components/states/StaleNote';
 import { loadWithCache, clearCache } from '../../config/cache';
 import { Eyebrow, GlassCard } from '../../features/mission/ui';
 import WorkoutPlayer, { FinishedSession } from '../../features/train/WorkoutPlayer';
-import { TEMPLATES, Template, activityRecords, dayKeyOf, fmtDuration, groupByDay, personalRecords, weekMinutes } from '../../features/train/trainLogic';
+import { CATEGORY_LABELS, Category, Routine, TEMPLATES, Template, activityRecords, dayKeyOf, estimateMinutes, fmtDuration, groupByDay, personalRecords, templateToRoutineInput, weekMinutes } from '../../features/train/trainLogic';
+import { ChallengeStrip, CoachCard, MyWorkouts, TodayPlan } from '../../features/train/PlanSections';
+import type { DayChallenge } from '../../features/challenges/challengeLogic';
+import { coach } from '../../services/coachService';
+import { dayChallenges } from '../../services/dayChallengeService';
 
 const TABS = ['Workout', 'Records', 'History'];
 
@@ -41,6 +45,9 @@ export default function TrainScreen() {
   const [open, setOpen] = useState<Template | null>(null);
   const [playing, setPlaying] = useState<Template | null>(null);
   const [saving, setSaving] = useState(false);
+  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [challenges, setChallenges] = useState<DayChallenge[]>([]);
+  const [cat, setCat] = useState<Category | 'all'>('all');
 
   const load = useCallback(async () => {
     const r = await loadWithCache('workouts', async () => ((await api.get('/workouts')).data.data || []) as Workout[]);
@@ -48,6 +55,9 @@ export default function TrainScreen() {
     setFailed(!r.data);
     setSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
     setLoading(false);
+    // Plan and challenges are extras: if they cannot load, the rest of the screen still works.
+    coach.routines().then(setRoutines).catch(() => {});
+    dayChallenges.list().then(setChallenges).catch(() => {});
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -57,6 +67,7 @@ export default function TrainScreen() {
       const res = await api.post('/workouts', { exercise: q.name, duration: q.duration, calories: q.cal, completed: true });
       setWorkouts((w) => [res.data.data, ...w]);
       await clearCache();
+      dayChallenges.list().then(setChallenges).catch(() => {});
     } catch (e: any) { Alert.alert('Could not log', e?.response?.data?.message || 'Check your connection and try again.'); }
     finally { setQuickBusy(null); }
   };
@@ -68,6 +79,7 @@ export default function TrainScreen() {
       setWorkouts((w) => [res.data.data, ...w]);
       await clearCache();
       setPlaying(null);
+      dayChallenges.list().then(setChallenges).catch(() => {});
       const saved = res.data.data as Workout;
       Alert.alert('Workout saved', 'Collect your daily mission XP on the Home screen. Share your results with your friends?', [
         { text: 'Not now', style: 'cancel' },
@@ -84,6 +96,14 @@ export default function TrainScreen() {
       catch { Alert.alert('Could not delete', 'Try again in a moment.'); }
     } },
   ]);
+
+  const saveTemplate = async (tpl: Template) => {
+    try {
+      const r = await coach.create(templateToRoutineInput(tpl));
+      setRoutines((x) => [r, ...x]);
+      Alert.alert('Saved', `${tpl.name} is in My workouts. Pick the days you want to do it from there.`);
+    } catch (e: any) { Alert.alert('Could not save', e?.response?.data?.message || 'Check your connection and try again.'); }
+  };
 
   const todayKey = dayKeyOf(new Date());
   const todays = workouts.filter((w) => dayKeyOf(new Date(w.timestamp)) === todayKey);
@@ -116,12 +136,24 @@ export default function TrainScreen() {
             <>
               {tab === 0 && (
                 <>
-                  <Eyebrow>Start a workout</Eyebrow>
-                  {TEMPLATES.map((t) => (
+                  <ChallengeStrip challenges={challenges} onOpen={(id) => navigation.navigate('Social', { screen: 'ChallengeDetail', params: { id } })} onBrowse={() => navigation.navigate('Social', { screen: 'Challenges' })} />
+                  <TodayPlan routines={routines} weekday={new Date().getDay()} onStart={setPlaying} onCoach={() => navigation.navigate('Coach')} />
+                  <CoachCard onPress={() => navigation.navigate('Coach')} />
+                  <MyWorkouts routines={routines} onChange={setRoutines} onStart={setPlaying} />
+
+                  <Eyebrow right={`${TEMPLATES.length} workouts`}>Start a workout</Eyebrow>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingBottom: 12 }}>
+                    {(['all', 'strength', 'bodyweight', 'conditioning', 'mobility'] as const).map((c) => (
+                      <TouchableOpacity key={c} onPress={() => setCat(c)} style={[s.filter, cat === c && s.filterOn]} accessibilityRole="button" accessibilityState={{ selected: cat === c }}>
+                        <Text style={[s.filterText, cat === c && { color: '#fff' }]}>{c === 'all' ? 'All' : CATEGORY_LABELS[c]}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                  {TEMPLATES.filter((x) => cat === 'all' || x.category === cat).map((t) => (
                     <GlassCard key={t.id} style={{ paddingVertical: 14 }}>
                       <TouchableOpacity onPress={() => setOpen(open?.id === t.id ? null : t)} activeOpacity={0.85} style={s.tplHead} accessibilityRole="button">
                         <View style={s.tplIcon}><Ionicons name={t.icon as any} size={22} color={colors.brandBright} /></View>
-                        <View style={{ flex: 1 }}><Text style={s.tplName}>{t.name}</Text><Text style={s.tplFocus}>{t.focus} · {t.exercises.length} exercises</Text></View>
+                        <View style={{ flex: 1 }}><Text style={s.tplName}>{t.name}</Text><Text style={s.tplFocus}>{t.focus} · {t.exercises.length} exercises · ~{estimateMinutes(t)} min</Text></View>
                         <Ionicons name={open?.id === t.id ? 'chevron-up' : 'chevron-down'} size={18} color={colors.faint} />
                       </TouchableOpacity>
                       {open?.id === t.id && (
@@ -130,6 +162,7 @@ export default function TrainScreen() {
                           <TouchableOpacity onPress={() => setPlaying(t)} activeOpacity={0.88} style={{ marginTop: 14 }}>
                             <LinearGradient colors={['#d62839', '#ff7a1a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.start}><Ionicons name="flash" size={18} color="#fff" /><Text style={s.startText}>Start guided workout</Text></LinearGradient>
                           </TouchableOpacity>
+                          <TouchableOpacity onPress={() => saveTemplate(t)} style={s.saveTpl} accessibilityRole="button"><Ionicons name="bookmark-outline" size={17} color={colors.brandBright} /><Text style={s.saveTplText}>Save to my workouts</Text></TouchableOpacity>
                         </View>
                       )}
                     </GlassCard>
@@ -237,6 +270,9 @@ const s = StyleSheet.create({
   tab: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
   tabOn: { backgroundColor: colors.brand, borderColor: '#ff9a4d' },
   tabText: { color: colors.inkSoft, fontWeight: '800', fontSize: 13.5 },
+  filter: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  filterOn: { backgroundColor: colors.brand, borderColor: '#ff9a4d' }, filterText: { color: colors.inkSoft, fontWeight: '800', fontSize: 13 },
+  saveTpl: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10, height: 44, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,154,77,0.5)', backgroundColor: 'rgba(255,122,26,0.08)' }, saveTplText: { color: colors.brandBright, fontWeight: '800', fontSize: 14 },
   tplHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   tplIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,122,26,0.12)', borderWidth: 1, borderColor: 'rgba(255,122,26,0.3)' },
   tplName: { fontSize: 17, fontWeight: '800', color: colors.ink }, tplFocus: { fontSize: 12, color: colors.muted, marginTop: 2 },

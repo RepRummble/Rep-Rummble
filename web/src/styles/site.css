@@ -163,6 +163,8 @@ html.theme-light { scrollbar-color: #d0d5dd #fff; }
   background: linear-gradient(135deg, var(--rr-brand) 0%, var(--rr-brand-bright) 100%);
   color: #fff; font-family: var(--rr-font-head); font-weight: 800; font-size: 13px; letter-spacing: 0.02em;
 }
+/* The app icon (kettlebell and moon) is the logo everywhere: navbar, sign-in panel, footer. It already has its own rounded tile. */
+img.rr-logo-mark { display: block; flex: none; background: none !important; padding: 0; object-fit: contain; box-shadow: 0 6px 18px -8px rgba(255, 90, 54, .7); }
 .rr-logo-name { font-family: var(--rr-font-head); font-weight: 800; font-size: 19px; letter-spacing: -0.02em; }
 
 .rr-nav { display: flex; align-items: center; gap: 4px; flex: 1; }

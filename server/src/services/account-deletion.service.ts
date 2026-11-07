@@ -7,7 +7,9 @@ import { DeviceReading } from '../models/DeviceReading.model'
 import { OAuthState } from '../models/OAuthState.model'
 import { revokeUpstream } from './devices/sync.service'
 import { Block } from '../models/Block.model'
+import { DayChallenge, DayChallengeMember } from '../models/DayChallenge.model'
 import { DirectMessage } from '../models/DirectMessage.model'
+import { Routine } from '../models/Routine.model'
 import { Friendship } from '../models/Friendship.model'
 import { Report } from '../models/Report.model'
 import { Story } from '../models/Story.model'
@@ -63,6 +65,7 @@ export async function deleteAccountData(userId: string, email?: string): Promise
 
   // Their own records, keyed by their sign-in id.
   count('workouts', await Workout.deleteMany({ userId: eq(userId) }))
+  count('routines', await Routine.deleteMany({ userId: eq(userId) }))
   count('meals', await Meal.deleteMany({ userId: eq(userId) }))
   count('wearableData', await WearableData.deleteMany({ userId: eq(userId) }))
   // Connected devices: tell each provider to stop sharing, then delete the sign-ins and everything they gave us.
@@ -107,6 +110,13 @@ export async function deleteAccountData(userId: string, email?: string): Promise
     count('messages', await DirectMessage.deleteMany({ $or: [{ from: legacy._id }, { to: legacy._id }] }))
     count('blocks', await Block.deleteMany({ $or: [{ blocker: legacy._id }, { blocked: legacy._id }] }))
     count('reports', await Report.deleteMany({ reporter: legacy._id }))
+    // Challenges they started end for everyone; in the others they simply leave.
+    const started = await DayChallenge.find({ creator: legacy._id }).select('_id')
+    if (started.length) {
+      count('dayChallengeMembers', await DayChallengeMember.deleteMany({ challenge: { $in: started.map((c) => c._id) } }))
+      count('dayChallenges', await DayChallenge.deleteMany({ _id: { $in: started.map((c) => c._id) } }))
+    }
+    count('dayChallengeMemberships', await DayChallengeMember.deleteMany({ user: legacy._id }))
     await SocialPost.updateMany({}, { $pull: { likes: legacy._id, comments: { author: legacy._id } } })
     count('legacyUser', await User.deleteOne({ _id: legacy._id }))
   }

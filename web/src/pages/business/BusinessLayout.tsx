@@ -12,7 +12,7 @@ function Gate({ title, children }: { title: string; children: React.ReactNode })
   return (
     <div className="dash-gate">
       <div className="dash-gate-card">
-        <span className="rr-logo-mark">RR</span>
+        <img className="rr-logo-mark" src="/favicon.svg" alt="" width={34} height={34} />
         <h1>{title}</h1>
         {children}
       </div>

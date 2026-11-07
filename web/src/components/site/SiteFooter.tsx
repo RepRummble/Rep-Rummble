@@ -8,7 +8,7 @@ export default function SiteFooter() {
         <div className="rr-footer-grid">
           <div>
             <Link to="/" className="rr-logo" aria-label="Reprummble home">
-              <span className="rr-logo-mark">RR</span>
+              <img className="rr-logo-mark" src="/favicon.svg" alt="" width={34} height={34} />
               <span className="rr-logo-name">Reprummble</span>
             </Link>
             <p>Training, nutrition, and recovery in one app — at a price that works for every household, and a platform that grows local gyms.</p>

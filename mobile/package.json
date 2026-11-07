@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "build": "echo \"No mobile build configured in this workspace. Skipping.\"",
     "ios:device": "expo run:ios --device",
-    "start:dev-client": "expo start --dev-client"
+    "start:dev-client": "expo start --dev-client",
+    "test:logic": "node scripts/run-logic-tests.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

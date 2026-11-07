@@ -108,8 +108,8 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
     }
 
     const challenges = await Challenge.find(filterQuery)
-      .populate("creator", "displayName email")
-      .populate("participants", "displayName email")
+      .populate("creator", "displayName")
+      .populate("participants", "displayName")
       .sort({ createdAt: -1 })
       .limit(parseInt(limit as string))
       .skip((parseInt(page as string) - 1) * parseInt(limit as string));
@@ -352,7 +352,7 @@ export const getChallengeLeaderboard = async (
     const participants = await ChallengeParticipant.find({
       challenge: challengeId,
     })
-      .populate("user", "displayName email")
+      .populate("user", "displayName")
       .sort({ currentProgress: -1 });
 
     const leaderboard = participants.map((participant, index) => {
@@ -361,8 +361,7 @@ export const getChallengeLeaderboard = async (
         rank: index + 1,
         user: {
           id: user._id,
-          displayName: user.displayName || user.email,
-          email: user.email,
+          displayName: user.displayName || "Member",
         },
         progress: participant.currentProgress,
         target: participant.targetProgress,

@@ -422,7 +422,7 @@ export default function Layout() {
       <header className={`rr-header${scrolled ? ' is-scrolled' : ''}${headerVisible || mobileMenuOpen ? '' : ' is-hidden'}${mobileMenuOpen ? ' menu-open' : ''}`}>
         <div className="rr-container rr-header-inner">
           <Link to={isLoggedIn ? homePath : '/'} className="rr-logo" aria-label={isLoggedIn ? 'Reprummble dashboard' : 'Reprummble home'}>
-            <span className="rr-logo-mark">RR</span>
+            <img className="rr-logo-mark" src="/favicon.svg" alt="" width={34} height={34} />
             <span className="rr-logo-name">Reprummble</span>
           </Link>
           <nav className="rr-nav" aria-label="Main">
@@ -500,7 +500,7 @@ export default function Layout() {
           >
             <aside className="rr-auth-aside" aria-hidden="true">
               <Link to="/" className="rr-logo" tabIndex={-1} onClick={() => setAuthOpen(false)}>
-                <span className="rr-logo-mark">RR</span>
+                <img className="rr-logo-mark" src="/favicon.svg" alt="" width={34} height={34} />
                 <span className="rr-logo-name">Reprummble</span>
               </Link>
               <h3>Your training, on every device.</h3>

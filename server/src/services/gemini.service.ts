@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { GEMINI_FALLBACK_MODEL, GEMINI_MODEL, isOverloaded } from '../config/ai'
+import { CoachPlan, CoachProfile, buildPrompt, cleanPlan } from './coach.service'
 
 // Types
 export interface DetectedFood {
@@ -379,9 +380,26 @@ function detectMealType(): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
   return 'dinner'
 }
 
+/** Builds a weekly plan from the person's goal and body style. Throws AiUnavailableError rather than inventing one. */
+export async function suggestWorkoutsWithGemini(profile: CoachProfile): Promise<CoachPlan> {
+  if (!genAI) throw new AiUnavailableError()
+  try {
+    const result = await generate(buildPrompt(profile))
+    const text = (await result.response).text()
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+    const plan = cleanPlan(JSON.parse((fenced ? fenced[1] : text).trim()), profile.daysPerWeek)
+    if (!plan) throw new Error('No usable plan in the answer')
+    return plan
+  } catch (error) {
+    console.error('Gemini coach error:', (error as Error).message)
+    throw new AiUnavailableError()
+  }
+}
+
 export default {
   analyzeFoodImageWithGemini,
   quickLogMealWithGemini,
   generateWorkoutPlanWithGemini,
+  suggestWorkoutsWithGemini,
   getNutritionInfoWithGemini
 }

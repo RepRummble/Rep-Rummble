@@ -11,6 +11,8 @@ import NewMessageScreen from "../screens/NewMessageScreen";
 import StreaksScreen from "../screens/StreaksScreen";
 import PeopleScreen from "../screens/PeopleScreen";
 import ChallengesScreen from "../screens/ChallengesScreen";
+import NewChallengeScreen from "../screens/NewChallengeScreen";
+import ChallengeDetailScreen from "../screens/ChallengeDetailScreen";
 
 const Stack = createNativeStackNavigator<SocialStackParamList>();
 
@@ -26,6 +28,8 @@ export default function SocialStackNavigator() {
       <Stack.Screen name="Streaks" component={StreaksScreen} />
       <Stack.Screen name="People" component={PeopleScreen} />
       <Stack.Screen name="Challenges" component={ChallengesScreen} />
+      <Stack.Screen name="NewChallenge" component={NewChallengeScreen} />
+      <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
     </Stack.Navigator>
   );
 }

@@ -220,6 +220,7 @@ export type RootStackParamList = {
   Chat: { conversationId?: string } | undefined;
   Subscription: undefined;
   Devices: undefined;
+  Coach: undefined;
 };
 
 export type MainTabParamList = {
@@ -242,4 +243,6 @@ export type SocialStackParamList = {
   Streaks: undefined;
   People: { tab?: 'friends' | 'requests' | 'find' } | undefined;
   Challenges: undefined;
+  NewChallenge: { days?: 30 | 60 | 90 } | undefined;
+  ChallengeDetail: { id: string };
 };

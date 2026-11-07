@@ -5,39 +5,183 @@ export interface LoggedSet { exercise: string; reps: number; weight: number }
 export interface WorkoutRec { _id?: string; exercise: string; duration: number; calories?: number; volume?: number; sets?: LoggedSet[]; timestamp: string }
 
 export interface TemplateExercise { name: string; sets: number; reps: number; rest: number; startWeight: number }
-export interface Template { id: string; name: string; focus: string; icon: string; exercises: TemplateExercise[] }
+export type Category = 'strength' | 'bodyweight' | 'conditioning' | 'mobility';
+export interface Template { id: string; name: string; focus: string; icon: string; category?: Category; exercises: TemplateExercise[] }
 
 /** Ready-made sessions to start from. The weights are only a starting suggestion: it uses what you last lifted when it knows. */
 export const TEMPLATES: Template[] = [
-  { id: 'push', name: 'Push day', focus: 'Chest, shoulders, triceps', icon: 'arrow-up-circle-outline', exercises: [
+  { id: 'push', category: 'strength', name: 'Push day', focus: 'Chest, shoulders, triceps', icon: 'arrow-up-circle-outline', exercises: [
     { name: 'Bench Press', sets: 4, reps: 8, rest: 120, startWeight: 40 },
     { name: 'Overhead Press', sets: 3, reps: 8, rest: 90, startWeight: 30 },
     { name: 'Incline Dumbbell Press', sets: 3, reps: 10, rest: 90, startWeight: 16 },
     { name: 'Lateral Raise', sets: 3, reps: 15, rest: 60, startWeight: 6 },
     { name: 'Triceps Pushdown', sets: 3, reps: 12, rest: 60, startWeight: 20 },
   ] },
-  { id: 'pull', name: 'Pull day', focus: 'Back and biceps', icon: 'arrow-down-circle-outline', exercises: [
+  { id: 'pull', category: 'strength', name: 'Pull day', focus: 'Back and biceps', icon: 'arrow-down-circle-outline', exercises: [
     { name: 'Deadlift', sets: 3, reps: 5, rest: 150, startWeight: 60 },
     { name: 'Barbell Row', sets: 4, reps: 8, rest: 90, startWeight: 40 },
     { name: 'Lat Pulldown', sets: 3, reps: 10, rest: 90, startWeight: 40 },
     { name: 'Face Pull', sets: 3, reps: 15, rest: 60, startWeight: 15 },
     { name: 'Dumbbell Curl', sets: 3, reps: 12, rest: 60, startWeight: 10 },
   ] },
-  { id: 'legs', name: 'Leg day', focus: 'Quads, hamstrings, glutes', icon: 'walk-outline', exercises: [
+  { id: 'legs', category: 'strength', name: 'Leg day', focus: 'Quads, hamstrings, glutes', icon: 'walk-outline', exercises: [
     { name: 'Back Squat', sets: 4, reps: 6, rest: 150, startWeight: 50 },
     { name: 'Romanian Deadlift', sets: 3, reps: 8, rest: 120, startWeight: 40 },
     { name: 'Leg Press', sets: 3, reps: 10, rest: 90, startWeight: 80 },
     { name: 'Walking Lunge', sets: 3, reps: 12, rest: 60, startWeight: 12 },
     { name: 'Calf Raise', sets: 4, reps: 15, rest: 45, startWeight: 30 },
   ] },
-  { id: 'full', name: 'Full body', focus: 'A bit of everything', icon: 'body-outline', exercises: [
+  { id: 'full', category: 'strength', name: 'Full body', focus: 'A bit of everything', icon: 'body-outline', exercises: [
     { name: 'Back Squat', sets: 3, reps: 8, rest: 120, startWeight: 50 },
     { name: 'Bench Press', sets: 3, reps: 8, rest: 90, startWeight: 40 },
     { name: 'Barbell Row', sets: 3, reps: 8, rest: 90, startWeight: 40 },
     { name: 'Overhead Press', sets: 3, reps: 10, rest: 90, startWeight: 30 },
     { name: 'Plank (seconds)', sets: 3, reps: 45, rest: 45, startWeight: 0 },
   ] },
+
+  { id: 'upper', category: 'strength', name: 'Upper body', focus: 'Chest, back, shoulders, arms', icon: 'fitness-outline', exercises: [
+    { name: 'Incline Bench Press', sets: 4, reps: 8, rest: 120, startWeight: 30 },
+    { name: 'Pull-up', sets: 4, reps: 8, rest: 90, startWeight: 0 },
+    { name: 'Seated Dumbbell Press', sets: 3, reps: 10, rest: 90, startWeight: 14 },
+    { name: 'Seated Cable Row', sets: 3, reps: 12, rest: 75, startWeight: 35 },
+    { name: 'Hammer Curl', sets: 3, reps: 12, rest: 60, startWeight: 10 },
+    { name: 'Overhead Triceps Extension', sets: 3, reps: 12, rest: 60, startWeight: 12 },
+  ] },
+  { id: 'lower', category: 'strength', name: 'Lower body', focus: 'Legs and glutes', icon: 'walk-outline', exercises: [
+    { name: 'Front Squat', sets: 4, reps: 6, rest: 150, startWeight: 40 },
+    { name: 'Hip Thrust', sets: 4, reps: 10, rest: 90, startWeight: 50 },
+    { name: 'Leg Curl', sets: 3, reps: 12, rest: 75, startWeight: 30 },
+    { name: 'Bulgarian Split Squat', sets: 3, reps: 10, rest: 90, startWeight: 12 },
+    { name: 'Seated Calf Raise', sets: 4, reps: 15, rest: 45, startWeight: 25 },
+  ] },
+  { id: 'chest-tri', category: 'strength', name: 'Chest and triceps', focus: 'Pressing day', icon: 'arrow-up-circle-outline', exercises: [
+    { name: 'Bench Press', sets: 4, reps: 8, rest: 120, startWeight: 40 },
+    { name: 'Incline Dumbbell Press', sets: 3, reps: 10, rest: 90, startWeight: 16 },
+    { name: 'Cable Fly', sets: 3, reps: 12, rest: 60, startWeight: 12 },
+    { name: 'Dips', sets: 3, reps: 10, rest: 75, startWeight: 0 },
+    { name: 'Skull Crusher', sets: 3, reps: 12, rest: 60, startWeight: 15 },
+  ] },
+  { id: 'back-bi', category: 'strength', name: 'Back and biceps', focus: 'Pulling day', icon: 'arrow-down-circle-outline', exercises: [
+    { name: 'Weighted Pull-up', sets: 4, reps: 6, rest: 120, startWeight: 0 },
+    { name: 'T-Bar Row', sets: 4, reps: 8, rest: 90, startWeight: 30 },
+    { name: 'Single-Arm Dumbbell Row', sets: 3, reps: 10, rest: 75, startWeight: 20 },
+    { name: 'Straight-Arm Pulldown', sets: 3, reps: 12, rest: 60, startWeight: 20 },
+    { name: 'Barbell Curl', sets: 3, reps: 10, rest: 60, startWeight: 20 },
+  ] },
+  { id: 'shoulders', category: 'strength', name: 'Shoulders and traps', focus: 'Wide, round shoulders', icon: 'barbell-outline', exercises: [
+    { name: 'Overhead Press', sets: 4, reps: 8, rest: 120, startWeight: 30 },
+    { name: 'Lateral Raise', sets: 4, reps: 15, rest: 60, startWeight: 6 },
+    { name: 'Rear Delt Fly', sets: 3, reps: 15, rest: 60, startWeight: 6 },
+    { name: 'Arnold Press', sets: 3, reps: 10, rest: 75, startWeight: 12 },
+    { name: 'Dumbbell Shrug', sets: 3, reps: 12, rest: 60, startWeight: 20 },
+  ] },
+  { id: 'arms', category: 'strength', name: 'Arm day', focus: 'Biceps and triceps', icon: 'fitness-outline', exercises: [
+    { name: 'Barbell Curl', sets: 4, reps: 10, rest: 60, startWeight: 20 },
+    { name: 'Close-Grip Bench Press', sets: 4, reps: 8, rest: 90, startWeight: 35 },
+    { name: 'Incline Dumbbell Curl', sets: 3, reps: 12, rest: 60, startWeight: 8 },
+    { name: 'Triceps Rope Pushdown', sets: 3, reps: 12, rest: 60, startWeight: 20 },
+    { name: 'Concentration Curl', sets: 2, reps: 15, rest: 45, startWeight: 8 },
+  ] },
+  { id: 'glutes', category: 'strength', name: 'Glutes and hamstrings', focus: 'Posterior chain', icon: 'walk-outline', exercises: [
+    { name: 'Hip Thrust', sets: 4, reps: 8, rest: 120, startWeight: 50 },
+    { name: 'Romanian Deadlift', sets: 4, reps: 8, rest: 120, startWeight: 40 },
+    { name: 'Cable Pull-Through', sets: 3, reps: 12, rest: 75, startWeight: 25 },
+    { name: 'Step-Up', sets: 3, reps: 10, rest: 75, startWeight: 10 },
+    { name: 'Glute Bridge', sets: 3, reps: 15, rest: 60, startWeight: 0 },
+  ] },
+  { id: 'core', category: 'bodyweight', name: 'Core and abs', focus: 'Abs, obliques, lower back', icon: 'ellipse-outline', exercises: [
+    { name: 'Hanging Knee Raise', sets: 3, reps: 12, rest: 60, startWeight: 0 },
+    { name: 'Cable Crunch', sets: 3, reps: 15, rest: 60, startWeight: 20 },
+    { name: 'Russian Twist', sets: 3, reps: 20, rest: 45, startWeight: 5 },
+    { name: 'Plank (seconds)', sets: 3, reps: 45, rest: 45, startWeight: 0 },
+    { name: 'Dead Bug', sets: 3, reps: 12, rest: 45, startWeight: 0 },
+  ] },
+  { id: 'home-full', category: 'bodyweight', name: 'Home full body', focus: 'No equipment', icon: 'home-outline', exercises: [
+    { name: 'Push-up', sets: 4, reps: 15, rest: 60, startWeight: 0 },
+    { name: 'Bodyweight Squat', sets: 4, reps: 20, rest: 45, startWeight: 0 },
+    { name: 'Reverse Lunge', sets: 3, reps: 12, rest: 45, startWeight: 0 },
+    { name: 'Glute Bridge', sets: 3, reps: 20, rest: 45, startWeight: 0 },
+    { name: 'Plank (seconds)', sets: 3, reps: 40, rest: 45, startWeight: 0 },
+  ] },
+  { id: 'calisthenics', category: 'bodyweight', name: 'Calisthenics strength', focus: 'Pull-ups, dips, push-ups', icon: 'body-outline', exercises: [
+    { name: 'Pull-up', sets: 5, reps: 6, rest: 120, startWeight: 0 },
+    { name: 'Dips', sets: 4, reps: 8, rest: 90, startWeight: 0 },
+    { name: 'Pike Push-up', sets: 3, reps: 8, rest: 75, startWeight: 0 },
+    { name: 'Inverted Row', sets: 3, reps: 10, rest: 60, startWeight: 0 },
+    { name: 'Hollow Hold (seconds)', sets: 3, reps: 30, rest: 45, startWeight: 0 },
+  ] },
+  { id: 'dumbbell-full', category: 'strength', name: 'Dumbbell full body', focus: 'One pair of dumbbells', icon: 'barbell-outline', exercises: [
+    { name: 'Goblet Squat', sets: 4, reps: 12, rest: 75, startWeight: 16 },
+    { name: 'Dumbbell Bench Press', sets: 4, reps: 10, rest: 90, startWeight: 16 },
+    { name: 'One-Arm Row', sets: 3, reps: 12, rest: 60, startWeight: 16 },
+    { name: 'Dumbbell Romanian Deadlift', sets: 3, reps: 12, rest: 75, startWeight: 16 },
+    { name: 'Dumbbell Shoulder Press', sets: 3, reps: 10, rest: 75, startWeight: 10 },
+  ] },
+  { id: 'hiit', category: 'conditioning', name: 'HIIT circuit', focus: 'Fat burn, 25 minutes', icon: 'flame-outline', exercises: [
+    { name: 'Burpee', sets: 4, reps: 12, rest: 30, startWeight: 0 },
+    { name: 'Mountain Climber (seconds)', sets: 4, reps: 40, rest: 20, startWeight: 0 },
+    { name: 'Jump Squat', sets: 4, reps: 15, rest: 30, startWeight: 0 },
+    { name: 'High Knees (seconds)', sets: 4, reps: 40, rest: 20, startWeight: 0 },
+    { name: 'Kettlebell Swing', sets: 4, reps: 20, rest: 30, startWeight: 16 },
+  ] },
+  { id: 'express', category: 'conditioning', name: '20-minute express', focus: 'Short on time', icon: 'timer-outline', exercises: [
+    { name: 'Goblet Squat', sets: 3, reps: 12, rest: 30, startWeight: 16 },
+    { name: 'Push-up', sets: 3, reps: 15, rest: 30, startWeight: 0 },
+    { name: 'Dumbbell Row', sets: 3, reps: 12, rest: 30, startWeight: 14 },
+    { name: 'Plank (seconds)', sets: 3, reps: 40, rest: 30, startWeight: 0 },
+  ] },
+  { id: 'kettlebell', category: 'conditioning', name: 'Kettlebell flow', focus: 'Strength and conditioning', icon: 'barbell-outline', exercises: [
+    { name: 'Kettlebell Swing', sets: 5, reps: 15, rest: 45, startWeight: 16 },
+    { name: 'Goblet Squat', sets: 4, reps: 12, rest: 60, startWeight: 16 },
+    { name: 'Kettlebell Clean and Press', sets: 3, reps: 8, rest: 60, startWeight: 12 },
+    { name: 'Turkish Get-up', sets: 2, reps: 3, rest: 75, startWeight: 8 },
+  ] },
+  { id: 'mobility', category: 'mobility', name: 'Mobility and stretch', focus: 'Recovery day, 15 minutes', icon: 'leaf-outline', exercises: [
+    { name: 'Cat-Cow (seconds)', sets: 2, reps: 45, rest: 15, startWeight: 0 },
+    { name: 'World’s Greatest Stretch (seconds)', sets: 2, reps: 60, rest: 15, startWeight: 0 },
+    { name: 'Hip Flexor Stretch (seconds)', sets: 2, reps: 45, rest: 15, startWeight: 0 },
+    { name: 'Thoracic Rotation (seconds)', sets: 2, reps: 45, rest: 15, startWeight: 0 },
+    { name: 'Child’s Pose (seconds)', sets: 2, reps: 60, rest: 15, startWeight: 0 },
+  ] },
 ];
+
+export const CATEGORY_LABELS: Record<Category, string> = { strength: 'Strength', bodyweight: 'Bodyweight', conditioning: 'Conditioning', mobility: 'Mobility' };
+
+/** Rough length of a session: about 40 seconds of work per set plus the rest between sets. */
+export function estimateMinutes(t: Pick<Template, 'exercises'>): number {
+  const sec = t.exercises.reduce((sum, e) => sum + e.sets * ((e.name.includes('(seconds)') ? e.reps : 40) + e.rest), 0);
+  return Math.max(5, Math.round(sec / 60 / 5) * 5);
+}
+
+// ── My workouts (saved routines) ────────────────────────────────────────────────
+export interface RoutineExercise { name: string; muscle?: string; sets: number; reps: number; unit: 'reps' | 'sec'; restSec: number; tip?: string }
+export interface Routine { _id: string; name: string; focus: string; exercises: RoutineExercise[]; weekdays: number[]; source: 'coach' | 'template' | 'manual' }
+
+/** The workout player works from templates, and marks timed holds by "(seconds)" in the name. */
+export function routineToTemplate(r: Routine): Template {
+  return {
+    id: r._id, name: r.name, focus: r.focus || 'Your workout', icon: 'albums-outline',
+    exercises: r.exercises.map((e) => ({ name: e.unit === 'sec' && !e.name.includes('(seconds)') ? `${e.name} (seconds)` : e.name, sets: e.sets, reps: e.reps, rest: e.restSec, startWeight: 0 })),
+  };
+}
+
+/** A built-in workout saved into My workouts. */
+export function templateToRoutineInput(t: Template) {
+  return {
+    name: t.name, focus: t.focus, source: 'template' as const,
+    exercises: t.exercises.map((e): RoutineExercise => {
+      const sec = e.name.includes('(seconds)');
+      return { name: e.name.replace(' (seconds)', ''), sets: e.sets, reps: e.reps, unit: sec ? 'sec' : 'reps', restSec: e.rest };
+    }),
+  };
+}
+
+export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** The workouts planned for a weekday (0 = Sunday), in the order they were saved. */
+export const routinesFor = (routines: Routine[], weekday: number) => routines.filter((r) => r.weekdays.includes(weekday));
+
+export const weekdaysLabel = (days: number[]) => (days.length === 0 ? 'Not scheduled' : days.length === 7 ? 'Every day' : [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => WEEKDAYS[d]).join(' · '));
 
 // ── Strength maths ──────────────────────────────────────────────────────────────
 /** Estimated best single lift from a set (the Epley formula). One rep is simply the weight. */

@@ -1,344 +1,118 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  StyleSheet,
-  ActivityIndicator,
-  Dimensions,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { challengeService, Challenge, ChallengeProgress } from "../services/challengeService";
-import { useAuth } from "../context/AuthContext";
-
+import React, { useCallback, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
-import { ListSkeleton } from '../components/states/Skeleton';
-import { EmptyState, ErrorState } from '../components/states/StateViews';
-import StaleNote from '../components/states/StaleNote';
-import { loadWithCache } from '../config/cache';
 import SpaceBackground from '../components/fx/SpaceBackground';
-const { width: SW } = Dimensions.get("window");
+import { ListSkeleton } from '../components/states/Skeleton';
+import { ErrorState } from '../components/states/StateViews';
+import { Eyebrow, GlassCard } from '../features/mission/ui';
+import type { SocialStackParamList } from '../types';
+import { DayChallenge, PRESETS, daysLeftLabel, paceLabel } from '../features/challenges/challengeLogic';
+import { StatusBar } from '../features/challenges/ui';
+import { dayChallenges } from '../services/dayChallengeService';
+import { errorMessage } from '../features/social/api';
 
-const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: readonly [string, string] }> = {
-  workout: { icon: "barbell",    color: colors.brand, bg: [colors.brandSoft, colors.brandSoft] },
-  calories: { icon: "flame",    color: colors.accent, bg: [colors.dangerSoft, colors.dangerSoft] },
-  steps:    { icon: "footsteps", color: colors.success, bg: [colors.successSoft, colors.successSoft] },
-};
+/** Your challenges, with your bar and your friends' bars side by side. Invitations come first. */
+export default function ChallengesScreen() {
+  const nav = useNavigation<NativeStackNavigationProp<SocialStackParamList>>();
+  const [items, setItems] = useState<DayChallenge[]>([]);
+  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [refreshing, setRefreshing] = useState(false);
 
-function daysLeft(endDate: string) {
-  const diff = new Date(endDate).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / 86400000));
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const d = Math.floor(diff / 86400000);
-  return d === 0 ? "Today" : d === 1 ? "Yesterday" : `${d}d ago`;
-}
-
-export default function ChallengesScreen({ navigation }: { navigation: any }) {
-  const { user } = useAuth();
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [myChallenges, setMyChallenges] = useState<Challenge[]>([]);
-  const [progress, setProgress] = useState<Record<string, ChallengeProgress>>({});
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"browse" | "active">("browse");
-
-  useEffect(() => {
-    Promise.all([loadChallenges(), loadMyChallenges()]).finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    try { setItems(await dayChallenges.list()); setState('ready'); } catch { setState((s) => (s === 'ready' ? s : 'error')); }
   }, []);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const [failed, setFailed] = useState(false);
-  const [savedAt, setSavedAt] = useState<number | undefined>();
+  const invites = items.filter((c) => c.myStatus === 'invited');
+  const active = items.filter((c) => c.myStatus === 'joined' && c.state === 'active');
+  const finished = items.filter((c) => c.myStatus === 'joined' && c.state === 'finished');
 
-  const loadChallenges = async () => {
-    const r = await loadWithCache("challenges", async () => {
-      const res = await challengeService.getChallenges({ status: "active" });
-      if (!res.success) throw new Error("failed");
-      return res.challenges;
-    });
-    if (r.data) setChallenges(r.data);
-    setFailed(!r.data);
-    setSavedAt(r.fromCache ? r.savedAt ?? Date.now() : undefined);
-  };
-
-  const loadMyChallenges = async () => {
-    const r = await loadWithCache("my-challenges", async () => {
-      const res = await challengeService.getMyChallenges();
-      if (!res.success) throw new Error("failed");
-      return res.challenges;
-    });
-    if (r.data) {
-      setMyChallenges(r.data);
-      r.data.forEach(c => loadProgress(c._id));
-    }
-  };
-
-  const loadProgress = async (challengeId: string) => {
-    try {
-      const res = await challengeService.getChallengeProgress(challengeId);
-      if (res.success) setProgress(p => ({ ...p, [challengeId]: res.progress }));
-    } catch {}
-  };
-
-  const handleJoin = async (challengeId: string) => {
-    try {
-      const res = await challengeService.joinChallenge(challengeId);
-      if (res.success) {
-        Alert.alert("Joined! 🎯", "Challenge accepted. Let's go!");
-        await Promise.all([loadChallenges(), loadMyChallenges()]);
-      }
-    } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.error || "Failed to join");
-    }
-  };
-
-  const renderChallenge = ({ item }: { item: Challenge }) => {
-    const cfg = TYPE_CONFIG[item.challengeType] || TYPE_CONFIG.workout;
-    const isJoined = myChallenges.some(c => c._id === item._id);
-    const prog = progress[item._id];
-    const pct = prog ? Math.min(prog.percentage, 100) : 0;
-    const days = daysLeft(item.endDate);
-    const authorName = item.creator.displayName || item.creator.email.split("@")[0];
-
-    return (
-      <View style={styles.card}>
-        {/* Gradient header banner */}
-        <LinearGradient colors={cfg.bg} style={styles.cardBanner}>
-          <View style={styles.cardBannerContent}>
-            <View style={styles.typeIconWrap}>
-              <Ionicons name={cfg.icon as any} size={28} color={cfg.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <View style={styles.cardTagRow}>
-                <View style={[styles.cardTag, { borderColor: cfg.color + "60", backgroundColor: cfg.color + "20" }]}>
-                  <Text style={[styles.cardTagText, { color: cfg.color }]}>
-                    {item.targetValue} {item.targetUnit}
-                  </Text>
-                </View>
-                <View style={[styles.cardTag, { borderColor: colors.border, backgroundColor: colors.bg + '40' }]}>
-                  <Ionicons name="time-outline" size={11} color={colors.muted} />
-                  <Text style={styles.cardTagTextGray}>{days}d left</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Participant avatars */}
-          <View style={styles.participantRow}>
-            {item.participants.slice(0, 4).map((_, i) => (
-              <LinearGradient
-                key={i}
-                colors={[cfg.color, cfg.color + "80"]}
-                style={[styles.participantAvatar, { marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }]}
-              >
-                <Text style={styles.participantAvatarText}>U</Text>
-              </LinearGradient>
-            ))}
-            {item.participants.length > 4 && (
-              <View style={[styles.participantAvatar, { marginLeft: -10, backgroundColor: colors.border, zIndex: 5 }]}>
-                <Text style={styles.participantAvatarText}>+{item.participants.length - 4}</Text>
-              </View>
-            )}
-            <Text style={styles.participantCount}>{item.participants.length} joined</Text>
-          </View>
-        </LinearGradient>
-
-        {/* Card body */}
-        <View style={styles.cardBody}>
-          {item.description && (
-            <Text style={styles.cardDesc}>{item.description}</Text>
-          )}
-
-          {/* Progress bar (if joined) */}
-          {isJoined && (
-            <View style={styles.progressWrap}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>Your Progress</Text>
-                <Text style={[styles.progressPct, { color: cfg.color }]}>{pct.toFixed(0)}%</Text>
-              </View>
-              <View style={styles.progressTrack}>
-                <LinearGradient
-                  colors={[cfg.color, cfg.color + "80"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[styles.progressFill, { width: `${pct}%` }]}
-                />
-              </View>
-              {prog && (
-                <Text style={styles.progressDetail}>{prog.current} / {prog.target} {item.targetUnit}</Text>
-              )}
-            </View>
-          )}
-
-          {/* Footer */}
-          <View style={styles.cardFooter}>
-            <View style={styles.creatorRow}>
-              <LinearGradient colors={[cfg.color + "60", cfg.color + "30"]} style={styles.creatorAvatar}>
-                <Text style={styles.creatorAvatarText}>{authorName[0].toUpperCase()}</Text>
-              </LinearGradient>
-              <Text style={styles.creatorName}>by {authorName}</Text>
-              <Text style={styles.creatorDate}>{timeAgo(item.createdAt)}</Text>
-            </View>
-
-            {isJoined ? (
-              <View style={[styles.joinedBadge, { borderColor: cfg.color }]}>
-                <Ionicons name="checkmark-circle" size={14} color={cfg.color} />
-                <Text style={[styles.joinedText, { color: cfg.color }]}>Active</Text>
-              </View>
-            ) : (
-              <TouchableOpacity onPress={() => handleJoin(item._id)} activeOpacity={0.85}>
-                <LinearGradient colors={[cfg.color, cfg.color + "cc"]} style={styles.joinBtn}>
-                  <Text style={styles.joinBtnText}>Join</Text>
-                  <Ionicons name="arrow-forward" size={14} color={colors.white} />
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.root}>
-      <SpaceBackground quiet />
-        <LinearGradient colors={['transparent', 'transparent']} style={StyleSheet.absoluteFill} />
-        <SafeAreaView style={styles.safeArea}>
-          <ListSkeleton rows={4} />
-        </SafeAreaView>
-      </View>
-    );
-  }
+  const accept = async (c: DayChallenge) => { try { await dayChallenges.accept(c._id); await load(); nav.navigate('ChallengeDetail', { id: c._id }); } catch (e) { Alert.alert('Could not join', errorMessage(e, 'Try again.')); } };
+  const decline = async (c: DayChallenge) => { try { await dayChallenges.decline(c._id); await load(); } catch (e) { Alert.alert('Could not decline', errorMessage(e, 'Try again.')); } };
 
   return (
-    <View style={styles.root}>
+    <View style={{ flex: 1 }}>
       <SpaceBackground quiet />
-      <LinearGradient colors={['transparent', 'transparent', 'transparent']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color={colors.ink} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Challenges</Text>
-            <Text style={styles.subtitle}>Compete. Win. Repeat.</Text>
-          </View>
-          <LinearGradient colors={[colors.brand + '20', colors.brand + '05']} style={styles.statPill}>
-            <Ionicons name="trophy" size={16} color={colors.warning} />
-            <Text style={styles.statPillText}>{myChallenges.length} active</Text>
-          </LinearGradient>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <View style={s.top}>
+          <TouchableOpacity onPress={() => nav.goBack()} hitSlop={10} accessibilityLabel="Back"><Ionicons name="chevron-back" size={28} color={colors.ink} /></TouchableOpacity>
+          <Text style={s.title}>Challenges</Text>
+          <TouchableOpacity onPress={() => nav.navigate('NewChallenge')} hitSlop={10} accessibilityLabel="Start a challenge"><Ionicons name="add-circle-outline" size={28} color={colors.ink} /></TouchableOpacity>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabBar}>
-          {[
-            { key: "browse" as const, label: "Discover", icon: "compass" },
-            { key: "active" as const, label: `My Challenges (${myChallenges.length})`, icon: "flash" },
-          ].map(t => (
-            <TouchableOpacity
-              key={t.key}
-              style={[styles.tab, activeTab === t.key && styles.tabActive]}
-              onPress={() => setActiveTab(t.key)}
-              activeOpacity={0.8}
-            >
-              {activeTab === t.key && <LinearGradient colors={[colors.brand + '20', colors.brand + '05']} style={[StyleSheet.absoluteFill, { borderRadius: 12 }]} />}
-              <Ionicons name={t.icon as any} size={15} color={activeTab === t.key ? colors.brandBright : colors.faint} />
-              <Text style={[styles.tabText, activeTab === t.key && styles.tabTextActive]}>{t.label}</Text>
-              {activeTab === t.key && <View style={styles.tabUnderline} />}
-            </TouchableOpacity>
-          ))}
-        </View>
+        {state === 'loading' ? <ListSkeleton /> : state === 'error' ? <ErrorState onRetry={load} /> : (
+          <ScrollView contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.brandBright} />}>
 
-        <FlatList
-          data={activeTab === "browse" ? challenges : myChallenges}
-          renderItem={renderChallenge}
-          keyExtractor={i => i._id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={savedAt !== undefined ? <StaleNote savedAt={savedAt} what="These challenges are" /> : undefined}
-          ListEmptyComponent={
-            failed && activeTab === "browse"
-              ? <ErrorState onRetry={() => { setLoading(true); Promise.all([loadChallenges(), loadMyChallenges()]).finally(() => setLoading(false)); }} />
-              : <EmptyState
-                  icon="trophy-outline"
-                  title={activeTab === "browse" ? "No active challenges" : "You haven't joined any"}
-                  why={activeTab === "active" ? "Join one from Browse and your progress will show up here." : "New challenges start every week. Check back soon, or invite a friend to start one."}
-                  actionLabel={activeTab === "active" ? "Browse challenges" : undefined}
-                  onAction={activeTab === "active" ? () => setActiveTab("browse") : undefined}
-                />
-          }
-        />
+            {invites.length ? <Eyebrow>Invitations</Eyebrow> : null}
+            {invites.map((c) => (
+              <GlassCard key={c._id} glow>
+                <Text style={s.cTitle}>{c.title}</Text>
+                <Text style={s.cMeta}>{c.days} days · {paceLabel(c.perWeek)}{c.members.find((m) => m.isMe)?.invitedBy ? ` · from ${c.members.find((m) => m.isMe)?.invitedBy}` : ''}</Text>
+                <Text style={s.cMeta}>{c.members.filter((m) => m.status === 'joined').map((m) => m.displayName).join(', ')} already in.</Text>
+                <View style={s.actions}>
+                  <TouchableOpacity style={s.primary} onPress={() => accept(c)}><Text style={s.primaryText}>Join</Text></TouchableOpacity>
+                  <TouchableOpacity style={s.ghost} onPress={() => decline(c)}><Text style={s.ghostText}>Decline</Text></TouchableOpacity>
+                </View>
+              </GlassCard>
+            ))}
+
+            {active.length ? <Eyebrow>{`Active · ${active.length}`}</Eyebrow> : null}
+            {active.map((c) => (
+              <TouchableOpacity key={c._id} activeOpacity={0.9} onPress={() => nav.navigate('ChallengeDetail', { id: c._id })} accessibilityRole="button">
+                <GlassCard>
+                  <View style={s.cHead}>
+                    <View style={{ flex: 1 }}><Text style={s.cTitle}>{c.title}</Text><Text style={s.cMeta}>Day {c.dayNumber} of {c.days} · {daysLeftLabel(c)} · {paceLabel(c.perWeek)}</Text></View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.faint} />
+                  </View>
+                  {c.members.map((m) => <StatusBar key={m._id} member={m} challenge={c} compact />)}
+                </GlassCard>
+              </TouchableOpacity>
+            ))}
+
+            {items.length === 0 ? (
+              <>
+                <Eyebrow>Start one</Eyebrow>
+                <Text style={s.lead}>Pick a length, choose how often you will train, and invite friends. Your days fill in by themselves when you log a workout.</Text>
+              </>
+            ) : <Eyebrow>Start a new one</Eyebrow>}
+            {PRESETS.map((p) => (
+              <TouchableOpacity key={p.days} activeOpacity={0.9} onPress={() => nav.navigate('NewChallenge', { days: p.days })} accessibilityRole="button" style={{ marginHorizontal: 20, marginBottom: 12 }}>
+                <LinearGradient colors={[p.color + 'cc', '#0c1730']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.preset}>
+                  <Ionicons name={p.icon as any} size={26} color="#fff" />
+                  <View style={{ flex: 1 }}><Text style={s.presetName}>{p.name}</Text><Text style={s.presetBlurb}>{p.blurb}</Text></View>
+                  <Text style={s.presetDays}>{p.days}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+
+            {finished.length ? <Eyebrow>Finished</Eyebrow> : null}
+            {finished.map((c) => (
+              <TouchableOpacity key={c._id} onPress={() => nav.navigate('ChallengeDetail', { id: c._id })} activeOpacity={0.9}>
+                <GlassCard style={{ opacity: 0.85 }}>
+                  <View style={s.cHead}><View style={{ flex: 1 }}><Text style={s.cTitle}>{c.title}</Text><Text style={s.cMeta}>{c.days} days · {c.members.find((m) => m.isMe)?.progress?.done ?? 0} of {c.target} days trained</Text></View><Ionicons name="chevron-forward" size={20} color={colors.faint} /></View>
+                </GlassCard>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </SafeAreaView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safeArea: { flex: 1 },
-
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, gap: 10 },
-  backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: colors.border, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 28, fontWeight: "800", color: colors.ink, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: colors.faint, marginTop: 2 },
-  statPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: colors.brand + '30' },
-  statPillText: { color: colors.brand, fontWeight: "700", fontSize: 13 },
-
-  tabBar: { flexDirection: "row", paddingHorizontal: 16, marginBottom: 10 },
-  tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, gap: 6, borderRadius: 12, position: "relative", overflow: "hidden" },
-  tabActive: {},
-  tabText: { fontSize: 13, color: colors.faint, fontWeight: "500" },
-  tabTextActive: { color: colors.brand, fontWeight: "700" },
-  tabUnderline: { position: "absolute", bottom: 0, left: "20%", right: "20%", height: 2, backgroundColor: colors.brand, borderRadius: 1 },
-
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
-
-  // Card
-  card: { borderRadius: 20, marginBottom: 14, overflow: "hidden", borderWidth: 1, borderColor: colors.border },
-  cardBanner: { padding: 16 },
-  cardBannerContent: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
-  typeIconWrap: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.black + '30', justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: colors.surfaceAlt },
-  cardTitle: { fontSize: 17, fontWeight: "800", color: colors.ink, letterSpacing: -0.3, marginBottom: 8 },
-  cardTagRow: { flexDirection: "row", gap: 8 },
-  cardTag: { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, gap: 4 },
-  cardTagText: { fontSize: 12, fontWeight: "700" },
-  cardTagTextGray: { fontSize: 12, color: colors.muted, fontWeight: "500" },
-  participantRow: { flexDirection: "row", alignItems: "center" },
-  participantAvatar: { width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: colors.bg },
-  participantAvatarText: { color: colors.white, fontSize: 10, fontWeight: "800" },
-  participantCount: { marginLeft: 8, fontSize: 12, color: colors.muted, fontWeight: "500" },
-
-  cardBody: { backgroundColor: colors.surface, padding: 16 },
-  cardDesc: { fontSize: 14, color: colors.muted, lineHeight: 20, marginBottom: 14 },
-
-  progressWrap: { marginBottom: 14 },
-  progressHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  progressLabel: { fontSize: 12, color: colors.muted, fontWeight: "500", textTransform: "uppercase", letterSpacing: 0.5 },
-  progressPct: { fontSize: 12, fontWeight: "800" },
-  progressTrack: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: "hidden" },
-  progressFill: { height: "100%", borderRadius: 4 },
-  progressDetail: { fontSize: 11, color: colors.faint, marginTop: 4, textAlign: "center" },
-
-  cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  creatorRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  creatorAvatar: { width: 26, height: 26, borderRadius: 13, justifyContent: "center", alignItems: "center" },
-  creatorAvatarText: { color: colors.white, fontSize: 11, fontWeight: "800" },
-  creatorName: { fontSize: 12, color: colors.muted, fontWeight: "500" },
-  creatorDate: { fontSize: 11, color: colors.faint },
-  joinBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingVertical: 9, borderRadius: 20, gap: 6 },
-  joinBtnText: { color: colors.white, fontWeight: "800", fontSize: 14 },
-  joinedBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: colors.black + '20' },
-  joinedText: { fontSize: 13, fontWeight: "700" },
-
-  empty: { alignItems: "center", paddingVertical: 60 },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.faint, marginTop: 14 },
-  emptyHint: { fontSize: 13, color: colors.border, marginTop: 4 },
+const s = StyleSheet.create({
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 8 }, title: { fontSize: 20, fontWeight: '900', color: colors.ink },
+  lead: { color: colors.muted, fontSize: 14, lineHeight: 20, marginHorizontal: 22, marginBottom: 12 },
+  cHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }, cTitle: { color: colors.ink, fontSize: 18, fontWeight: '900' }, cMeta: { color: colors.muted, fontSize: 12.5, marginTop: 3 },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  primary: { flex: 1, height: 44, borderRadius: 14, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' }, primaryText: { color: '#fff', fontWeight: '900', fontSize: 15 },
+  ghost: { height: 44, paddingHorizontal: 20, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }, ghostText: { color: colors.inkSoft, fontWeight: '800' },
+  preset: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,190,140,0.25)' },
+  presetName: { color: '#fff', fontSize: 17, fontWeight: '900' }, presetBlurb: { color: 'rgba(255,255,255,0.8)', fontSize: 12.5, marginTop: 2 }, presetDays: { color: '#fff', fontSize: 38, fontWeight: '900', opacity: 0.9 },
 });

@@ -115,6 +115,8 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   app.use('/api/friends', require(SRC + '/routes/friend.routes').default);
   app.use('/api/challenges', require(SRC + '/routes/challenge.routes').default);
   app.use('/api/devices', require(SRC + '/routes/devices.routes').default);
+  app.use('/api/day-challenges', require(SRC + '/routes/dayChallenge.routes').default);
+  app.use('/api/coach', require(SRC + '/routes/coach.routes').default);
   // Unique indexes (e.g. one member per email per business) are built in the background on a fresh
   // database. Wait for them, or a fast test can slip a duplicate in before the index exists.
   await Promise.all(Object.values(require('mongoose').models).map((m) => m.init()));
@@ -1581,6 +1583,196 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal(await DeviceConnection.countDocuments({ userId: uid }), 0); assert.equal(await DeviceReading.countDocuments({ userId: uid }), 0);
   });
   global.fetch = realFetchDev;
+
+
+  console.log('Challenges (30 / 60 / 90 days) and the AI coach');
+  const logic = require(SRC + '/services/challenge.logic');
+  const coachSvc = require(SRC + '/services/coach.service');
+  const { DayChallenge, DayChallengeMember } = require(SRC + '/models/DayChallenge.model');
+  const { Routine } = require(SRC + '/models/Routine.model');
+  const [P1, P2, P3, P4] = ['nutri', 'viewer', 'coach', 'newbie'];     // P1 starts challenges; P2 and P3 are P1's friends; P4 is a stranger
+  const cToday = new Date().toISOString().slice(0, 10);
+  const trained = (who, when = new Date(), extra = {}) => Workout.create({ userId: users[who].id, exercise: 'Session', duration: 30, completed: true, timestamp: when, ...extra });
+  let ch1;
+
+  await t('progress rules: days done, missed days, streak, pace and completion are worked out from the days trained', () => {
+    const keys = new Set(['2026-03-01', '2026-03-02', '2026-03-04', '2026-03-05']);
+    const p = logic.progressFor(keys, '2026-03-01', 30, 5, '2026-03-05');
+    assert.equal(p.target, 22); assert.equal(p.done, 4); assert.equal(p.pct, 18); assert.equal(p.streak, 2); assert.equal(p.todayDone, true);
+    assert.equal(p.grid.slice(0, 7), 'ddmddff'); assert.equal(p.grid.length, 30); assert.equal(p.onTrack, true);
+    // today not trained yet: the streak survives until the day is over; today shows as pending
+    const q = logic.progressFor(new Set(['2026-03-03', '2026-03-04']), '2026-03-01', 30, 5, '2026-03-05');
+    assert.equal(q.streak, 2); assert.equal(q.todayDone, false); assert.equal(q.grid.slice(0, 6), 'mmddtf');
+    assert.equal(logic.targetFor(30, 7), 30); assert.equal(logic.targetFor(60, 3), 26); assert.equal(logic.targetFor(90, 5), 65);
+    assert.equal(logic.endKeyFor('2026-03-01', 30), '2026-03-30'); assert.equal(logic.stateOf('2026-03-01', 30, '2026-03-30'), 'active'); assert.equal(logic.stateOf('2026-03-01', 30, '2026-03-31'), 'finished');
+    // finishing: enough days done
+    const full = new Set(Array.from({ length: 22 }, (_, i) => logic.addDays('2026-03-01', i)));
+    assert.equal(logic.progressFor(full, '2026-03-01', 30, 5, '2026-03-30').completed, true);
+    // behind pace
+    assert.equal(logic.progressFor(new Set(['2026-03-01']), '2026-03-01', 30, 7, '2026-03-10').onTrack, false);
+  });
+  await t('starting a challenge needs a real length (30/60/90) and pace (3/5/7 a week)', async () => {
+    assert.equal((await call(P1, 'POST', '/api/day-challenges', { days: 45, perWeek: 5 })).status, 400);
+    assert.equal((await call(P1, 'POST', '/api/day-challenges', { days: 30, perWeek: 4 })).status, 400);
+    assert.equal((await call(null, 'POST', '/api/day-challenges', { days: 30, perWeek: 5 })).status, 401);
+  });
+  await t('only friends can be invited; strangers and blocked people cannot', async () => {
+    await befriend(P1, P2); await befriend(P1, P3);
+    assert.equal((await call(P1, 'POST', '/api/day-challenges', { days: 30, perWeek: 5, friendIds: [await meId(P4)] })).status, 400);
+    await call(P1, 'POST', '/api/safety/block/' + await meId(P3));
+    assert.equal((await call(P1, 'POST', '/api/day-challenges', { days: 30, perWeek: 5, friendIds: [await meId(P3)] })).status, 400);
+    await call(P1, 'DELETE', '/api/safety/block/' + await meId(P3)); await befriend(P1, P3).catch(() => {});
+  });
+  await t('a 30-day challenge for 5 days a week: 22 training days needed, invitations sent, nothing counted yet', async () => {
+    await trained(P1, new Date(Date.now() - 2 * DAY));                    // before the challenge: must not count
+    const r = await call(P1, 'POST', '/api/day-challenges', { days: 30, perWeek: 5, title: '  Summer <b>cut</b> ', friendIds: [await meId(P2)] });
+    assert.equal(r.status, 201, JSON.stringify(r.body)); ch1 = r.body.data;
+    assert.equal(ch1.title, 'Summer bcut/b');   // angle brackets removed, spaces trimmed
+    assert.deepEqual([ch1.days, ch1.target, ch1.startKey, ch1.state, ch1.dayNumber, ch1.isCreator], [30, 22, cToday, 'active', 1, true]);
+    const me = ch1.members.find((m) => m.isMe), friend = ch1.members.find((m) => !m.isMe);
+    assert.equal(me.status, 'joined'); assert.equal(me.progress.done, 0); assert.equal(me.progress.grid[0], 't'); assert.equal(me.progress.grid.length, 30);
+    assert.equal(friend.status, 'invited'); assert.equal(friend.progress, null);
+    assert.ok(!JSON.stringify(r.body).includes('@'), 'no emails');
+  });
+  await t('an invitation shows up for the friend, and only for them', async () => {
+    const mine = (await call(P2, 'GET', '/api/day-challenges')).body.data;
+    assert.equal(mine.length, 1); assert.equal(mine[0].myStatus, 'invited'); assert.equal(mine[0].members.find((m) => m.isMe).status, 'invited');
+    assert.equal((await call(P4, 'GET', '/api/day-challenges/' + ch1._id)).status, 404);
+    assert.deepEqual((await call(P4, 'GET', '/api/day-challenges')).body.data, []);
+    assert.equal((await call(P4, 'POST', `/api/day-challenges/${ch1._id}/accept`, {})).status, 404);
+    assert.equal((await call(P1, 'GET', '/api/day-challenges/not-an-id')).status, 404);
+  });
+  await t('accepting joins the challenge; progress then comes only from workouts really saved in the challenge days', async () => {
+    const a = await call(P2, 'POST', `/api/day-challenges/${ch1._id}/accept`, {});
+    assert.equal(a.status, 200); assert.equal(a.body.data.members.find((m) => m.isMe).status, 'joined');
+    await trained(P1); await trained(P1);                                      // two sessions the same day = one day
+    await trained(P1, new Date(), { completed: false });                       // not completed: does not count
+    const d = (await call(P1, 'GET', '/api/day-challenges/' + ch1._id)).body.data;
+    const me = d.members.find((m) => m.isMe), friend = d.members.find((m) => !m.isMe);
+    assert.deepEqual([me.progress.done, me.progress.pct, me.progress.streak, me.progress.todayDone, me.progress.grid[0]], [1, 5, 1, true, 'd']);
+    assert.deepEqual([friend.progress.done, friend.progress.todayDone], [0, false]);
+    // both see the same two people, each with their own bar
+    const theirs = (await call(P2, 'GET', '/api/day-challenges/' + ch1._id)).body.data;
+    assert.equal(theirs.members.length, 2); assert.equal(theirs.members.find((m) => !m.isMe).progress.done, 1);
+    await trained(P2);
+    assert.equal((await call(P1, 'GET', '/api/day-challenges/' + ch1._id)).body.data.members.find((m) => m.displayName === (theirs.members.find((x) => x.isMe).displayName)).progress.done, 1);
+  });
+  await t('workouts of someone outside the challenge never leak into it', async () => {
+    await trained(P4); await trained(P4);
+    const d = (await call(P1, 'GET', '/api/day-challenges/' + ch1._id)).body.data;
+    assert.deepEqual(d.members.map((m) => m.progress.done).sort(), [1, 1]);
+  });
+  await t('inviting more friends: only members can invite, only friends, up to 10 people', async () => {
+    assert.equal((await call(P3, 'POST', `/api/day-challenges/${ch1._id}/invite`, { friendIds: [await meId(P1)] })).status, 404);   // not a member
+    assert.equal((await call(P1, 'POST', `/api/day-challenges/${ch1._id}/invite`, { friendIds: [await meId(P4)] })).status, 400);   // stranger
+    assert.equal((await call(P1, 'POST', `/api/day-challenges/${ch1._id}/invite`, { friendIds: [] })).status, 400);
+    const r = await call(P1, 'POST', `/api/day-challenges/${ch1._id}/invite`, { friendIds: [await meId(P3)] });
+    assert.equal(r.status, 200); assert.equal(r.body.data.members.length, 3);
+  });
+  await t('declining removes the person from the bars; they can be invited again', async () => {
+    assert.equal((await call(P3, 'POST', `/api/day-challenges/${ch1._id}/decline`)).status, 200);
+    assert.equal((await call(P1, 'GET', '/api/day-challenges/' + ch1._id)).body.data.members.length, 2);
+    assert.equal((await call(P3, 'GET', '/api/day-challenges/' + ch1._id)).status, 404);
+    assert.equal((await call(P1, 'POST', `/api/day-challenges/${ch1._id}/invite`, { friendIds: [await meId(P3)] })).body.data.members.length, 3);
+  });
+  await t('blocking someone hides them from the challenge bars', async () => {
+    await call(P1, 'POST', '/api/safety/block/' + await meId(P3));
+    assert.equal((await call(P1, 'GET', '/api/day-challenges/' + ch1._id)).body.data.members.some((m) => m.status === 'invited'), false);
+    await call(P1, 'DELETE', '/api/safety/block/' + await meId(P3));
+  });
+  await t('capacity: a challenge holds up to 10 people, and a person up to 5 active challenges', async () => {
+    const full = await DayChallenge.create({ creator: await meId(P1), title: 'Full', days: 30, perWeek: 3, target: 13, startKey: cToday, endKey: logic.endKeyFor(cToday, 30) });
+    await DayChallengeMember.create({ challenge: full._id, user: await meId(P1), supabaseId: users[P1].id, status: 'joined' });
+    await DayChallengeMember.insertMany(Array.from({ length: 9 }, () => ({ challenge: full._id, user: new (require('mongoose').Types.ObjectId)(), status: 'joined' })));
+    assert.equal((await call(P1, 'POST', `/api/day-challenges/${full._id}/invite`, { friendIds: [await meId(P2)] })).status, 400);
+    await DayChallengeMember.deleteMany({ challenge: full._id }); await DayChallenge.deleteOne({ _id: full._id });
+    const made = [];
+    for (let i = 0; i < 4; i++) made.push((await call(P1, 'POST', '/api/day-challenges', { days: 60, perWeek: 3 })).body.data?._id);   // 1 + 4 = 5 active
+    assert.equal((await call(P1, 'POST', '/api/day-challenges', { days: 60, perWeek: 3 })).status, 429);
+    for (const id of made) await call(P1, 'DELETE', '/api/day-challenges/' + id);
+  });
+  await t('leaving and ending: a member leaves; the creator cannot leave but can end it for everyone', async () => {
+    assert.equal((await call(P1, 'POST', `/api/day-challenges/${ch1._id}/leave`)).status, 400);
+    assert.equal((await call(P2, 'DELETE', '/api/day-challenges/' + ch1._id)).status, 404);
+    assert.equal((await call(P2, 'POST', `/api/day-challenges/${ch1._id}/leave`)).status, 200);
+    assert.equal((await call(P2, 'GET', '/api/day-challenges/' + ch1._id)).status, 404);
+    assert.equal((await call(P1, 'DELETE', '/api/day-challenges/' + ch1._id)).status, 200);
+    assert.equal(await DayChallengeMember.countDocuments({ challenge: ch1._id }), 0); assert.equal((await call(P1, 'GET', '/api/day-challenges')).body.data.length, 0);
+  });
+  await t('a finished challenge cannot be joined, and shows as finished', async () => {
+    const old = await DayChallenge.create({ creator: await meId(P1), title: 'Old', days: 30, perWeek: 5, target: 22, startKey: '2025-01-01', endKey: '2025-01-30' });
+    await DayChallengeMember.create({ challenge: old._id, user: await meId(P1), supabaseId: users[P1].id, status: 'joined' });
+    await DayChallengeMember.create({ challenge: old._id, user: await meId(P2), status: 'invited', invitedBy: await meId(P1) });
+    assert.equal((await call(P2, 'POST', `/api/day-challenges/${old._id}/accept`, {})).status, 400);
+    const d = (await call(P1, 'GET', '/api/day-challenges')).body.data; assert.equal(d[0].state, 'finished'); assert.equal(d[0].daysLeft, 0);
+    await DayChallengeMember.deleteMany({ challenge: old._id }); await DayChallenge.deleteOne({ _id: old._id });
+  });
+  await t('the older challenge list no longer exposes email addresses', async () => {
+    await call(P1, 'POST', '/api/challenges', { title: 'Legacy', challengeType: 'workout', targetValue: 5, targetUnit: 'workouts', duration: 7 });
+    const list = await call(P1, 'GET', '/api/challenges'); assert.ok(!JSON.stringify(list.body).includes('@'));
+  });
+
+  // ── AI coach ──
+  const gemC = require(SRC + '/services/gemini.service'); const realSuggest = gemC.suggestWorkoutsWithGemini;
+  let coachMode = 'ok'; const seenProfiles = [];
+  gemC.suggestWorkoutsWithGemini = async (profile) => { seenProfiles.push(profile); if (coachMode === 'down') throw new gemC.AiUnavailableError(); return coachSvc.cleanPlan({ summary: 'Build a wide back.', days: [
+    { name: 'Pull', focus: 'Back, biceps', exercises: [{ name: 'Pull-up', muscle: 'back', sets: 4, reps: 8, restSec: 90 }, { name: 'Barbell Row', muscle: 'back', sets: 3, reps: 10 }] },
+    { name: 'Push', focus: 'Chest', exercises: [{ name: 'Bench Press', sets: 4, reps: 8 }, { name: 'Plank', unit: 'sec', reps: 45 }] }], tips: ['Sleep 8 hours'] }); };
+  const brief = { goal: 'build_muscle', bodyStyle: 'v_taper', level: 'intermediate', equipment: 'full_gym', daysPerWeek: 4, minutes: 50, focus: ['back', 'shoulders', 'nonsense'], notes: 'bad <script>knee</script>' };
+
+  await t('coach rules: the AI answer is cleaned (limits, duplicates, tags, thin days) and junk is rejected', () => {
+    const plan = coachSvc.cleanPlan({ summary: 'x<b>', days: [
+      { name: 'Day <i>1</i>', focus: 'f', exercises: [{ name: 'Squat', sets: 99, reps: 9999, restSec: -5 }, { name: 'squat' }, { name: '' }, { name: 'Plank', unit: 'sec', reps: 5 }, 'junk'] },
+      { name: 'Thin', exercises: [{ name: 'Only one' }] }], tips: ['a', 5, 'b', 'c', 'd'] });
+    assert.equal(plan.days.length, 1); assert.equal(plan.days[0].name, 'Day i 1 /i'); assert.equal(plan.summary, 'x b'); assert.ok(!/[<>]/.test(plan.days[0].name + plan.summary));
+    const [sq, pl] = plan.days[0].exercises; assert.equal(plan.days[0].exercises.length, 2);
+    assert.deepEqual([sq.sets, sq.reps, sq.restSec, sq.unit], [8, 50, 0, 'reps']); assert.deepEqual([pl.unit, pl.reps], ['sec', 10]);
+    assert.equal(plan.tips.length, 3);
+    assert.equal(coachSvc.cleanPlan(null), null); assert.equal(coachSvc.cleanPlan({ days: [] }), null); assert.equal(coachSvc.cleanPlan({ days: [{ name: 'x', exercises: [] }] }), null);
+  });
+  await t('coach: a goal and a body style are required, and the request is checked before the AI is asked', async () => {
+    assert.equal((await call(P1, 'POST', '/api/coach/suggest', { bodyStyle: 'v_taper' })).status, 400);
+    assert.equal((await call(P1, 'POST', '/api/coach/suggest', { goal: 'build_muscle', bodyStyle: 'rockstar' })).status, 400);
+    assert.equal((await call(null, 'POST', '/api/coach/suggest', brief)).status, 401);
+    assert.equal(seenProfiles.length, 0);
+  });
+  await t('coach: a plan comes back for the goal, with the request cleaned first (unknown focus dropped, tags stripped)', async () => {
+    const r = await call(P2, 'POST', '/api/coach/suggest', { ...brief, daysPerWeek: 99, minutes: 5 });
+    assert.equal(r.status, 200); assert.equal(r.body.data.plan.days.length, 2); assert.equal(r.body.data.plan.days[0].exercises[0].name, 'Pull-up');
+    const p = seenProfiles.at(-1); assert.deepEqual([p.goal, p.bodyStyle, p.daysPerWeek, p.minutes], ['build_muscle', 'v_taper', 6, 20]);
+    assert.deepEqual(p.focus, ['back', 'shoulders']); assert.ok(!/[<>]/.test(p.notes));
+  });
+  await t('coach: if the AI is down we say so (no invented plan) and the try is not counted; free accounts get 3 plans a day', async () => {
+    coachMode = 'down';
+    for (let i = 0; i < 5; i++) { const r = await call(P3, 'POST', '/api/coach/suggest', brief); assert.equal(r.status, 503); assert.equal(r.body.code, 'ai_unavailable'); }
+    coachMode = 'ok';
+    for (let i = 0; i < 3; i++) assert.equal((await call(P3, 'POST', '/api/coach/suggest', brief)).status, 200);
+    const r = await call(P3, 'POST', '/api/coach/suggest', brief); assert.equal(r.status, 429); assert.match(r.body.message, /workout plans/);
+  });
+  gemC.suggestWorkoutsWithGemini = realSuggest;
+
+  await t('my workouts: save from a plan, schedule on weekdays, edit, add exercises (no repeats), delete', async () => {
+    const make = await call(P1, 'POST', '/api/coach/routines', { name: ' Pull day ', focus: 'Back', source: 'coach', weekdays: [1, 4, 4, 9, 'x'], exercises: [{ name: 'Pull-up', sets: 4, reps: 8 }, { name: 'Plank', unit: 'sec', reps: 45, sets: 999 }] });
+    assert.equal(make.status, 201); const id = make.body.data._id;
+    assert.deepEqual([make.body.data.name, make.body.data.weekdays, make.body.data.source, make.body.data.exercises[1].sets], ['Pull day', [1, 4], 'coach', 8]);
+    const add = await call(P1, 'POST', `/api/coach/routines/${id}/exercises`, { exercises: [{ name: 'pull-up' }, { name: 'Face Pull', sets: 3, reps: 15 }] });
+    assert.equal(add.status, 200); assert.equal(add.body.added, 1); assert.equal(add.body.data.exercises.length, 3);
+    const upd = await call(P1, 'PUT', `/api/coach/routines/${id}`, { name: 'Back day', weekdays: [2] });
+    assert.deepEqual([upd.body.data.name, upd.body.data.weekdays], ['Back day', [2]]);
+    assert.equal((await call(P1, 'PUT', `/api/coach/routines/${id}`, { exercises: [] })).status, 400);
+    assert.equal((await call(P1, 'GET', '/api/coach/routines')).body.data.length, 1);
+    assert.equal((await call(P2, 'GET', '/api/coach/routines')).body.data.length, 0);                       // someone else's list is empty
+    assert.equal((await call(P2, 'PUT', `/api/coach/routines/${id}`, { name: 'hijack' })).status, 404);
+    assert.equal((await call(P2, 'DELETE', `/api/coach/routines/${id}`)).status, 404);
+    assert.equal((await call(P1, 'DELETE', `/api/coach/routines/${id}`)).status, 200); assert.equal(await Routine.countDocuments({ userId: users[P1].id }), 0);
+  });
+  await t('my workouts: a name and at least one exercise are required, and there is a limit of 20', async () => {
+    assert.equal((await call(P1, 'POST', '/api/coach/routines', { name: '', exercises: [{ name: 'x' }] })).status, 400);
+    assert.equal((await call(P1, 'POST', '/api/coach/routines', { name: 'Empty', exercises: [] })).status, 400);
+    await Routine.insertMany(Array.from({ length: 20 }, (_, i) => ({ userId: users[P1].id, name: 'R' + i, exercises: [{ name: 'x', sets: 3, reps: 10, unit: 'reps', restSec: 60 }] })));
+    assert.equal((await call(P1, 'POST', '/api/coach/routines', { name: 'One more', exercises: [{ name: 'x' }] })).status, 400);
+    await Routine.deleteMany({ userId: users[P1].id });
+  });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
   server.close(); await require('mongoose').disconnect(); await mms.stop();

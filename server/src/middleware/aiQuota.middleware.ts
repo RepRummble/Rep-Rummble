@@ -3,15 +3,15 @@ import { AiUsage } from '../models/AiUsage.model'
 import { AuthRequest } from './auth.middleware'
 import { getBillingView } from '../services/billing.service'
 
-export type AiKind = 'scan' | 'quicklog' | 'search'
+export type AiKind = 'scan' | 'quicklog' | 'search' | 'coach'
 
 /** Daily allowance per plan. Free is small; paid is generous but still capped, so one account cannot run up the AI bill. */
 export const AI_DAILY_LIMITS: Record<'free' | 'paid', Record<AiKind, number>> = {
-  free: { scan: 3, quicklog: 10, search: 40 },
-  paid: { scan: 100, quicklog: 200, search: 400 },
+  free: { scan: 3, quicklog: 10, search: 40, coach: 3 },
+  paid: { scan: 100, quicklog: 200, search: 400, coach: 30 },
 }
 
-const LABEL: Record<AiKind, string> = { scan: 'photo scans', quicklog: 'quick logs', search: 'food searches' }
+const LABEL: Record<AiKind, string> = { scan: 'photo scans', quicklog: 'quick logs', search: 'food searches', coach: 'workout plans' }
 
 export const utcDay = (d: Date = new Date()) => d.toISOString().slice(0, 10)
 
