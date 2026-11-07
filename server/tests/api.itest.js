@@ -1562,6 +1562,8 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     assert.equal(devCrypto.decrypt(blob), 'secret-token');
     const parts = blob.split('.'); parts[3] = Buffer.from('x' + Buffer.from(parts[3], 'base64url').toString('binary')).toString('base64url');
     assert.throws(() => devCrypto.decrypt(parts.join('.')));
+    const shortTag = blob.split('.'); shortTag[2] = Buffer.from(Buffer.from(shortTag[2], 'base64url').subarray(0, 4)).toString('base64url');
+    assert.throws(() => devCrypto.decrypt(shortTag.join('.')), /Unreadable/);   // a truncated tag is refused, not verified
     const keep = process.env.DEVICE_TOKEN_KEY; process.env.DEVICE_TOKEN_KEY = 'too-short'; assert.throws(() => devCrypto.encrypt('x')); process.env.DEVICE_TOKEN_KEY = keep;
   });
   await t('without the lock key, services are reported unavailable rather than storing tokens in the clear', async () => {
