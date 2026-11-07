@@ -337,7 +337,7 @@ export default function WearablesScreen() {
 
   return (
     <View style={s.root}>
-      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['transparent', 'transparent', 'transparent']} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         {/* ── Header ── */}

@@ -22,7 +22,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0b3d91"
+        "backgroundColor": "#7a1224"
       },
       "package": "com.reprumble.app",
       "permissions": [

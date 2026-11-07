@@ -83,6 +83,8 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   const goodRefresh = new Set(['refresh-good']);
   sup.refreshSession = async (token) => goodRefresh.delete(token) ? { success: true, user: { id: users.maya.id, email: users.maya.email, user_metadata: { displayName: 'Maya' } }, session: { access_token: 'access-2', refresh_token: 'refresh-2' } } : { success: false, error: 'Invalid Refresh Token: Already Used' };
   sup.resendVerification = async (email) => { resent.push(email); };
+  const resetMails = [];
+  sup.sendPasswordReset = async (email) => { resetMails.push(email); };
   const express = require('express');
   const { connectDB } = require(SRC + '/config/database');
   await connectDB();
@@ -1004,6 +1006,27 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     const r = await call('maya', 'POST', '/api/ai/analyze-food', { imageBase64: 'A'.repeat(300) });
     assert.equal(r.status, 503); assert.equal(r.body.code, 'ai_unavailable');
     assert.equal(r.body.data, undefined);
+  });
+
+  console.log('Password reset and saved preferences');
+  await t('forgot-password emails a reset link and answers the same way for any address', async () => {
+    const r = await fetch(base + '/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: '  Maya@Members.test ' }) });
+    assert.equal(r.status, 200); assert.deepEqual(resetMails, ['maya@members.test']);
+    const r2 = await fetch(base + '/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'nobody@nowhere.test' }) });
+    assert.equal(r2.status, 200); assert.equal((await r2.json()).message, (await r.json()).message);
+  });
+  await t('forgot-password rejects something that is not an email, without sending anything', async () => {
+    const before = resetMails.length;
+    for (const body of [{}, { email: 'not-an-email' }, { email: 42 }, { email: 'a@b' }]) {
+      const r = await fetch(base + '/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      assert.equal(r.status, 400);
+    }
+    assert.equal(resetMails.length, before);
+  });
+  await t('/auth/me carries the goals and preferences the person saved, with safe defaults when there are none', async () => {
+    const me = await call('maya', 'GET', '/api/auth/me');
+    assert.equal(me.status, 200);
+    assert.deepEqual(me.body.data.profile, { goal: null, activity: null, diets: [], notifications: null });
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);

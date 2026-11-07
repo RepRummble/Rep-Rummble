@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { register, login, refresh, resendVerification, getMe, getOAuthUrl, logout, updateProfile, deleteAccount } from '../controllers/auth.controller'
+import { register, login, refresh, resendVerification, forgotPassword, getMe, getOAuthUrl, logout, updateProfile, deleteAccount } from '../controllers/auth.controller'
 import { protect } from '../middleware/auth.middleware'
 import { authLimiter, loginLimiter, refreshLimiter, resendLimiter } from '../middleware/rateLimit.middleware'
 
@@ -10,6 +10,7 @@ router.post('/register', authLimiter, register)
 router.post('/login', loginLimiter, login)
 router.post('/refresh', refreshLimiter, refresh)
 router.post('/resend-verification', resendLimiter, resendVerification)
+router.post('/forgot-password', resendLimiter, forgotPassword)
 
 // OAuth routes (Supabase handles the callback)
 router.get('/oauth/:provider', getOAuthUrl)

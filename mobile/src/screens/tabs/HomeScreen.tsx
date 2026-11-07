@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
-  TouchableOpacity, Dimensions, Animated,
+  TouchableOpacity, Dimensions, Animated, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,20 +18,18 @@ import StaleNote from '../../components/states/StaleNote';
 import { loadWithCache } from '../../config/cache';
 
 import { colors } from '../../theme/colors';
+import RankCard from '../../features/mission/RankCard';
+import MissionsCard from '../../features/mission/MissionsCard';
+import WaterCard from '../../features/mission/WaterCard';
+import BriefingCard from '../../features/mission/BriefingCard';
+import BadgesRow from '../../features/mission/BadgesRow';
+import { GOALS, badgesFor, claimableXp, dayKey, insightsFor, levelFromXp, missionsFor } from '../../features/mission/missionLogic';
+import { loadClaimed, loadWater, saveClaimed, saveWater } from '../../features/mission/missionStore';
+import { useTargets } from '../../features/profile/targetsStore';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const { width: SW } = Dimensions.get('window');
 
-const CAL_GOAL = 2200;
-const PROTEIN_GOAL = 150;
-const WORKOUT_GOAL = 1;
-
-const AI_TIPS = [
-  { icon: '💧', title: 'Hydration Check', body: 'You\'re 3 hours in — aim for 500ml water before your next meal to boost metabolism by 30%.' },
-  { icon: '🏋️', title: 'Lift Heavy Today', body: 'Your HRV suggests you\'re recovered. Push a PR on bench press — body is primed.' },
-  { icon: '🥗', title: 'Protein Window', body: 'Log a protein-rich meal within the next 2 hours to maximize muscle protein synthesis.' },
-  { icon: '😴', title: 'Recovery Mode', body: '8 hours of sleep = 34% better next-day performance. Wind down by 10:30 PM tonight.' },
-  { icon: '🔥', title: 'Keep the Streak', body: 'Streaks rewire habits. One small workout — even 10 min — keeps your chain alive.' },
-];
+const WORKOUT_GOAL = GOALS.workouts;
 
 const QUICK_ACTIONS = [
   { label: 'Scan Meal',    icon: 'camera',        color: colors.success, bg: [colors.successSoft, colors.successSoft] as const, route: 'FoodScanner' },
@@ -78,14 +76,27 @@ function Ring({ pct, size, color, icon, label }: { pct: number; size: number; co
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const targets = useTargets();
+  const CAL_GOAL = targets.calories;
+  const PROTEIN_GOAL = targets.protein;
+  const goals = { ...GOALS, ...targets };
   const [meals, setMeals] = useState<Meal[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const tipIdx = useRef(new Date().getHours() % AI_TIPS.length).current;
+  const [water, setWater] = useState(0);
+  const [claimed, setClaimed] = useState<string[]>([]);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Water and collected missions are saved per calendar day on this phone.
+  const uid = user?._id || user?.email || 'me';
+  useEffect(() => {
+    const day = dayKey();
+    loadWater(uid, day).then(setWater);
+    loadClaimed(uid, day).then(setClaimed);
+  }, [uid]);
 
   useEffect(() => {
     fetchData();
@@ -127,13 +138,36 @@ export default function HomeScreen() {
   const name = user?.displayName || user?.email?.split('@')[0] || 'Champ';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const tip = AI_TIPS[tipIdx];
 
-  // XP to next level
-  const xpPerLevel = 500;
   const currentXP = user?.xp || 0;
-  const xpInLevel = currentXP % xpPerLevel;
-  const xpPct = (xpInLevel / xpPerLevel) * 100;
+
+  // Missions, briefing and medals are all worked out from what has really been logged.
+  const missions = missionsFor({ mealsLogged: todayMeals.length, calories: totalCalories, protein: totalProtein, workouts: todayWorkouts.length, water }, goals);
+  const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+  const workoutsLast7 = workouts.filter(w => new Date(w.timestamp).getTime() >= weekAgo).length;
+  const daysWithMealsLast7 = new Set(meals.filter(m => new Date(m.timestamp).getTime() >= weekAgo).map(m => dayKey(new Date(m.timestamp)))).size;
+  const insights = insightsFor({ todayCalories: totalCalories, todayProtein: totalProtein, todayWorkouts: todayWorkouts.length, todayMeals: todayMeals.length, streak: user?.streak || 0, hour, workoutsLast7, daysWithMealsLast7 }, goals);
+  const badges = badgesFor({ meals: meals.length, workouts: workouts.length, streak: user?.streak || 0, level: levelFromXp(currentXP) });
+
+  const changeWater = (n: number) => { setWater(n); saveWater(uid, dayKey(), n); };
+
+  // Collect XP for finished missions: saved to the account first, and only marked as collected once that worked.
+  const claimMissions = async (ids: string[]): Promise<boolean> => {
+    const gain = claimableXp(missions.filter(m => ids.includes(m.id)), claimed);
+    if (gain <= 0) return false;
+    const newXp = currentXP + gain;
+    try {
+      await api.put('/users/profile', { xp: newXp, level: levelFromXp(newXp) });
+    } catch {
+      Alert.alert('Could not collect XP', 'Check your connection and try again. Your mission is still complete.');
+      return false;
+    }
+    updateUser({ xp: newXp, level: levelFromXp(newXp) });
+    const next = [...claimed, ...ids.filter(i => !claimed.includes(i))];
+    setClaimed(next);
+    await saveClaimed(uid, dayKey(), next);
+    return true;
+  };
 
   const recentActivity = [
     ...todayMeals.slice(0, 2).map(m => ({ type: 'meal' as const, label: m.foodName, meta: `${m.calories} kcal`, emoji: '🍽️', color: colors.success })),
@@ -142,7 +176,7 @@ export default function HomeScreen() {
 
   return (
     <View style={s.root}>
-      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['transparent', 'transparent', 'transparent']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView
@@ -157,28 +191,9 @@ export default function HomeScreen() {
               <Text style={s.greeting}>{greeting},</Text>
               <Text style={s.name}>{name} 👋</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <LinearGradient colors={[colors.accent + '25', colors.accent + '10']} style={s.streakBadge}>
-                  <Text style={{ fontSize: 16 }}>🔥</Text>
-                  <Text style={s.streakBadgeText}>{user?.streak || 0}d</Text>
-                </LinearGradient>
-              </Animated.View>
-              <LinearGradient colors={[colors.brand, colors.tealMid]} style={s.levelBadge}>
-                <Ionicons name="trophy" size={12} color={colors.gold} />
-                <Text style={s.levelText}>Lvl {user?.level || 1}</Text>
-              </LinearGradient>
-            </View>
           </View>
 
-          {/* ── XP Progress ── */}
-          <View style={s.xpRow}>
-            <Text style={s.xpLabel}>{xpInLevel} / {xpPerLevel} XP to Level {(user?.level || 1) + 1}</Text>
-            <Text style={s.xpTotal}>{currentXP} total</Text>
-          </View>
-          <View style={s.xpTrack}>
-            <LinearGradient colors={[colors.brand, colors.brandBright, colors.success]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.xpFill, { width: `${xpPct}%` }]} />
-          </View>
+          <RankCard xp={currentXP} streak={user?.streak || 0} />
 
           {savedAt !== undefined && <StaleNote savedAt={savedAt} what="Your day is" />}
           {loading ? <HomeSkeleton /> : failed && meals.length === 0 && workouts.length === 0 ? (
@@ -228,27 +243,10 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          {/* ── AI Coach Tip ── */}
-          <LinearGradient colors={[colors.surface, colors.surface]} style={s.tipCard}>
-            <View style={s.glowOrbRight} />
-            <View style={s.tipHeader}>
-              <View style={s.tipIconWrap}>
-                <Text style={{ fontSize: 22 }}>{tip.icon}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={s.tipBadgeRow}>
-                  <Ionicons name="sparkles" size={10} color={colors.brand} />
-                  <Text style={s.tipBadge}>AI COACH</Text>
-                </View>
-                <Text style={s.tipTitle}>{tip.title}</Text>
-              </View>
-            </View>
-            <Text style={s.tipBody}>{tip.body}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Chat')} style={s.tipCta}>
-              <Text style={s.tipCtaText}>Ask AI Coach</Text>
-              <Ionicons name="arrow-forward" size={13} color={colors.brand} />
-            </TouchableOpacity>
-          </LinearGradient>
+          {/* ── Missions, hydration and briefing ── */}
+          <MissionsCard missions={missions} claimed={claimed} onClaim={claimMissions} />
+          <WaterCard glasses={water} goal={goals.water} onChange={changeWater} />
+          <BriefingCard insights={insights} onAsk={() => navigation.navigate('Chat')} />
 
           {/* ── Today's Activity ── */}
           <View style={s.sectionRow}>
@@ -314,6 +312,8 @@ export default function HomeScreen() {
               </View>
             ))}
           </LinearGradient>
+
+          <BadgesRow badges={badges} />
 
           </>
           )}

@@ -104,6 +104,20 @@ export async function resendVerification(email: string): Promise<void> {
 }
 
 /**
+ * Emails a password-reset link. Quiet on failure: the caller answers the same way whether or not the address has an
+ * account, so this cannot be used to find out who is registered.
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  const client = anonClient()
+  if (!client) return
+  try {
+    await client.auth.resetPasswordForEmail(email, { redirectTo: `${clientUrl()}/auth/callback` })
+  } catch (error) {
+    console.error('sendPasswordReset error:', error instanceof Error ? error.message : error)
+  }
+}
+
+/**
  * Sign in with email and password
  */
 export async function signInWithEmail(
@@ -294,6 +308,7 @@ export { supabase }
 export default {
   signUpWithEmail,
   resendVerification,
+  sendPasswordReset,
   signInWithEmail,
   verifyToken,
   getOAuthUrl,

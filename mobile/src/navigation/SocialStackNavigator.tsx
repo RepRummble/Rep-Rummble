@@ -19,7 +19,7 @@ export default function SocialStackNavigator() {
         animation: "slide_from_right",
       }}
     >
-      <Stack.Screen name="SocialFeed"  component={SocialFeedScreen}  />
+      <Stack.Screen name="SocialFeed"  component={SocialFeedScreen}  options={{ contentStyle: { backgroundColor: "transparent" } }} />
       <Stack.Screen name="Friends"     component={FriendsScreen}     />
       <Stack.Screen name="Challenges"  component={ChallengesScreen}  />
     </Stack.Navigator>

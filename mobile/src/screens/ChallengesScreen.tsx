@@ -20,6 +20,7 @@ import { ListSkeleton } from '../components/states/Skeleton';
 import { EmptyState, ErrorState } from '../components/states/StateViews';
 import StaleNote from '../components/states/StaleNote';
 import { loadWithCache } from '../config/cache';
+import SpaceBackground from '../components/fx/SpaceBackground';
 const { width: SW } = Dimensions.get("window");
 
 const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: readonly [string, string] }> = {
@@ -207,7 +208,8 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
   if (loading) {
     return (
       <View style={styles.root}>
-        <LinearGradient colors={[colors.bg, colors.bg]} style={StyleSheet.absoluteFill} />
+      <SpaceBackground quiet />
+        <LinearGradient colors={['transparent', 'transparent']} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.safeArea}>
           <ListSkeleton rows={4} />
         </SafeAreaView>
@@ -217,7 +219,8 @@ export default function ChallengesScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <SpaceBackground quiet />
+      <LinearGradient colors={['transparent', 'transparent', 'transparent']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>

@@ -20,15 +20,16 @@ export default function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        animation: 'fade',
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: 'rgba(6, 10, 22, 0.94)',
+          borderTopColor: 'rgba(255, 122, 26, 0.28)',
           borderTopWidth: 1,
           height: 85,
           paddingBottom: 20,
           paddingTop: 10,
         },
-        tabBarActiveTintColor: colors.brand,
+        tabBarActiveTintColor: '#ff7a1a',
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: {
           fontSize: 12,

@@ -11,6 +11,7 @@ import { useSubscription, PLAN_PRICES } from '../context/SubscriptionContext';
 import { PlanId } from '../types';
 
 import { colors } from '../theme/colors';
+import SpaceBackground from '../components/fx/SpaceBackground';
 const { width: SW } = Dimensions.get('window');
 
 // ── Feature table data ────────────────────────────────────────────────────────
@@ -191,7 +192,8 @@ export default function SubscriptionScreen() {
 
   return (
     <View style={st.root}>
-      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      <SpaceBackground quiet />
+      <LinearGradient colors={['transparent', 'transparent', 'transparent']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         {/* Header */}

@@ -41,7 +41,7 @@ export default function RootNavigator() {
     >
       {isAuthenticated ? (
         <>
-          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <Stack.Screen name="Main" component={MainTabNavigator} options={{ contentStyle: { backgroundColor: 'transparent' } }} />
           <Stack.Screen
             name="FoodScanner"
             component={FoodScannerScreen}
@@ -85,8 +85,8 @@ export default function RootNavigator() {
         </>
       ) : (
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} options={{ contentStyle: { backgroundColor: 'transparent' } }} />
+          <Stack.Screen name="Register" component={RegisterScreen} options={{ contentStyle: { backgroundColor: 'transparent' }, animation: 'fade' }} />
         </>
       )}
     </Stack.Navigator>

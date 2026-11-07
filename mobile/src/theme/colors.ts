@@ -1,5 +1,5 @@
-// Reprummble mobile design tokens: a deep navy and black night theme with an ocean-blue brand,
-// blood-red and orange for energy. (The names stay the same as before, so every screen picks the
+// Reprummble mobile design tokens: a deep navy and black night sky with a red-orange brand (the same as the website),
+// ocean blue and blood red as supporting colours. (The names stay the same as before, so every screen picks the
 // new look up from here.)
 export const colors = {
   // Surfaces (dark, from black-navy up to lighter navy)
@@ -15,19 +15,19 @@ export const colors = {
   muted:  '#8fa4c9', // secondary text, labels
   faint:  '#6179a3', // placeholders, disabled
 
-  // Brand: ocean blue
-  brand:       '#1f6fff', // primary: buttons, links, active tab
-  brandHover:  '#1558d6',
-  brandBright: '#4da3ff', // highlights, progress ends
-  brandSoft:   '#1f6fff2b', // tinted backgrounds
-  tealMid:     '#0b3d91', // hero gradient end (deep ocean)
-  tealDeep:    '#061d4a',
+  // Brand: red-orange, like the website's buttons and highlights
+  brand:       '#ff5a36', // primary: buttons, links, active tab
+  brandHover:  '#e0451f',
+  brandBright: '#ff9a4d', // highlights, progress ends
+  brandSoft:   '#ff5a362b', // tinted backgrounds
+  tealMid:     '#8f1d2a', // gradient end (deep red; the old name is kept so every screen picks it up)
+  tealDeep:    '#3a0b16',
 
   // Energy: orange and blood red
   accent:     '#ff7a1a', // streaks, fire, energy
   accentSoft: '#ff7a1a2b',
-  violet:     '#7a8cff',
-  violetSoft: '#7a8cff2b',
+  violet:     '#4da3ff',
+  violetSoft: '#4da3ff2b',
 
   // Status
   success:     '#1ec98a',
@@ -56,5 +56,5 @@ export const shadow = {
   lift: { shadowColor: '#000000', shadowOpacity: 0.5, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
 } as const;
 
-/** The ocean-blue hero gradient used on headers. */
-export const heroGradient = ['#1f6fff', '#061d4a'] as const;
+/** The deep-red hero gradient used on headers. */
+export const heroGradient = ['#c4263a', '#3a0b16'] as const;

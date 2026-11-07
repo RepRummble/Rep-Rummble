@@ -141,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       'rep_rumble_user',
       'rep_rumble_meals',
       'rep_rumble_workouts',
+      'rr_targets',
     ]);
     await clearCache();
 

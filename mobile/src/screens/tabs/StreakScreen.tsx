@@ -238,8 +238,8 @@ function ActiveWorkoutModal({ visible, onClose, onComplete }: ActiveWorkoutProps
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} style={StyleSheet.absoluteFill} />
+      <View style={{ flex: 1 }}>
+        <LinearGradient colors={['transparent', 'transparent', 'transparent']} style={StyleSheet.absoluteFill} />
         <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
 
           {/* ── Top bar ── */}
@@ -475,7 +475,7 @@ export default function StreakScreen() {
 
   return (
     <View style={s.root}>
-      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['transparent', 'transparent', 'transparent']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         {/* Header */}

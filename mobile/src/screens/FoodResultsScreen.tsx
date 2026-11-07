@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { RootStackParamList, FoodAnalysisResponse, DetectedFood } from '../types';
 
 import { colors } from '../theme/colors';
+import SpaceBackground from '../components/fx/SpaceBackground';
 type RouteProps = RouteProp<RootStackParamList, 'FoodResults'>;
 
 export default function FoodResultsScreen() {
@@ -102,6 +103,7 @@ export default function FoodResultsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <SpaceBackground quiet />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -286,7 +288,6 @@ export default function FoodResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',

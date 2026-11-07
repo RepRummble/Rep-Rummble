@@ -16,6 +16,8 @@ import { PaywallModal } from './SubscriptionScreen';
 
 import { colors } from '../theme/colors';
 import { ChatSkeleton } from '../components/states/Skeleton';
+import SpaceBackground from '../components/fx/SpaceBackground';
+import Pilot from '../components/fx/Pilot';
 // ── Local AI response engine (dev / offline mode) ───────────────────────────
 
 const AI_BANK: Array<{ keys: string[]; replies: string[] }> = [
@@ -242,12 +244,10 @@ export default function ChatScreen() {
     return (
       <View style={[st.row, isUser ? st.rowUser : st.rowOther]}>
         {!isUser && (
-          <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.avatar}>
-            <Ionicons name="sparkles" size={14} color={colors.white} />
-          </LinearGradient>
+          <View style={st.avatar}><Pilot size={30} /></View>
         )}
         <View style={[st.bubble, isUser ? st.bubbleUser : st.bubbleOther]}>
-          {!isUser && <Text style={st.senderName}>{item.senderName || 'AI Coach'}</Text>}
+          {!isUser && <Text style={st.senderName}>{(item.senderName === 'AI Coach' || !item.senderName ? 'Rumi' : item.senderName).toUpperCase()}</Text>}
           <Text style={[st.msgText, isUser && st.msgTextUser]}>{item.content}</Text>
         </View>
       </View>
@@ -257,6 +257,7 @@ export default function ChatScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={st.container}>
+        <SpaceBackground quiet />
         <ChatSkeleton />
         <Text style={st.loadingText}>Starting AI chat...</Text>
       </SafeAreaView>
@@ -265,6 +266,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={st.container} edges={['top']}>
+      <SpaceBackground quiet />
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
@@ -278,14 +280,12 @@ export default function ChatScreen() {
         </TouchableOpacity>
         <View style={st.headerCenter}>
           <View style={st.headerAvatarWrap}>
-            <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.headerAvatar}>
-              <Ionicons name="sparkles" size={18} color={colors.white} />
-            </LinearGradient>
+            <Pilot size={42} />
             <View style={[st.onlineDot, { backgroundColor: colors.success }]} />
           </View>
           <View>
-            <Text style={st.headerTitle}>AI Coach</Text>
-            <Text style={st.headerSub}>Rep Rummble · Online</Text>
+            <Text style={st.headerTitle}>Reprummble Support</Text>
+            <Text style={st.headerSub}>Rumi · AI Assistant</Text>
           </View>
         </View>
         <View style={{ width: 40 }} />
@@ -306,14 +306,13 @@ export default function ChatScreen() {
           ListFooterComponent={
             isTyping ? (
               <View style={st.typingRow}>
-                <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.avatar}>
-                  <Ionicons name="sparkles" size={14} color={colors.white} />
-                </LinearGradient>
+                <View style={st.avatar}><Pilot size={30} /></View>
                 <View style={st.typingBubble}>
                   <View style={st.typingDots}>
                     <View style={[st.dot, { opacity: 0.4 }]} />
                     <View style={[st.dot, { opacity: 0.65 }]} />
                     <View style={st.dot} />
+                    <Text style={st.transmitting}>TRANSMITTING</Text>
                   </View>
                 </View>
               </View>
@@ -340,7 +339,7 @@ export default function ChatScreen() {
         <View style={st.inputRow}>
           <TextInput
             style={st.input}
-            placeholder="Ask your AI coach anything..."
+            placeholder="Transmit a message…"
             placeholderTextColor={colors.borderStrong}
             value={inputText}
             onChangeText={setInputText}
@@ -353,10 +352,10 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!inputText.trim() || isSending}
           >
-            <LinearGradient colors={[colors.brand, colors.tealMid]} style={st.sendGrad}>
+            <LinearGradient colors={['#d62839', '#ff7a1a']} style={st.sendGrad}>
               {isSending
                 ? <ActivityIndicator size="small" color={colors.white} />
-                : <Ionicons name="send" size={18} color={colors.white} />}
+                : <Ionicons name="rocket" size={20} color={colors.white} />}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -366,17 +365,17 @@ export default function ChatScreen() {
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1 },
   loadingText: { color: colors.muted, marginTop: 12, fontSize: 15, textAlign: 'center' },
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.04)' },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   headerAvatarWrap: { position: 'relative' },
-  headerAvatar: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
+  headerAvatar: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
   onlineDot: { position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, borderWidth: 2, borderColor: colors.bg },
   headerTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  headerSub: { fontSize: 11, color: colors.success, marginTop: 1 },
+  headerSub: { fontSize: 11, color: '#ffb37a', marginTop: 1, letterSpacing: 0.3 },
 
   list: { padding: 16, paddingBottom: 8 },
 
@@ -384,12 +383,12 @@ const st = StyleSheet.create({
   rowUser: { alignSelf: 'flex-end' },
   rowOther: { alignSelf: 'flex-start', gap: 8 },
 
-  avatar: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginTop: 2, flexShrink: 0 },
+  avatar: { width: 30, height: 30, marginTop: 2, flexShrink: 0 },
 
   bubble: { padding: 12, borderRadius: 18, maxWidth: '100%' },
-  bubbleUser: { backgroundColor: colors.brand, borderBottomRightRadius: 4 },
-  bubbleOther: { backgroundColor: colors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
-  senderName: { fontSize: 11, color: colors.brand, fontWeight: '700', marginBottom: 4 },
+  bubbleUser: { backgroundColor: '#d62839', borderBottomRightRadius: 4, shadowColor: '#ff4d2e', shadowOpacity: 0.45, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  bubbleOther: { backgroundColor: 'rgba(12,23,48,0.88)', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: 'rgba(77,163,255,0.4)', shadowColor: '#4da3ff', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
+  senderName: { fontSize: 10.5, color: '#ff9a4d', fontWeight: '800', marginBottom: 4, letterSpacing: 1 },
   msgText: { fontSize: 15, color: colors.ink, lineHeight: 22 },
   msgTextUser: { color: colors.ink },
 
@@ -397,16 +396,17 @@ const st = StyleSheet.create({
   systemMsg: { fontSize: 12, color: colors.faint, backgroundColor: colors.surface, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12 },
 
   typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 8 },
-  typingBubble: { backgroundColor: colors.surface, borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: colors.border },
+  typingBubble: { backgroundColor: 'rgba(12,23,48,0.88)', borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(77,163,255,0.4)' },
   typingDots: { flexDirection: 'row', gap: 5, alignItems: 'center' },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.brand },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#ff7a1a', shadowColor: '#ff7a1a', shadowOpacity: 0.9, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
+  transmitting: { marginLeft: 6, fontSize: 10, letterSpacing: 1.4, color: colors.muted, fontWeight: '700' },
 
   suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
-  suggestionChip: { backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.border },
-  suggestionText: { fontSize: 12, color: colors.brand, fontWeight: '600' },
+  suggestionChip: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: 'rgba(255,122,26,0.5)' },
+  suggestionText: { fontSize: 12, color: colors.ink, fontWeight: '600' },
 
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.surface },
-  input: { flex: 1, backgroundColor: colors.surface, borderRadius: 22, paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, color: colors.ink, maxHeight: 120, borderWidth: 1, borderColor: colors.border },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.03)' },
+  input: { flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 22, paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, color: colors.ink, maxHeight: 120, borderWidth: 1, borderColor: colors.border },
   sendBtn: { marginBottom: 2 },
   sendGrad: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
 });

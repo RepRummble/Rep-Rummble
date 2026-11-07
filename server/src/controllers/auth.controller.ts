@@ -80,6 +80,17 @@ export const register = async (req: Request, res: Response) => {
 }
 
 // @route POST /api/auth/resend-verification
+// @route POST /api/auth/forgot-password
+// Emails a reset link. The answer is the same for every address, so it cannot be used to find out who has an account.
+export const forgotPassword = async (req: Request, res: Response) => {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+  if (!isEmail(email)) {
+    return res.status(400).json({ success: false, message: 'Enter a valid email address.' })
+  }
+  await supabaseService.sendPasswordReset(email)
+  return res.json({ success: true, message: 'If an account exists for that address, a reset link is on its way.' })
+}
+
 export const resendVerification = async (req: Request, res: Response) => {
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
   if (isEmail(email)) {
@@ -192,6 +203,13 @@ export const getMe = async (req: AuthRequest, res: Response) => {
       streak: mongoUser?.streak || 0,
       xp: mongoUser?.xp || 0,
       level: mongoUser?.level || 1,
+      // What the person chose on the website or in the app, so both show the same goals and preferences.
+      profile: {
+        goal: supabaseResult.user?.user_metadata?.goal ?? null,
+        activity: supabaseResult.user?.user_metadata?.activity ?? null,
+        diets: Array.isArray(supabaseResult.user?.user_metadata?.diets) ? supabaseResult.user?.user_metadata?.diets : [],
+        notifications: supabaseResult.user?.user_metadata?.notifications ?? null,
+      },
     }
 
     return res.json({ success: true, data: userData })

@@ -589,7 +589,7 @@ export default function SocialFeedScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={[colors.bg, colors.bg, colors.bg]} locations={[0, 0.3, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['transparent', 'transparent', 'transparent']} locations={[0, 0.3, 1]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
         {/* Header */}
@@ -833,7 +833,7 @@ export default function SocialFeedScreen() {
       <Modal visible={viewingMyStatus} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => setViewingMyStatus(false)}>
         {myStatus && (
           <View style={{ flex: 1, backgroundColor: colors.black }}>
-            <LinearGradient colors={['#2a0954', colors.bg, colors.black]} style={StyleSheet.absoluteFill} />
+            <LinearGradient colors={['#3a0b16', colors.bg, colors.black]} style={StyleSheet.absoluteFill} />
             {/* Progress bar */}
             <View style={{ position: 'absolute', top: 54, left: 16, right: 16, height: 3, backgroundColor: colors.white + '30', borderRadius: 2, zIndex: 10 }}>
               <Animated.View style={{ height: '100%', borderRadius: 2, backgroundColor: colors.white, width: storyProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />

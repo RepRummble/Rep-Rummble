@@ -17,6 +17,7 @@ import { NutritionSearchItem } from '../types';
 
 import { colors } from '../theme/colors';
 import { EmptyState, ErrorState, NoResults } from '../components/states/StateViews';
+import SpaceBackground from '../components/fx/SpaceBackground';
 const scaleNutrients = (nutrients: NutritionSearchItem['nutrientsPer100g'], grams: number) => {
   const factor = grams / 100;
   const round = (value: number) => Math.round(value * 10) / 10;
@@ -126,6 +127,7 @@ export default function FoodSearchScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <SpaceBackground quiet />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.ink} />
@@ -234,7 +236,6 @@ export default function FoodSearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
