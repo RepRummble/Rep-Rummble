@@ -17,6 +17,8 @@ import { colors } from '../../theme/colors';
 import { Eyebrow, GlassCard } from '../../features/mission/ui';
 import { levelProgress } from '../../features/mission/missionLogic';
 import { saveTargets, useTargets } from '../../features/profile/targetsStore';
+import { syncReminders, openPhoneSettings } from '../../services/notifications';
+import { REMINDER_COPY, anyEnabled } from '../../features/notifications/notifyLogic';
 import {
   ACTIVITY_CHOICES, DIET_CHOICES, GOAL_CHOICES, HistoryRow, NOTIFICATION_CHOICES, canDelete, cleanName, historyToCsv, notificationState,
 } from '../../features/profile/profileLogic';
@@ -195,6 +197,10 @@ export default function ProfileScreen() {
     try {
       await api.put('/auth/profile', { notifications: notif });
       close();
+      // Make the reminders real on this phone. The phone asks for permission the first time one is switched on.
+      const status = await syncReminders({ prefs: notif, ask: true });
+      if (status === 'denied') Alert.alert('Reminders are blocked', 'Your phone is not allowing notifications from Reprummble. Turn them on in Settings to get your reminders.', [{ text: 'Open Settings', onPress: openPhoneSettings }, { text: 'Not now', style: 'cancel' }]);
+      else if (status === 'unavailable' && anyEnabled(notif)) Alert.alert('Saved', 'Your choices are saved. Reminders on this phone need the latest version of the app, so they will start after you update it.');
     } catch (e) { Alert.alert('Could not save', errorText(e, 'Check your connection and try again.')); } finally { setBusy(null); }
   };
 
@@ -365,7 +371,7 @@ export default function ProfileScreen() {
         <GlassCard style={{ marginHorizontal: 0, padding: 0 }}>
           {NOTIFICATION_CHOICES.map((n, i) => (
             <View key={n.key} style={[st.row, i < NOTIFICATION_CHOICES.length - 1 && st.rowBorder]}>
-              <View style={{ flex: 1 }}><Text style={st.rowLabel}>{n.label}</Text><Text style={st.rowSub}>{n.desc}</Text></View>
+              <View style={{ flex: 1 }}><Text style={st.rowLabel}>{REMINDER_COPY[n.key]?.label ?? n.label}</Text><Text style={st.rowSub}>{REMINDER_COPY[n.key]?.desc ?? n.desc}</Text></View>
               <Switch value={!!notif[n.key]} onValueChange={(v) => setNotif((cur) => ({ ...cur, [n.key]: v }))} trackColor={{ false: 'rgba(255,255,255,0.15)', true: colors.brand }} thumbColor="#fff" />
             </View>
           ))}

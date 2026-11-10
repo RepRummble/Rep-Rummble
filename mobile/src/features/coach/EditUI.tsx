@@ -3,7 +3,7 @@ import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import type { RoutineExercise } from '../train/trainLogic';
-import { ALL_MUSCLES, MUSCLE_LABEL, type LibExercise, type Muscle } from './exerciseLibrary';
+import { ALL_MUSCLES, CATEGORY_LABEL, GEAR_LABEL, MUSCLE_LABEL, type LibExercise, type Muscle } from './exerciseLibrary';
 import { alternativesFor, searchLibrary, step, type Field } from './planEdit';
 import type { Ctx } from './planGenerator';
 
@@ -77,7 +77,7 @@ export function LibrarySheet({ mode, current, ctx, exclude, onPick, onClose }: {
           <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">
             {list.length === 0 ? <Text style={s.none}>Nothing matches. Try another word.</Text> : list.map((e) => (
               <TouchableOpacity key={e.id} style={s.row} onPress={() => onPick(e)} accessibilityRole="button">
-                <View style={{ flex: 1 }}><Text style={s.name}>{e.name}</Text><Text style={s.meta}>{MUSCLE_LABEL[e.muscle]} · {e.gear === 'bar' ? 'pull-up bar' : e.gear} · {e.level === 1 ? 'beginner' : e.level === 2 ? 'intermediate' : 'advanced'}</Text></View>
+                <View style={{ flex: 1 }}><Text style={s.name}>{e.name}</Text><Text style={s.meta}>{MUSCLE_LABEL[e.muscle]} · {GEAR_LABEL[e.gear]} · {e.level === 1 ? 'beginner' : e.level === 2 ? 'intermediate' : 'advanced'}{e.category !== 'strength' ? ` · ${CATEGORY_LABEL[e.category]}` : ''}</Text></View>
                 <Ionicons name={mode === 'swap' ? 'swap-horizontal' : 'add-circle-outline'} size={22} color={colors.brandBright} />
               </TouchableOpacity>
             ))}

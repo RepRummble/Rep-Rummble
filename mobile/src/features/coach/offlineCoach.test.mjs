@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { LIBRARY, allowedGear, normalizeMuscle, ALL_MUSCLES, byName } from './exerciseLibrary.ts';
+import { LIBRARY, allowedGear, normalizeMuscle, ALL_MUSCLES, byName, CATEGORY_LABEL, GEAR_LABEL, MUSCLE_LABEL } from './exerciseLibrary.ts';
 import { generatePlan, ctxOf, isAllowed } from './planGenerator.ts';
 import { alternativesFor, searchLibrary, exerciseFromLib, swapExercise, step, moveAt, removeAt, insertAt, replaceAt, libEntryFor, muscleOf, sameExercises } from './planEdit.ts';
 import { GOALS, BODY_STYLES, LEVELS, EQUIPMENT, DEFAULT_BRIEF, aiBrief } from './coachLogic.ts';
@@ -10,14 +10,29 @@ const brief = (o = {}) => ({ ...DEFAULT_BRIEF, goal: 'build_muscle', bodyStyle: 
 const sets = (plan, muscles) => plan.days.flatMap((d) => d.exercises).filter((e) => muscles.includes(e.muscle)).reduce((s, e) => s + e.sets, 0);
 const ALL_AVOID = ['knee', 'shoulder', 'back', 'wrist', 'impact'];
 
-t('library: unique, valid, tagged, short enough for the server, and every muscle has choices', () => {
-  assert.ok(LIBRARY.length >= 140, `only ${LIBRARY.length}`);
+t('library: 700+ exercises, unique, valid, tagged, short enough for the server, and every muscle has choices', () => {
+  assert.ok(LIBRARY.length >= 700, `only ${LIBRARY.length}`);
   assert.equal(new Set(LIBRARY.map((e) => e.id)).size, LIBRARY.length); assert.equal(new Set(LIBRARY.map((e) => e.name.toLowerCase())).size, LIBRARY.length);
-  for (const e of LIBRARY) { assert.ok(e.name.length <= 60 && e.tip && e.tip.length <= 160, e.name); assert.ok([1, 2, 3].includes(e.level), e.name); }
+  const patterns = ['hpush', 'vpush', 'hpull', 'vpull', 'squat', 'hinge', 'lunge', 'iso', 'core', 'carry', 'cardio'];
+  for (const e of LIBRARY) {
+    assert.ok(e.name.length <= 60 && e.tip && e.tip.length <= 160, e.name); assert.ok([1, 2, 3].includes(e.level), e.name);
+    assert.ok(ALL_MUSCLES.includes(e.muscle) && MUSCLE_LABEL[e.muscle], `${e.name} muscle ${e.muscle}`); assert.ok(GEAR_LABEL[e.gear], `${e.name} gear ${e.gear}`);
+    assert.ok(patterns.includes(e.pattern), `${e.name} pattern ${e.pattern}`); assert.ok(CATEGORY_LABEL[e.category], `${e.name} category`); assert.ok(['compound', 'isolation'].includes(e.kind));
+    assert.ok(e.stress.every((s) => ['knee', 'shoulder', 'back', 'wrist', 'impact'].includes(s)), e.name);
+  }
+  assert.ok(LIBRARY.filter((e) => e.curated).length >= 140); assert.ok(LIBRARY.filter((e) => e.category === 'strength').length >= 500);
   for (const m of ALL_MUSCLES) assert.ok(LIBRARY.filter((e) => e.muscle === m).length >= 5, m);
   for (const eq of keys(EQUIPMENT)) for (const m of ['chest', 'back', 'shoulders', 'triceps', 'quads', 'hamstrings', 'glutes', 'abs']) {
-    const ok = LIBRARY.filter((e) => e.muscle === m && allowedGear(eq).includes(e.gear) && e.level === 1);
+    const ok = LIBRARY.filter((e) => e.muscle === m && e.curated && allowedGear(eq).includes(e.gear) && e.level === 1);
     assert.ok(ok.length >= 1, `${eq} has no beginner ${m} exercise`);
+  }
+  // the database added real variety for the common equipment, not just stretches
+  for (const g of ['barbell', 'dumbbell', 'cable', 'machine', 'kettlebell', 'bodyweight']) assert.ok(LIBRARY.filter((e) => e.gear === g && e.category === 'strength').length >= 30, g);
+});
+
+t('automatic plans use only strength and conditioning work, never a stretch, plyometric, Olympic or strongman lift', () => {
+  for (const b of [brief(), brief({ equipment: 'home_bodyweight', avoid: ['wrist', 'impact'] }), brief({ bodyStyle: 'calisthenics', level: 'advanced' }), brief({ goal: 'lose_fat', equipment: 'kettlebell_bands' })]) {
+    for (const e of generatePlan(b).days.flatMap((d) => d.exercises)) assert.ok(['strength', 'cardio'].includes(byName.get(e.name.toLowerCase()).category), e.name);
   }
 });
 
@@ -39,6 +54,7 @@ t('EVERY combination of goal, style, level, equipment, days and time builds a va
           const lib = byName.get(e.name.toLowerCase()); assert.ok(lib, `${where}: ${e.name} is not in the library`);
           assert.ok(ctx.gear.includes(lib.gear), `${where}: ${e.name} needs ${lib.gear}`);
           assert.ok(!lib.stress.some((s) => avoid.includes(s)), `${where}: ${e.name} stresses ${lib.stress}`);
+          if (!['strength', 'cardio'].includes(lib.category)) assert.fail(`${where}: ${e.name} is a ${lib.category}`);
           if (lib.level > ctx.cap) { relaxed++; assert.equal(lib.level, ctx.cap + 1, where); }
           // The limits the server enforces when a plan is saved.
           assert.ok(e.sets >= 1 && e.sets <= 8 && Number.isInteger(e.sets), where); assert.ok(e.restSec >= 0 && e.restSec <= 300, where);

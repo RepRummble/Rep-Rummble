@@ -2,7 +2,7 @@
 // give the same plan. A "seed" changes the picks so a person can shuffle for a different set of exercises.
 
 import type { RoutineExercise } from '../train/trainLogic';
-import { LIBRARY, allowedGear, type LibExercise, type Gear, type Kind, type Muscle, type Pattern, type Stress } from './exerciseLibrary';
+import { BY_MUSCLE, CURATED_BY_MUSCLE, PLANNABLE, allowedGear, type LibExercise, type Gear, type Kind, type Muscle, type Pattern, type Stress } from './exerciseLibrary';
 import type { Brief } from './coachLogic';
 
 export interface PlanDay { name: string; focus: string; exercises: RoutineExercise[] }
@@ -73,7 +73,10 @@ function pickFor(slot: Slot, ctx: Ctx, planUsed: Set<string>, dayUsed: Set<strin
   ];
   for (const cap of [ctx.cap, Math.min(3, ctx.cap + 1)]) {
     for (const match of tiers) {
-      const pool = LIBRARY.filter((e) => match(e) && isAllowed(e, ctx, cap) && !dayUsed.has(e.name));
+      const ok = (e: LibExercise) => match(e) && isAllowed(e, ctx, cap) && !dayUsed.has(e.name);
+      // Our hand-picked exercises first. The database's are used only when none of ours fit (strict injuries, little equipment).
+      let pool = (CURATED_BY_MUSCLE.get(slot.m) ?? []).filter(ok);
+      if (!pool.length) pool = (BY_MUSCLE.get(slot.m) ?? []).filter((e) => PLANNABLE.includes(e.category) && ok(e));
       if (!pool.length) continue;
       let best = pool[0], bestScore = -Infinity;
       for (const e of pool) {
@@ -104,11 +107,15 @@ export function prescribe(e: LibExercise, o: RxOpts): RoutineExercise {
   const base = BASE[o.goal] ?? BASE.general_fitness;
   const lightHold = o.level === 'beginner' ? 30 : o.level === 'advanced' ? 50 : 40;
 
+  if (e.timed && e.category === 'stretch') return { name: e.name, muscle: e.muscle, sets: 2, reps: 30, unit: 'sec', restSec: 15, tip: e.tip };
   if (e.timed) {
     const cardio = e.muscle === 'cardio';
     return { name: e.name, muscle: e.muscle, sets: cardio && (o.goal === 'endurance' || o.goal === 'lose_fat') ? 4 : 3, reps: cardio ? 40 : lightHold, unit: 'sec', restSec: cardio ? 20 : 30, tip: e.tip };
   }
   if (e.muscle === 'cardio') return { name: e.name, muscle: e.muscle, sets: 3, reps: 10, unit: 'reps', restSec: 30, tip: e.tip };
+  if (e.category === 'olympic') return { name: e.name, muscle: e.muscle, sets: 5, reps: 3, unit: 'reps', restSec: 120, tip: e.tip };   // heavy, few reps, long rest
+  if (e.category === 'plyo') return { name: e.name, muscle: e.muscle, sets: 3, reps: 8, unit: 'reps', restSec: 45, tip: e.tip };
+  if (e.category === 'strongman') return { name: e.name, muscle: e.muscle, sets: 4, reps: 5, unit: 'reps', restSec: 120, tip: e.tip };
 
   let rx: Rx = { ...(e.kind === 'compound' ? base.comp : base.iso) };
   if (e.kind === 'compound' && o.first) {

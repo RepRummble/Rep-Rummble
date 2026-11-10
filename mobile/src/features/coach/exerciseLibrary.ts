@@ -1,12 +1,15 @@
 // The exercises the offline coach builds from. Every entry is tagged, so a plan can respect the equipment a person has,
 // their experience, and anything that hurts. Pure data: no network, no AI.
 
-export type Muscle = 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'quads' | 'hamstrings' | 'glutes' | 'calves' | 'abs' | 'cardio';
+export type Muscle = 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'forearms' | 'quads' | 'hamstrings' | 'glutes' | 'calves' | 'abs' | 'cardio';
 export type Pattern = 'hpush' | 'vpush' | 'hpull' | 'vpull' | 'squat' | 'hinge' | 'lunge' | 'iso' | 'core' | 'carry' | 'cardio';
-export type Gear = 'barbell' | 'dumbbell' | 'machine' | 'cable' | 'bodyweight' | 'bar' | 'kettlebell' | 'band';
+/** `other` is gym extras: medicine balls, exercise balls, foam rollers, sleds, suspension straps. */
+export type Gear = 'barbell' | 'dumbbell' | 'machine' | 'cable' | 'bodyweight' | 'bar' | 'kettlebell' | 'band' | 'other';
 /** What a movement can aggravate. People tick what hurts and the coach avoids it. */
 export type Stress = 'knee' | 'shoulder' | 'back' | 'wrist' | 'impact';
 export type Kind = 'compound' | 'isolation';
+/** strength is what plans are built from; the rest can be searched and added by hand. */
+export type Category = 'strength' | 'cardio' | 'stretch' | 'plyo' | 'olympic' | 'strongman';
 
 export interface LibExercise {
   id: string; name: string; muscle: Muscle; pattern: Pattern; gear: Gear;
@@ -14,15 +17,20 @@ export interface LibExercise {
   level: 1 | 2 | 3; kind: Kind; stress: Stress[]; tip: string;
   /** A hold or a timed effort: the number is seconds. */
   timed?: boolean;
+  category: Category;
+  /** Hand-picked and checked: automatic plans prefer these. The rest comes from the public exercise database. */
+  curated: boolean;
 }
+
+import { EXTRA_ROWS } from './exerciseLibrary.extra';
 
 const id = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 type O = { stress?: Stress[]; timed?: boolean };
 const x = (name: string, muscle: Muscle, pattern: Pattern, gear: Gear, level: 1 | 2 | 3, kind: Kind, tip: string, o: O = {}): LibExercise =>
-  ({ id: id(name), name, muscle, pattern, gear, level, kind, tip, stress: o.stress ?? [], timed: o.timed });
+  ({ id: id(name), name, muscle, pattern, gear, level, kind, tip, stress: o.stress ?? [], timed: o.timed, category: muscle === 'cardio' ? 'cardio' : 'strength', curated: true });
 const C = 'compound' as const, I = 'isolation' as const;
 
-export const LIBRARY: LibExercise[] = [
+const CURATED_LIST: LibExercise[] = [
   // ── Chest ──
   x('Barbell Bench Press', 'chest', 'hpush', 'barbell', 2, C, 'Shoulder blades pinched, feet planted, lower to mid-chest.', { stress: ['shoulder'] }),
   x('Incline Barbell Bench Press', 'chest', 'hpush', 'barbell', 2, C, 'Bench at about 30 degrees. Press up and slightly back.', { stress: ['shoulder'] }),
@@ -190,10 +198,35 @@ export const LIBRARY: LibExercise[] = [
   x('Band Sprint in Place', 'cardio', 'cardio', 'band', 1, C, 'Band around your thighs, run in place with high knees.', { timed: true, stress: ['impact'] }),
 ];
 
-export const ALL_MUSCLES: Muscle[] = ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'quads', 'hamstrings', 'glutes', 'calves', 'abs', 'cardio'];
+const STRESS_LETTER: Record<string, Stress> = { k: 'knee', s: 'shoulder', b: 'back', w: 'wrist', i: 'impact' };
+const CATEGORY_CODE: Record<string, Category> = { s: 'strength', m: 'stretch', p: 'plyo', o: 'olympic', g: 'strongman', c: 'cardio' };
+
+/** The public-domain Free Exercise DB, in our labels (see scripts/build-exercise-library.mjs). */
+const EXTRA_LIST: LibExercise[] = EXTRA_ROWS.map(([name, muscle, pattern, gear, level, kind, stress, cat, timed, tip]) => ({
+  id: id(name), name, muscle: muscle as Muscle, pattern: pattern as Pattern, gear: gear as Gear, level, kind: kind === 'c' ? 'compound' : 'isolation',
+  stress: [...stress].map((ch) => STRESS_LETTER[ch]).filter(Boolean), tip, timed: timed === 1 || undefined, category: CATEGORY_CODE[cat] ?? 'strength', curated: false,
+}));
+
+/** All exercises: ours first, then the database's. A name we already have is never added twice. */
+export const LIBRARY: LibExercise[] = (() => {
+  const seen = new Set<string>(), out: LibExercise[] = [];
+  for (const e of [...CURATED_LIST, ...EXTRA_LIST]) { const k = e.name.toLowerCase(); if (!seen.has(k) && !seen.has(e.id)) { seen.add(k); seen.add(e.id); out.push(e); } }
+  return out;
+})();
+
+export const ALL_MUSCLES: Muscle[] = ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms', 'quads', 'hamstrings', 'glutes', 'calves', 'abs', 'cardio'];
 export const byName = new Map(LIBRARY.map((e) => [e.name.toLowerCase(), e]));
 
-export const MUSCLE_LABEL: Record<Muscle, string> = { chest: 'Chest', back: 'Back', shoulders: 'Shoulders', biceps: 'Biceps', triceps: 'Triceps', quads: 'Quads', hamstrings: 'Hamstrings', glutes: 'Glutes', calves: 'Calves', abs: 'Abs and core', cardio: 'Conditioning' };
+/** Exercises grouped by muscle, so picking one never scans the whole library. */
+const group = (list: LibExercise[]) => { const m = new Map<Muscle, LibExercise[]>(); for (const e of list) { const l = m.get(e.muscle) ?? []; l.push(e); m.set(e.muscle, l); } return m; };
+export const BY_MUSCLE = group(LIBRARY);
+export const CURATED_BY_MUSCLE = group(LIBRARY.filter((e) => e.curated));
+/** Categories a plan can be built from. Stretches, plyometrics and Olympic or strongman lifts are for searching and adding by hand. */
+export const PLANNABLE: Category[] = ['strength', 'cardio'];
+
+export const MUSCLE_LABEL: Record<Muscle, string> = { chest: 'Chest', back: 'Back', shoulders: 'Shoulders', biceps: 'Biceps', triceps: 'Triceps', forearms: 'Forearms', quads: 'Quads', hamstrings: 'Hamstrings', glutes: 'Glutes', calves: 'Calves', abs: 'Abs and core', cardio: 'Conditioning' };
+export const CATEGORY_LABEL: Record<Category, string> = { strength: 'Strength', cardio: 'Conditioning', stretch: 'Stretch', plyo: 'Plyometric', olympic: 'Olympic lift', strongman: 'Strongman' };
+export const GEAR_LABEL: Record<Gear, string> = { barbell: 'barbell', dumbbell: 'dumbbell', machine: 'machine', cable: 'cable', bodyweight: 'bodyweight', bar: 'pull-up bar', kettlebell: 'kettlebell', band: 'band', other: 'other equipment' };
 
 /** Which equipment a person can use, from what they told the coach. Calisthenics assumes a pull-up bar. */
 export function allowedGear(equipment: string, bodyStyle?: string): Gear[] {
@@ -202,7 +235,7 @@ export function allowedGear(equipment: string, bodyStyle?: string): Gear[] {
     case 'dumbbells': return ['dumbbell', 'bodyweight'];
     case 'home_bodyweight': return ['bodyweight'];
     case 'kettlebell_bands': return ['kettlebell', 'band', 'bodyweight'];
-    default: return ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'bar', 'kettlebell', 'band'];
+    default: return ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'bar', 'kettlebell', 'band', 'other'];
   }
 }
 
@@ -211,7 +244,7 @@ export function normalizeMuscle(text: string | undefined): Muscle | null {
   const t = (text ?? '').toLowerCase();
   if (!t) return null;
   const table: [RegExp, Muscle][] = [
-    [/chest|pec/, 'chest'], [/lat|back|trap|rhomboid/, 'back'], [/shoulder|delt/, 'shoulders'], [/bicep/, 'biceps'], [/tricep/, 'triceps'],
+    [/forearm|grip/, 'forearms'], [/chest|pec/, 'chest'], [/lat|back|trap|rhomboid/, 'back'], [/shoulder|delt/, 'shoulders'], [/bicep/, 'biceps'], [/tricep/, 'triceps'],
     [/quad|thigh/, 'quads'], [/hamstring/, 'hamstrings'], [/glute|hip/, 'glutes'], [/calf|calves/, 'calves'], [/abs|core|oblique|abdom/, 'abs'], [/cardio|conditioning/, 'cardio'],
   ];
   return table.find(([r]) => r.test(t))?.[1] ?? null;

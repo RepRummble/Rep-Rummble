@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { syncRemindersThrottled, watchAppState } from "../services/notifications";
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { MainTabParamList } from '../types';
@@ -16,6 +17,8 @@ import { colors } from '../theme/colors';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabNavigator() {
+  // Keep the on-phone reminders in step with your plan, streak and challenges whenever the app opens or comes back.
+  useEffect(() => { syncRemindersThrottled(); return watchAppState(syncRemindersThrottled); }, []);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

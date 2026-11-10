@@ -13,6 +13,8 @@ import { Eyebrow, GlassCard } from '../features/mission/ui';
 import { STEP_GOAL, hoursLabel, observations, sleepBars, spo2Percent } from '../features/health/healthLogic';
 import { SummaryDay, SOURCE_NAMES, latestDay } from '../features/devices/devicesLogic';
 import { devices, refreshPhoneDevices } from '../services/devicesService';
+import { useReadiness } from '../features/health/useReadiness';
+import { RecoveryCard, SleepCard, StrainCard } from '../features/health/ReadinessCards';
 
 const UNAVAILABLE: Record<Exclude<HealthAvailability, { ok: true }>['reason'], string> = {
   'expo-go': 'Apple Health needs the Reprummble app build. It cannot run inside Expo Go.',
@@ -98,6 +100,7 @@ const Tag = ({ source }: { source: string }) => <Text style={s.tag}>{SOURCE_NAME
 export default function HealthScreen() {
   const nav = useNavigation<any>();
   const dev = useDeviceReadings();
+  const ready = useReadiness();
   const h = useHealth();
   const t = h.today;
   const [refreshing, setRefreshing] = useState(false);
@@ -123,7 +126,17 @@ export default function HealthScreen() {
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await h.reload(); setRefreshing(false); }} tintColor={colors.brand} />}>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await Promise.all([h.reload(), ready.refresh()]); setRefreshing(false); }} tintColor={colors.brand} />}>
+
+          {/* Today: our own Recovery, Sleep and Strain, from the readings in your health app. */}
+          <Eyebrow>Today</Eyebrow>
+          {ready.readiness ? (
+            <>
+              <RecoveryCard r={ready.readiness} />
+              <SleepCard r={ready.readiness} />
+              <StrainCard r={ready.readiness} />
+            </>
+          ) : <GlassCard><ActivityIndicator color={colors.brandBright} /></GlassCard>}
 
           {/* Devices: Apple Watch, Galaxy Watch, Fitbit, WHOOP, Oura. Only real, connected readings. */}
           <Eyebrow right={dev.count ? `${dev.count} connected` : undefined}>Your devices</Eyebrow>

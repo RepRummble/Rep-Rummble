@@ -18,6 +18,8 @@ import { CATEGORY_LABELS, Category, Routine, TEMPLATES, Template, activityRecord
 import { ChallengeStrip, CoachCard, MyWorkouts, TodayPlan } from '../../features/train/PlanSections';
 import type { DayChallenge } from '../../features/challenges/challengeLogic';
 import { coach } from '../../services/coachService';
+import { useReadiness } from '../../features/health/useReadiness';
+import { syncRemindersSoon } from '../../services/notifications';
 import { dayChallenges } from '../../services/dayChallengeService';
 
 const TABS = ['Workout', 'Records', 'History'];
@@ -48,6 +50,7 @@ export default function TrainScreen() {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [challenges, setChallenges] = useState<DayChallenge[]>([]);
   const [cat, setCat] = useState<Category | 'all'>('all');
+  const { readiness } = useReadiness();
 
   const load = useCallback(async () => {
     const r = await loadWithCache('workouts', async () => ((await api.get('/workouts')).data.data || []) as Workout[]);
@@ -80,6 +83,7 @@ export default function TrainScreen() {
       await clearCache();
       setPlaying(null);
       dayChallenges.list().then(setChallenges).catch(() => {});
+      syncRemindersSoon();
       const saved = res.data.data as Workout;
       Alert.alert('Workout saved', 'Collect your daily mission XP on the Home screen. Share your results with your friends?', [
         { text: 'Not now', style: 'cancel' },
@@ -137,7 +141,7 @@ export default function TrainScreen() {
               {tab === 0 && (
                 <>
                   <ChallengeStrip challenges={challenges} onOpen={(id) => navigation.navigate('Social', { screen: 'ChallengeDetail', params: { id } })} onBrowse={() => navigation.navigate('Social', { screen: 'Challenges' })} />
-                  <TodayPlan routines={routines} weekday={new Date().getDay()} onStart={setPlaying} onCoach={() => navigation.navigate('Coach')} />
+                  <TodayPlan routines={routines} weekday={new Date().getDay()} readiness={readiness} onStart={setPlaying} onCoach={() => navigation.navigate('Coach')} />
                   <CoachCard onPress={() => navigation.navigate('Coach')} />
                   <MyWorkouts routines={routines} onChange={setRoutines} onStart={setPlaying} />
 

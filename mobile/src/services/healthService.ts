@@ -248,6 +248,64 @@ export async function getLast7Days(): Promise<HealthDay[]> {
   }));
 }
 
+// ── Inputs for the Recovery, Sleep and Strain scores ────────────────────────────
+export interface ScoreDay { date: string; hrv: number | null; restingHR: number | null; sleepHours: number | null }
+export interface ScoreInputs {
+  /** About a month of days, oldest first, today last. A day with no reading has null. */
+  days: ScoreDay[];
+  night: { asleep: number; deep: number; rem: number; awake: number } | null;
+  hrSamples: { t: number; bpm: number }[];
+  observedMaxHR: number | null;
+}
+
+/** One failing query must not take the others down: a missing reading is just missing. */
+const safe = async <T,>(p: Promise<T>): Promise<T | undefined> => { try { return await p; } catch { return undefined; } };
+
+export async function getScoreInputs(span = 31): Promise<ScoreInputs | null> {
+  const mod = loadHealthKit();
+  if (!mod) return null;
+  const anchor = daysAgo(span - 1);
+  const range = { startDate: anchor, endDate: new Date() };
+  const todayRange = { startDate: startOfDay(new Date()), endDate: new Date() };
+
+  const [hrvC, rhrC, sleepSamples, night, hr, maxHr] = await Promise.all([
+    safe(mod.queryStatisticsCollectionForQuantity('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', ['discreteAverage'], anchor, { day: 1 }, { unit: 'ms', filter: { date: range } })),
+    safe(mod.queryStatisticsCollectionForQuantity('HKQuantityTypeIdentifierRestingHeartRate', ['discreteAverage'], anchor, { day: 1 }, { unit: 'count/min', filter: { date: range } })),
+    safe(mod.queryCategorySamples('HKCategoryTypeIdentifierSleepAnalysis', { limit: 0, filter: { date: { startDate: new Date(anchor.getTime() - 6 * 3600 * 1000), endDate: new Date() } } })),
+    safe(lastNightSleep(mod)),
+    safe(mod.queryQuantitySamples('HKQuantityTypeIdentifierHeartRate', { unit: 'count/min', filter: { date: todayRange }, limit: 0, ascending: true } as never)),
+    safe(mod.queryStatisticsForQuantity('HKQuantityTypeIdentifierHeartRate', ['discreteMax'], { unit: 'count/min', filter: { date: { startDate: daysAgo(90), endDate: new Date() } } })),
+  ]);
+
+  const byDay = (list: readonly { startDate?: Date; averageQuantity?: { quantity: number } }[] | undefined) => {
+    const m = new Map<string, number>();
+    for (const r of list ?? []) { const q = r.averageQuantity?.quantity; if (r.startDate && typeof q === 'number' && q > 0) m.set(localDayKey(new Date(r.startDate)), q); }
+    return m;
+  };
+  const hrvM = byDay(hrvC), rhrM = byDay(rhrC);
+
+  const asleepByDay = new Map<string, number>();
+  for (const s of sleepSamples ?? []) {
+    const v = Number(s.value);
+    if (v === SLEEP.inBed || v === SLEEP.awake) continue;
+    const k = localDayKey(new Date(s.endDate)); // sleep belongs to the morning it ends on
+    asleepByDay.set(k, (asleepByDay.get(k) ?? 0) + (new Date(s.endDate).getTime() - new Date(s.startDate).getTime()) / 3600000);
+  }
+
+  const days: ScoreDay[] = Array.from({ length: span }, (_, i) => {
+    const k = localDayKey(daysAgo(span - 1 - i));
+    const sleep = asleepByDay.get(k);
+    return { date: k, hrv: hrvM.get(k) ?? null, restingHR: rhrM.get(k) ?? null, sleepHours: sleep && sleep > 0 ? round(sleep, 1) : null };
+  });
+
+  return {
+    days,
+    night: night ? { asleep: night.totalHours, deep: night.deep, rem: night.rem, awake: night.awake } : null,
+    hrSamples: (hr ?? []).map((s) => ({ t: new Date(s.startDate).getTime(), bpm: s.quantity })),
+    observedMaxHR: maxHr?.maximumQuantity?.quantity ?? null,
+  };
+}
+
 /**
  * Looks in Apple Health for data written by an Apple Watch (steps and heart rate of the last week).
  * Returns the watch's name, or null when only the iPhone (or other apps) has written anything.

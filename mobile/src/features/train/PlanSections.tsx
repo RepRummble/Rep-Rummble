@@ -6,7 +6,10 @@ import { colors } from '../../theme/colors';
 import { Eyebrow, GlassCard } from '../mission/ui';
 import { DayChallenge, daysLeftLabel, paceLabel } from '../challenges/challengeLogic';
 import { StatusBar } from '../challenges/ui';
-import { Routine, RoutineExercise, WEEKDAYS, routineToTemplate, routinesFor, weekdaysLabel, Template } from './trainLogic';
+import { Routine, RoutineExercise, TEMPLATES, WEEKDAYS, routineToTemplate, routinesFor, weekdaysLabel, Template } from './trainLogic';
+import { RECOVERY_TEMPLATE_ID, adviceFor, lighterVersion } from './adviceLogic';
+import type { Readiness } from '../health/readiness';
+import { LEVEL_COLOR, RecoveryChip } from '../health/ReadinessCards';
 import { ExerciseEditor, LibrarySheet } from '../coach/EditUI';
 import { ctxOf } from '../coach/planGenerator';
 import { exerciseFromLib, insertAt, moveAt, removeAt, replaceAt, sameExercises, swapExercise } from '../coach/planEdit';
@@ -49,22 +52,42 @@ export function ChallengeStrip({ challenges, onOpen, onBrowse }: { challenges: D
   );
 }
 
-/** What is planned for today, with a Start button. When nothing is planned it points at the coach. */
-export function TodayPlan({ routines, weekday, onStart, onCoach }: { routines: Routine[]; weekday: number; onStart: (t: Template) => void; onCoach: () => void }) {
+/** What is planned for today, with advice from today's recovery. When nothing is planned it points at the coach. */
+export function TodayPlan({ routines, weekday, readiness, onStart, onCoach }: { routines: Routine[]; weekday: number; readiness: Readiness | null; onStart: (t: Template) => void; onCoach: () => void }) {
   const today = routinesFor(routines, weekday);
+  const advice = adviceFor(readiness?.headline?.score ?? null);
+  const mobility = TEMPLATES.find((x) => x.id === RECOVERY_TEMPLATE_ID);
+  const col = advice ? LEVEL_COLOR[advice.level] : colors.brandBright;
   return (
     <>
       <Eyebrow right={WEEKDAYS[weekday]}>Today’s plan</Eyebrow>
-      {today.length > 0 ? today.map((r) => (
-        <GlassCard key={r._id} glow>
-          <Text style={s.cTitle}>{r.name}</Text>
-          <Text style={s.cMeta}>{r.focus ? `${r.focus} · ` : ''}{r.exercises.length} exercises</Text>
-          <Text style={s.preview} numberOfLines={2}>{r.exercises.map((e) => e.name).join(' · ')}</Text>
-          <TouchableOpacity onPress={() => onStart(routineToTemplate(r))} activeOpacity={0.88} style={{ marginTop: 12 }} accessibilityRole="button">
-            <LinearGradient colors={['#d62839', '#ff7a1a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.start}><Ionicons name="flash" size={18} color="#fff" /><Text style={s.startText}>Start today’s workout</Text></LinearGradient>
-          </TouchableOpacity>
+      {advice ? (
+        <GlassCard style={{ borderColor: col, borderWidth: 1.5 }}>
+          <RecoveryChip r={readiness} />
+          <Text style={[s.cTitle, { marginTop: 10 }]}>{advice.headline}</Text>
+          <Text style={s.cMeta}>{advice.detail}</Text>
+          {advice.target ? <Text style={s.target}>Aim for strain {advice.target.min} to {advice.target.max} today.</Text> : null}
+          {advice.suggested === 'lighter' && mobility ? (
+            <TouchableOpacity onPress={() => onStart(mobility)} style={s.softBtn} accessibilityRole="button"><Ionicons name="leaf-outline" size={17} color={colors.brandBright} /><Text style={s.softBtnText}>Do a mobility session instead</Text></TouchableOpacity>
+          ) : null}
         </GlassCard>
-      )) : (
+      ) : null}
+      {today.length > 0 ? today.map((r) => {
+        const full = routineToTemplate(r);
+        const lighter = lighterVersion(full);
+        const preferLighter = advice?.suggested === 'lighter';
+        return (
+          <GlassCard key={r._id} glow={!preferLighter}>
+            <Text style={s.cTitle}>{r.name}</Text>
+            <Text style={s.cMeta}>{r.focus ? `${r.focus} · ` : ''}{r.exercises.length} exercises</Text>
+            <Text style={s.preview} numberOfLines={2}>{r.exercises.map((e) => e.name).join(' · ')}</Text>
+            <TouchableOpacity onPress={() => onStart(preferLighter ? lighter : full)} activeOpacity={0.88} style={{ marginTop: 12 }} accessibilityRole="button">
+              <LinearGradient colors={preferLighter ? ['#1f6fe0', '#4da3ff'] : ['#d62839', '#ff7a1a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.start}><Ionicons name={preferLighter ? 'leaf' : 'flash'} size={18} color="#fff" /><Text style={s.startText}>{preferLighter ? 'Start the lighter version' : 'Start today’s workout'}</Text></LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onStart(preferLighter ? full : lighter)} style={s.softBtn} accessibilityRole="button"><Text style={s.softBtnText}>{preferLighter ? 'Do it as planned' : 'Make it lighter (about 30% fewer sets)'}</Text></TouchableOpacity>
+          </GlassCard>
+        );
+      }) : (
         <GlassCard>
           <Text style={s.cMeta}>{routines.length ? 'Nothing planned for today. Rest, or pick any workout below.' : 'You have no plan yet. Tell the coach what you want to become and it will suggest your week.'}</Text>
           {routines.length === 0 ? <TouchableOpacity onPress={onCoach} style={s.link} accessibilityRole="button"><Text style={s.linkText}>Build my plan</Text></TouchableOpacity> : null}
@@ -191,6 +214,8 @@ const s = StyleSheet.create({
   cta: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,190,140,0.25)' }, ctaTitle: { color: colors.ink, fontSize: 16, fontWeight: '900' }, ctaSub: { color: colors.muted, fontSize: 12.5, marginTop: 2 },
   cHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }, cTitle: { color: colors.ink, fontSize: 17, fontWeight: '900' }, cMeta: { color: colors.muted, fontSize: 12.5, marginTop: 3, lineHeight: 18 }, preview: { color: colors.faint, fontSize: 12.5, marginTop: 8, lineHeight: 18 },
   start: { height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }, startText: { color: '#fff', fontWeight: '900', fontSize: 15.5 },
+  target: { color: colors.brandBright, fontWeight: '800', fontSize: 13.5, marginTop: 8 },
+  softBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10, height: 42, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,154,77,0.4)', backgroundColor: 'rgba(255,122,26,0.07)' }, softBtnText: { color: colors.brandBright, fontWeight: '800', fontSize: 13.5 },
   link: { marginTop: 12, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.brand }, linkText: { color: '#fff', fontWeight: '800' },
   coach: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,190,140,0.35)' }, coachIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   coachTitle: { color: '#fff', fontSize: 19, fontWeight: '900' }, coachSub: { color: 'rgba(255,255,255,0.88)', fontSize: 12.5, lineHeight: 18, marginTop: 3 },

@@ -31,10 +31,10 @@ https://<API host>/api/devices/callback/fitbit
 ```
 
 ## WHOOP — developer.whoop.com
-Create an app in the WHOOP Developer Dashboard. Scopes used: `offline read:recovery read:cycles read:sleep read:profile`. Add the whoop return address above. New apps start limited to a small number of members until WHOOP approves them.
+Create an app in the WHOOP Developer Dashboard. Scopes used: `offline read:recovery read:cycles read:sleep read:profile`. Add the whoop return address above. Create the app at developer-dashboard.whoop.com/apps/create (you can have up to 5). Check the dashboard for any limit on how many members a new app can have before WHOOP approves it.
 
 ## Oura — cloud.ouraring.com/oauth/applications
-Create an application. Scope used: `daily`. Add the oura return address. Oura limits new apps to 10 users until approved.
+Create an application. Scope used: `daily`. Add the oura return address. Check Oura's dashboard for any limit on users while a new app is unapproved.
 
 ## Fitbit — through the Google Health API
 Google switched off the old Fitbit Web API on 2 November 2026. Fitbit and Pixel Watch data now comes from the Google Health API:

@@ -2,7 +2,7 @@
 // Pure helpers used by the Coach screen and by saved workouts. Every result stays inside the limits the server accepts.
 
 import type { RoutineExercise } from '../train/trainLogic';
-import { LIBRARY, byName, normalizeMuscle, type LibExercise, type Muscle } from './exerciseLibrary';
+import { BY_MUSCLE, LIBRARY, byName, normalizeMuscle, type Category, type LibExercise, type Muscle } from './exerciseLibrary';
 import { isAllowed, prescribe, type Ctx } from './planGenerator';
 
 /** Where an exercise sits in the library, when it is one of ours (the AI's names are matched by name). */
@@ -21,18 +21,23 @@ export function alternativesFor(ex: RoutineExercise, ctx: Ctx, exclude: Iterable
   const skip = new Set([...exclude].map((n) => n.toLowerCase().replace(' (seconds)', '')));
   skip.add(ex.name.toLowerCase().replace(' (seconds)', ''));
   const me = libEntryFor(ex);
-  return LIBRARY.filter((e) => e.muscle === m && !skip.has(e.name.toLowerCase()) && isAllowed(e, ctx))
-    .map((e) => ({ e, score: (me && e.pattern === me.pattern ? 4 : 0) + (me && e.kind === me.kind ? 2 : 0) + (me && e.gear === me.gear ? 1 : 0) - Math.abs(e.level - (me?.level ?? e.level)) }))
+  // A swap stays the same kind of exercise: a lift is swapped for lifts, a stretch for stretches.
+  const cat: Category = me?.category ?? 'strength';
+  return (BY_MUSCLE.get(m) ?? []).filter((e) => e.category === cat && !skip.has(e.name.toLowerCase()) && isAllowed(e, ctx))
+    .map((e) => ({ e, score: (e.curated ? 3 : 0) + (me && e.pattern === me.pattern ? 4 : 0) + (me && e.kind === me.kind ? 2 : 0) + (me && e.gear === me.gear ? 1 : 0) - Math.abs(e.level - (me?.level ?? e.level)) }))
     .sort((a, b) => b.score - a.score || a.e.name.localeCompare(b.e.name))
     .slice(0, limit).map((x) => x.e);
 }
 
-/** Search the library by name or muscle, only for exercises this person can do. */
-export function searchLibrary(query: string, ctx: Ctx, muscle: Muscle | 'all' = 'all', exclude: Iterable<string> = [], limit = 40): LibExercise[] {
+const CATEGORY_ORDER: Category[] = ['strength', 'cardio', 'stretch', 'plyo', 'olympic', 'strongman'];
+
+/** Search the library by name or muscle, only for exercises this person can do. Strength exercises first, our own picks before the rest. */
+export function searchLibrary(query: string, ctx: Ctx, muscle: Muscle | 'all' = 'all', exclude: Iterable<string> = [], limit = 60): LibExercise[] {
   const q = query.trim().toLowerCase();
   const skip = new Set([...exclude].map((n) => n.toLowerCase().replace(' (seconds)', '')));
-  return LIBRARY.filter((e) => isAllowed(e, ctx) && !skip.has(e.name.toLowerCase()) && (muscle === 'all' || e.muscle === muscle) && (!q || e.name.toLowerCase().includes(q) || e.muscle.includes(q)))
-    .sort((a, b) => a.muscle.localeCompare(b.muscle) || a.level - b.level || a.name.localeCompare(b.name)).slice(0, limit);
+  const source = muscle === 'all' ? LIBRARY : BY_MUSCLE.get(muscle) ?? [];
+  return source.filter((e) => isAllowed(e, ctx) && !skip.has(e.name.toLowerCase()) && (!q || e.name.toLowerCase().includes(q) || e.muscle.includes(q)))
+    .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category) || Number(b.curated) - Number(a.curated) || a.level - b.level || a.name.localeCompare(b.name)).slice(0, limit);
 }
 
 /** A library exercise, ready to drop into a workout with sensible sets and reps for the person's goal. */
