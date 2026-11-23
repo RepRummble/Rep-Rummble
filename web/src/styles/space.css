@@ -70,7 +70,9 @@ body.rr-space .rr-page, body.rr-space main.page { position: relative; z-index: 1
 
 /* ── Places that hard-code white ─────────────────────────────────────────────── */
 body.rr-space .rr-header { background: rgba(5, 8, 16, 0.72); border-bottom-color: rgba(255, 255, 255, 0.08); }
-body.rr-space .rr-header.is-scrolled { border-bottom-color: var(--rr-line); box-shadow: 0 8px 30px -12px rgba(0, 0, 0, .7); }
+/* aurora.css turns the header white (with !important) once scrolled. On the dark theme it must stay dark. */
+body.rr-space .rr-header, body.rr-space .rr-header.is-scrolled { background: rgba(5, 8, 16, 0.72) !important; -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); }
+body.rr-space .rr-header.is-scrolled { background: rgba(5, 8, 16, 0.86) !important; border-bottom-color: var(--rr-line); box-shadow: 0 8px 30px -12px rgba(0, 0, 0, .7); }
 body.rr-space .rr-logo-mark { background: linear-gradient(135deg, #d62839, #ff7a1a); }
 
 /* Cards and panels: dark glass with a thin light edge */
