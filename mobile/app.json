@@ -86,7 +86,8 @@
             "minSdkVersion": 26
           }
         }
-      ]
+      ],
+      "./plugins/withoutPushEntitlement"
     ],
     "scheme": "reprummble"
   }

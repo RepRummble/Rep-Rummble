@@ -221,6 +221,7 @@ export type RootStackParamList = {
   Subscription: undefined;
   Devices: undefined;
   Coach: undefined;
+  Coaching: undefined;
 };
 
 export type MainTabParamList = {

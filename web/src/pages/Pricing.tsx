@@ -7,12 +7,12 @@ import Faq from '../components/site/Faq';
 import { Aurora, CountUp, Magnetic, MovingBorder, SpotlightCard } from '../components/fx/Effects';
 
 const FAQS = [
-  { q: 'Is the free plan really free?', a: 'Yes. The free plan has no time limit and never asks for a card. It has limits on logging and challenges, and you can upgrade whenever you want more.' },
-  { q: "What's the difference between Pro and Premium?", a: `Pro gives you full access to every app feature. Premium adds a human touch: 1-on-1 check-ins with a coach twice a month, a custom nutrition plan, PDF progress reports, and priority support — for ${fmtPrice(PREMIUM_UPGRADE)} more a month.` },
+  { q: 'Is the free plan really free?', a: 'Yes. The free plan has no time limit and never asks for a card. It limits how many AI meal scans and AI coach plans you can run each day. Logging, challenges with friends, wearables and your recovery scores are all included. Upgrade whenever you want higher limits.' },
+  { q: "What's the difference between Pro and Premium?", a: `Pro raises your daily AI limits and adds your reports history and CSV export. Premium adds a human touch: 1-on-1 check-ins with a coach twice a month, a custom nutrition plan, PDF progress reports, and priority support — for ${fmtPrice(PREMIUM_UPGRADE)} more a month.` },
   { q: 'I train at a partner gym. Do I get Pro for free?', a: `Yes. Members of Reprummble partner gyms get Pro included with their gym membership. Want coaching extras? Upgrade to Premium for just ${fmtPrice(PREMIUM_UPGRADE)}/month.` },
   { q: `How does the ${PRICING.trialDays}-day Pro trial work?`, a: `You get full Pro access for ${PRICING.trialDays} days. We remind you before it ends, and if you don't continue you simply return to the free plan — no surprise charges.` },
   { q: 'Can I switch plans or cancel anytime?', a: 'Yes. Upgrade, downgrade, or cancel from your account settings. Changes apply at the end of your current billing period.' },
-  { q: 'Do I need a gym membership or a wearable?', a: 'No. Reprummble works at home, outdoors, or in any gym. Wearables add richer recovery data but are completely optional.' },
+  { q: 'Do I need a gym membership or a wearable?', a: 'No. Reprummble works at home, outdoors, or in any gym. Connecting a watch or ring adds richer recovery data, but it is completely optional.' },
   { q: 'I run a gym. How do I partner with you?', a: `It's free to join. Your members get Pro included, you publish programs, and you keep ${PRICING.gymPayoutPercent}% of every program sale. Apply on our Collaboration page.` },
 ];
 
@@ -23,8 +23,8 @@ function Cell({ value }: { value: boolean | string }) {
 }
 
 const FINDER = [
-  { id: 'start', label: 'I am just getting started', plan: 'free', why: 'Free is plenty to build the habit: basic logging, streaks, weekly insights, and a challenge every month. No card, no time limit.' },
-  { id: 'serious', label: 'I want every feature', plan: 'pro', why: `Pro unlocks unlimited logging, your AI training plan, meal photos, wearable sync, and recovery scores. Start with ${PRICING.trialDays} days free.` },
+  { id: 'start', label: 'I am just getting started', plan: 'free', why: 'Free is plenty to build the habit: unlimited logging, streaks, challenges with friends, your recovery scores, and a few AI scans and coach plans every day. No card, no time limit.' },
+  { id: 'serious', label: 'I want every feature', plan: 'pro', why: `Pro lifts your daily AI limits (up to 100 meal scans and 30 coach plans a day) and adds your reports history and CSV export. Start with ${PRICING.trialDays} days free.` },
   { id: 'coach', label: 'I want a coach in my corner', plan: 'premium', why: `Premium adds twice-monthly 1-on-1 check-ins, a custom nutrition plan, PDF reports, and priority support, for ${fmtPrice(PREMIUM_UPGRADE)} more than Pro.` },
   { id: 'gym', label: 'I train at a partner gym', plan: 'pro', why: `Pro is included with your gym membership at no extra cost. Add Premium coaching for just ${fmtPrice(PREMIUM_UPGRADE)}/month.` },
 ] as const;

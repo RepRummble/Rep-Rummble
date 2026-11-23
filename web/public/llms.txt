@@ -1,26 +1,27 @@
 # Reprummble
 
-> AI-powered fitness platform connecting workouts, nutrition, sleep, and wearables into one adaptive training plan.
+> Fitness platform connecting workouts, nutrition, sleep, and wearables. Free to start, live on the web, with iPhone and Android apps coming soon.
 
-Reprummble helps athletes and everyday fitness enthusiasts train smarter, recover faster, and live stronger. The platform uses AI to build personalised training and nutrition plans that adapt in real-time based on wearable data, sleep quality, and user feedback.
+Reprummble helps athletes and everyday fitness enthusiasts train smarter, recover faster, and live stronger. It offers an AI workout coach and an offline coach, AI meal logging, daily Recovery, Sleep and Strain scores, and challenges with friends.
 
 ## Key Features
 
-- **Personalised Training Plans** – AI-built programs that adapt to your schedule, gear, and fitness goals
-- **Smart Nutrition** – Instant meal logging, macro tracking, and smart food swap suggestions
-- **Recovery & Readiness** – Daily readiness scores powered by HRV, resting HR, and sleep quality data
-- **Apps** – Available on the web, iOS (App Store), and Android (Google Play)
-- **Wearable Sync** – Automatic data import from Apple Watch, Oura Ring, Garmin, and Whoop
-- **Actionable Analytics** – Weekly insights connecting habits to results
-- **30-Day Challenges** – Leaderboards and coach nudges to maintain momentum
+- **Workout coach** – an AI coach and an offline rules-based coach build a week of workouts from your goal, body style, equipment, level and injuries; every plan is editable. About 1,000 exercises.
+- **Smart nutrition** – meal logging from a photo, with a per-food breakdown, macro targets and lighter swaps.
+- **Recovery, Sleep and Strain** – daily scores worked out from your HRV, resting heart rate, sleep and heart rate, measured against your own normal, with the readings that moved each score.
+- **Wearables** – Apple Watch (via Apple Health), Samsung Galaxy Watch (via Health Connect), Fitbit, WHOOP and Oura connect directly.
+- **Challenges and friends** – 30, 60 and 90-day challenges with friends, a social feed, 24-hour statuses and messages between friends.
+- **Apps** – the website is live. The iPhone and Android apps are coming soon.
 
 ## Pages
 
 - [Home](https://reprummble.com/) – Overview, features, testimonials, and sign-up CTA
 - [Features](https://reprummble.com/features) – Detailed breakdown of all platform capabilities
 - [Pricing](https://reprummble.com/pricing) – Free, Pro ($9.99/month, included for partner-gym members), and Premium ($14.99/month with coach check-ins)
-- [For Gyms](https://reprummble.com/for-gyms) – Partner program for gyms and coaches (free to join, members get Pro included, revenue share on programs)
+- [Collaborate](https://reprummble.com/collaborate) – Partner program for gyms and coaches (free to join, members get Pro included, revenue share on programs)
 - [FAQ](https://reprummble.com/faq) – Answers to common questions
+- [Blog](https://reprummble.com/blog) – How the Recovery and Strain scores, the coach, wearables and challenges work
+- [About](https://reprummble.com/about) – What we are building and what we believe
 - [Contact](https://reprummble.com/contact) – Support contact form
 - [Privacy Policy](https://reprummble.com/privacy) – How user data is collected and used
 - [Terms of Service](https://reprummble.com/terms) – Rules and conditions for using the platform

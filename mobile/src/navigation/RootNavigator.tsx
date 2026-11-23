@@ -14,6 +14,7 @@ import FoodScannerScreen from '../screens/FoodScannerScreen';
 import FoodResultsScreen from '../screens/FoodResultsScreen';
 import DevicesScreen from '../screens/DevicesScreen';
 import CoachScreen from '../screens/CoachScreen';
+import CoachingScreen from '../screens/CoachingScreen';
 import FoodSearchScreen from '../screens/FoodSearchScreen';
 import ChatScreen from '../screens/ChatScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
@@ -76,6 +77,7 @@ export default function RootNavigator() {
               animation: 'slide_from_bottom',
             }}
           />
+          <Stack.Screen name="Coaching" component={CoachingScreen} options={{ presentation: 'card', animation: 'slide_from_right', contentStyle: { backgroundColor: 'transparent' } }} />
           <Stack.Screen name="Coach" component={CoachScreen} options={{ presentation: 'card', animation: 'slide_from_right', contentStyle: { backgroundColor: 'transparent' } }} />
           <Stack.Screen name="Devices" component={DevicesScreen} options={{ presentation: 'card', animation: 'slide_from_right', contentStyle: { backgroundColor: 'transparent' } }} />
           <Stack.Screen

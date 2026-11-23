@@ -65,8 +65,29 @@ const policySections: LegalSection[] = [
         </ul>
         <h4>Device & Wearable Data</h4>
         <ul>
-          <li>Data synced from Apple Watch, Oura Ring, Garmin, Whoop, Fitbit, and other connected devices</li>
+          <li>
+            Readings from the devices you connect: Apple Watch (through Apple Health), Samsung Galaxy Watch (through
+            Health Connect), Fitbit (through your Google account), WHOOP, and Oura. For example steps, active calories,
+            sleep, resting heart rate, HRV, and each device's own recovery or strain score
+          </li>
+          <li>
+            The sign-in that lets us read from WHOOP, Oura, and Fitbit. It is encrypted, is never shown in the app,
+            and is deleted when you disconnect
+          </li>
+          <li>
+            Our own Recovery, Sleep, and Strain scores are worked out on your phone from your health app's readings.
+            They are not stored on our servers
+          </li>
           <li>We only import data you explicitly authorise through each device's permission screen</li>
+        </ul>
+        <h4>Community & Messages</h4>
+        <ul>
+          <li>Posts and comments you write, and workouts or meals you choose to share (we keep a copy of the details as they were when you shared)</li>
+          <li>Statuses you post. They are removed automatically after 24 hours</li>
+          <li>Messages between you and your friends. Only friends can message each other</li>
+          <li>Your friends, friend requests, and the people you block</li>
+          <li>Challenges you join and your progress in them, counted from your saved workouts</li>
+          <li>Reports you send about content or people, and reports others send about you</li>
         </ul>
         <h4>Usage & Technical Data</h4>
         <ul>
@@ -156,6 +177,19 @@ const policySections: LegalSection[] = [
           <li>
             <strong>Cloud infrastructure</strong> — Our servers run on trusted providers
             (e.g. AWS, Supabase). Your data is encrypted in transit and at rest.
+          </li>
+          <li>
+            <strong>AI services</strong> — To scan a meal photo, log a meal from a description, build a workout
+            plan with the AI coach, or answer a chat or support question, we send that request to Google's Gemini
+            API and show you the result. We send what the feature needs: the photo or text you provided, and for
+            coach plans your answers (goal, body style, experience, equipment, days a week, and any note you add).
+            We do not send your wearable readings, your recovery scores, or your messages to friends. Google's own
+            terms and privacy policy apply to how it handles the request.
+          </li>
+          <li>
+            <strong>Friends and challenge members</strong> — People you are friends with can see your name, your
+            posts, and your statuses. People in a challenge with you can see your name and your progress in it.
+            Nobody can see your email address through these features.
           </li>
           <li>
             <strong>Payment processor</strong> — When online billing opens, a third-party
@@ -387,9 +421,13 @@ const policySections: LegalSection[] = [
             your account is closed.
           </li>
           <li>
-            <strong>Account deletion</strong> — All personal data is permanently deleted
-            within 30 days of account closure, unless a longer retention period is
-            required by law (e.g. tax or financial records retained for 7 years).
+            <strong>Account deletion</strong> — You can delete your account in the app (Profile, then Delete account). Your records are removed from our live systems straight away, and any copies in backups are gone within 30 days, unless a longer retention period is required by law (e.g. tax or financial records retained for 7 years).
+          </li>
+          <li>
+            <strong>Statuses</strong> — Removed automatically 24 hours after you post them.
+          </li>
+          <li>
+            <strong>Connected devices</strong> — When you disconnect a device, we revoke our access where the provider allows it and delete the sign-in and the readings we saved from it straight away.
           </li>
           <li>
             <strong>Anonymised analytics</strong> — Aggregate, de-identified usage data
@@ -446,8 +484,7 @@ const policySections: LegalSection[] = [
     details: (
       <>
         <p>
-          Connecting wearables and health apps (Apple Health, Google Fit, Oura, Garmin
-          Connect, Whoop, Fitbit) is entirely optional. When you connect a device:
+          Connecting wearables and health apps (Apple Health, Health Connect, Fitbit through Google, WHOOP, Oura) is entirely optional. When you connect a device:
         </p>
         <ul>
           <li>
@@ -459,8 +496,7 @@ const policySections: LegalSection[] = [
             permissions needed for the features you use.
           </li>
           <li>
-            <strong>You can disconnect at any time</strong> — Revoking access in app
-            settings stops future imports and we delete previously synced data on request.
+            <strong>You can disconnect at any time</strong> — Disconnecting a device in the app stops future imports and deletes the sign-in and the readings we saved from it straight away.
           </li>
           <li>
             <strong>Independent policies apply</strong> — Each service has its own privacy
@@ -567,7 +603,7 @@ export default function Privacy() {
     <LegalDoc
       badge="Privacy Policy"
       title="Your data, explained clearly."
-      updated="October 2026"
+      updated="November 2026"
       lead="We do not sell your data. Ever. Here is what we collect, why, who can see it, and the choices you have."
       sections={policySections}
     />

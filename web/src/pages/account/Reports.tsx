@@ -16,6 +16,7 @@ export default function Reports() {
   const [period, setPeriod] = useState<ReportPeriod>('monthly');
   const [history, setHistory] = useState<History | null | undefined>(undefined); // undefined = loading
   const [error, setError] = useState('');
+  const [upgrade, setUpgrade] = useState(false);   // the server says this needs a higher plan
   const [busy, setBusy] = useState<'pdf' | 'csv' | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -25,6 +26,7 @@ export default function Reports() {
       if (cancelled) return;
       setHistory(res.data ?? null);
       setError(res.error ?? '');
+      setUpgrade(res.code === 'upgrade_required');
     });
     return () => { cancelled = true; };
   }, [period]);
@@ -75,7 +77,14 @@ export default function Reports() {
       </div>
       {message && <div className={message.ok ? 'rr-msg-ok' : 'rr-msg-err'} role="status">{message.text}</div>}
 
-      {history === undefined ? <SkeletonPage kind="cards" label="Loading your history" /> : history === null ? (
+      {upgrade ? (
+        <div className="dash-card" role="status">
+          <h2>Reports are part of Pro</h2>
+          <p>{error || 'Your history, CSV export and PDF reports come with the Pro and Premium plans.'}</p>
+          <p className="dash-muted">Pro includes your reports history and CSV export. Premium adds PDF progress reports. Free keeps unlimited logging, challenges and your recovery scores.</p>
+          <div className="dash-actions"><a className="rr-btn rr-btn-primary" href="/dashboard/billing">See plans</a></div>
+        </div>
+      ) : history === undefined ? <SkeletonPage kind="cards" label="Loading your history" /> : history === null ? (
         <ErrorState detail={error} onRetry={() => choose(period)} />
       ) : (
         <>

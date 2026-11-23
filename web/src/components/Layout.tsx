@@ -473,6 +473,7 @@ export default function Layout() {
                       Review applications{account.pending > 0 ? ` (${account.pending})` : ''}
                     </Link>
                   )}
+                  {account.isAdmin && <Link to="/admin/waitlist" onClick={() => setProfileOpen(false)}>Waitlist and coaching</Link>}
                   <button type="button" onClick={handleSignOut}>Sign out</button>
                 </div>
               )}

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Waitlist from './Waitlist';
 
 const IOS_URL = import.meta.env.VITE_IOS_APP_URL || '';
 const ANDROID_URL = import.meta.env.VITE_ANDROID_APP_URL || '';
@@ -27,6 +28,8 @@ function StoreLink({ href, label, mini, icon, variant }: {
 }
 
 export default function StoreButtons({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
+  // Until the apps are in the stores, offer the waitlist instead of buttons that go nowhere.
+  if (!IOS_URL && !ANDROID_URL) return <Waitlist variant={variant} source="waitlist-footer" />;
   return (
     <div className="rr-stores">
       <StoreLink

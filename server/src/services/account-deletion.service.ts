@@ -1,4 +1,6 @@
 import { Business, BusinessFood, BusinessMealPlan, BusinessMember, BusinessPlan, BusinessStaff } from '../models/Business.model'
+import { CheckIn } from '../models/CheckIn.model'
+import { NutritionRequest } from '../models/NutritionRequest.model'
 import { Challenge } from '../models/Challenge.model'
 import { ChallengeParticipant } from '../models/ChallengeParticipant.model'
 import { Contact } from '../models/Contact.model'
@@ -66,6 +68,8 @@ export async function deleteAccountData(userId: string, email?: string): Promise
   // Their own records, keyed by their sign-in id.
   count('workouts', await Workout.deleteMany({ userId: eq(userId) }))
   count('routines', await Routine.deleteMany({ userId: eq(userId) }))
+  count('checkIns', await CheckIn.deleteMany({ userId: eq(userId) }))
+  count('nutritionRequests', await NutritionRequest.deleteMany({ userId: eq(userId) }))
   count('meals', await Meal.deleteMany({ userId: eq(userId) }))
   count('wearableData', await WearableData.deleteMany({ userId: eq(userId) }))
   // Connected devices: tell each provider to stop sharing, then delete the sign-ins and everything they gave us.

@@ -39,6 +39,8 @@ import wearableRoutes from "./routes/wearable.routes";
 import deviceRoutes from './routes/devices.routes'
 import dayChallengeRoutes from './routes/dayChallenge.routes'
 import coachRoutes from './routes/coach.routes'
+import coachingRoutes from './routes/coaching.routes'
+import adminRoutes from './routes/admin.routes'
 import challengeRoutes from "./routes/challenge.routes";
 import socialRoutes from "./routes/social.routes";
 import friendRoutes from "./routes/friend.routes";
@@ -149,6 +151,8 @@ app.use("/api/wearables", wearableRoutes);
 app.use("/api/devices", deviceRoutes)
 app.use("/api/day-challenges", dayChallengeRoutes)
 app.use("/api/coach", coachRoutes)
+app.use("/api/coaching", coachingRoutes)
+app.use("/api/admin", adminRoutes)
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/social", socialRoutes);
 app.use("/api/friends", friendRoutes);

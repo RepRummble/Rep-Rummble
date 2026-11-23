@@ -17,18 +17,19 @@ const { width: SW } = Dimensions.get('window');
 // ── Feature table data ────────────────────────────────────────────────────────
 
 const FEATURES: Array<{ label: string; free: string | boolean; pro: string | boolean; premium: string | boolean; icon: string }> = [
-  { icon: 'camera',           label: 'AI Meal Scans',          free: '3 / day',      pro: 'Unlimited',    premium: 'Unlimited'    },
-  { icon: 'search',           label: 'Food Search',            free: true,           pro: true,           premium: true           },
-  { icon: 'barbell',          label: 'Workout Logging',        free: true,           pro: true,           premium: true           },
-  { icon: 'chatbubble',       label: 'AI Coach Chat',          free: '5 msgs / day', pro: 'Unlimited',    premium: 'Unlimited'    },
-  { icon: 'nutrition',        label: 'Micronutrients',         free: false,          pro: true,           premium: true           },
-  { icon: 'trophy',           label: 'Full Leaderboard',       free: 'Top 10 only',  pro: true,           premium: true           },
-  { icon: 'watch',            label: 'Wearable Sync',          free: false,          pro: '1 device',     premium: 'All devices'  },
-  { icon: 'people',           label: 'Create Challenges',      free: false,          pro: true,           premium: true           },
-  { icon: 'stats-chart',      label: 'Advanced Analytics',     free: false,          pro: false,          premium: true           },
-  { icon: 'sparkles',         label: 'Personalised Plans',     free: false,          pro: false,          premium: true           },
+  { icon: 'camera',           label: 'AI Meal Scans',          free: '3 / day',      pro: '100 / day',    premium: '100 / day'    },
+  { icon: 'flash',            label: 'AI Quick Log',           free: '10 / day',     pro: '200 / day',    premium: '200 / day'    },
+  { icon: 'search',           label: 'Food Search',            free: '40 / day',     pro: '400 / day',    premium: '400 / day'    },
+  { icon: 'sparkles',         label: 'AI Coach Plans',         free: '3 / day',      pro: '30 / day',     premium: '30 / day'     },
+  { icon: 'barbell',          label: 'Offline Coach & Library', free: true,          pro: true,           premium: true           },
+  { icon: 'trophy',           label: 'Challenges with Friends', free: true,          pro: true,           premium: true           },
+  { icon: 'watch',            label: 'Wearables',              free: true,           pro: true,           premium: true           },
+  { icon: 'pulse',            label: 'Recovery, Sleep & Strain', free: true,         pro: true,           premium: true           },
+  { icon: 'stats-chart',      label: 'Reports & CSV Export',   free: false,          pro: true,           premium: true           },
+  { icon: 'document-text',    label: 'PDF Progress Reports',   free: false,          pro: false,          premium: true           },
+  { icon: 'chatbubbles',      label: 'Coach Check-ins',        free: false,          pro: false,          premium: '2 / month'    },
+  { icon: 'nutrition',        label: 'Custom Nutrition Plan',  free: false,          pro: false,          premium: '1 / month'    },
   { icon: 'headset',          label: 'Priority Support',       free: false,          pro: false,          premium: true           },
-  { icon: 'ribbon',           label: 'Premium Profile Badge',  free: false,          pro: false,          premium: true           },
 ];
 
 // ── Plan card config ──────────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ const PLANS: PlanCard[] = [
     colors: [colors.surface, colors.surface],
     border: colors.border,
     textColor: colors.muted,
-    highlights: ['3 AI scans/day', '5 AI chat messages/day', 'Basic workout log', 'Top-10 leaderboard'],
+    highlights: ['3 AI meal scans a day', '3 AI coach plans a day', 'Offline coach & ~1,000 exercises', 'Challenges, friends & wearables'],
   },
   {
     id: 'pro',
@@ -64,7 +65,7 @@ const PLANS: PlanCard[] = [
     textColor: colors.brand,
     badge: 'MOST POPULAR',
     badgeColor: colors.brand,
-    highlights: ['Unlimited AI meal scans', 'Unlimited AI coach chat', 'Full leaderboard access', 'Connect 1 wearable device', 'Create & join challenges', 'Micronutrient tracking'],
+    highlights: ['Up to 100 AI meal scans a day', 'Up to 30 AI coach plans a day', 'Reports history & CSV export', 'Member pricing on gym programs'],
   },
   {
     id: 'premium',
@@ -75,7 +76,7 @@ const PLANS: PlanCard[] = [
     textColor: colors.warning,
     badge: 'ALL-IN',
     badgeColor: colors.warning,
-    highlights: ['Everything in Pro', 'Personalised AI training plans', 'Advanced analytics dashboard', 'Sync unlimited wearables', 'Priority 24/7 support', 'Premium profile badge'],
+    highlights: ['Everything in Pro', '2 coach check-ins a month', 'A custom nutrition plan, 1 a month', 'PDF progress reports', 'Priority support'],
   },
 ];
 

@@ -7,6 +7,9 @@ import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import Collaborate from './pages/Collaborate';
 import FAQ from './pages/FAQ';
+import About from './pages/About';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
@@ -25,6 +28,9 @@ import InviteRedirect from './pages/account/InviteRedirect';
 import ReferralClaimer from './components/ReferralClaimer';
 import BusinessLayout from './pages/business/BusinessLayout';
 import BusinessApplications from './pages/admin/Applications';
+import AdminWaitlist from './pages/admin/Waitlist';
+import AdminCheckIns from './pages/admin/CheckIns';
+import AdminNutrition from './pages/admin/Nutrition';
 import BusinessOverview from './pages/business/Overview';
 import BusinessMembers from './pages/business/Members';
 import BusinessWorkouts from './pages/business/WorkoutPlans';
@@ -57,6 +63,9 @@ function App() {
           <Route path="referral" element={<Navigate to="/dashboard/referral" replace />} />
           <Route path="payment" element={<Navigate to="/dashboard/billing" replace />} />
           <Route path="faq" element={<FAQ />} />
+          <Route path="about" element={<About />} />
+          <Route path="blog" element={<Blog />} />
+          <Route path="blog/:slug" element={<BlogPost />} />
           <Route path="contact" element={<Contact />} />
           <Route path="signin" element={<Navigate to="/?auth=signin" replace />} />
           <Route path="signup" element={<Navigate to="/?auth=signup" replace />} />
@@ -74,6 +83,9 @@ function App() {
             <Route path="profile" element={<AccountProfile />} />
           </Route>
           <Route path="admin/applications" element={<BusinessApplications />} />
+          <Route path="admin/waitlist" element={<AdminWaitlist />} />
+          <Route path="admin/checkins" element={<AdminCheckIns />} />
+          <Route path="admin/nutrition" element={<AdminNutrition />} />
           <Route path="business" element={<BusinessLayout />}>
             <Route index element={<BusinessOverview />} />
             <Route path="members" element={<BusinessMembers />} />

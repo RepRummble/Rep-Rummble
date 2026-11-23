@@ -9,17 +9,17 @@ const SECTIONS = [
   {
     title: 'Getting started',
     items: [
-      { q: 'Is Reprummble really free?', a: `Yes. The Free plan costs nothing and needs no card. Pro (${fmtPrice(PRICING.proMonthly)}/month) unlocks unlimited logging, your personalized AI plan, and wearable sync, with a ${PRICING.trialDays}-day free trial.` },
+      { q: 'Is Reprummble really free?', a: `Yes. The Free plan costs nothing and needs no card. Free includes unlimited logging, challenges with friends, wearables and your recovery scores, with a few AI meal scans and coach plans each day. Pro (${fmtPrice(PRICING.proMonthly)}/month) raises those daily AI limits and adds your reports history and CSV export, with a ${PRICING.trialDays}-day free trial.` },
       { q: 'Do I need gym equipment?', a: 'No. Many workouts use only your bodyweight. Tell us what you have (nothing, dumbbells, bands, or a full gym) and your plan uses just that.' },
       { q: 'I am a complete beginner. Where do I start?', a: 'Sign up and answer a few questions about your goal, schedule, and equipment. Reprummble starts you with easier variations, short sessions, and plenty of rest while you learn the moves.' },
-      { q: 'Where do the workouts live?', a: 'In the iPhone and Android app. This website is for signing up, pricing, billing, and contacting us.' },
+      { q: 'Where do the workouts live?', a: 'In the iPhone and Android app, which are coming soon (join the waitlist on the home page). This website is for signing up, pricing, billing, your dashboard and reports, and contacting us.' },
     ],
   },
   {
     title: 'Devices & syncing',
     items: [
       { q: 'Can I use the same account on my phone and the web?', a: 'Yes. Sign in with the same account on iPhone, Android, and reprummble.com. Your plan, progress, and subscription stay in sync automatically.' },
-      { q: 'Which wearables work?', a: 'On iPhone, Reprummble reads Apple Health, which includes Apple Watch and any device whose app syncs to Apple Health, such as Garmin, Oura, Whoop, Fitbit, and Polar. Android Health Connect support is coming.' },
+      { q: 'Which wearables work?', a: 'Apple Watch (through Apple Health on iPhone), Samsung Galaxy Watch (through Health Connect on Android), Fitbit (through your Google account), WHOOP and Oura connect directly, and you can disconnect any of them in the app. Garmin and Polar data also appears if their own app writes to Apple Health.' },
       { q: 'My data is missing. What should I do?', a: 'Open your wearable\'s own app and make sure it is syncing to Apple Health, then check that Reprummble has permission to read it in your phone\'s Health settings. Still stuck? Ask Rumi or contact support.' },
     ],
   },

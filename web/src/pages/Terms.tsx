@@ -40,8 +40,7 @@ const termsSections: LegalSection[] = [
         </p>
         <ul>
           <li>
-            <strong>Personalised training plans</strong> — AI-built programmes that
-            adapt to your goals, schedule, and available equipment.
+            <strong>Personalised training plans</strong> — Plans built by our AI coach or our offline coach from your goals, schedule, and equipment. You can change anything in them.
           </li>
           <li>
             <strong>Nutrition logging and tracking</strong> — Meal logging, macro
@@ -52,16 +51,14 @@ const termsSections: LegalSection[] = [
             resting heart rate analysis.
           </li>
           <li>
-            <strong>Wearable device integration</strong> — Sync with Apple Watch,
-            Oura Ring, Garmin, Whoop, Fitbit, and compatible devices.
+            <strong>Wearable device integration</strong> — Connect Apple Watch (through Apple Health), Samsung Galaxy Watch (through Health Connect), Fitbit, WHOOP, and Oura.
           </li>
           <li>
             <strong>Analytics and reports</strong> — Weekly insights, progress
             charts, and shareable health reports.
           </li>
           <li>
-            <strong>Challenges and community</strong> — Group challenges, leaderboards,
-            and coach nudges.
+            <strong>Challenges and community</strong> — 30, 60 and 90-day challenges with friends, leaderboards, a social feed, 24-hour statuses, and messages between friends.
           </li>
           <li>
             <strong>Customer support</strong> — Live chat and email assistance.
@@ -172,11 +169,10 @@ const termsSections: LegalSection[] = [
         <h4>Subscription Plans</h4>
         <ul>
           <li>
-            <strong>Free</strong> — No charge, with limited access to core tracking features.
+            <strong>Free</strong> — No charge. Includes logging, challenges with friends, wearables, and your recovery scores, with daily limits on AI features.
           </li>
           <li>
-            <strong>Pro</strong> — Paid monthly; full access to personalized training
-            plans, AI meal analysis, wearable sync, recovery scores, and advanced analytics.
+            <strong>Pro</strong> — Paid monthly; much higher daily limits on AI meal scans, quick logs, food searches, and AI coach plans, plus your reports history and CSV export.
             Pro may be included for members of participating partner gyms.
           </li>
           <li>
@@ -394,6 +390,31 @@ const termsSections: LegalSection[] = [
       </>
     ),
   },
+    {
+    id: 'community',
+    title: 'Community & Messaging',
+    summary: 'How friends, posts, statuses and messages work, and how to report or block',
+    details: (
+      <>
+        <p>
+          Reprummble has social features: a feed of posts and comments, statuses that disappear after 24 hours,
+          messages between friends, and challenges you can take on together. Please be kind and keep it
+          about training.
+        </p>
+        <ul>
+          <li><strong>Who can contact you</strong> — Only your friends can message you or invite you to a challenge.</li>
+          <li><strong>Blocking</strong> — You can block anyone at any time. Blocking ends the friendship and hides you from each other.</li>
+          <li><strong>Reporting</strong> — You can report any post, comment, status, message, or person from the menu next to it. Reports go to our team. Something several people report is hidden automatically while we look at it.</li>
+          <li><strong>What we remove</strong> — We may remove content, limit features, or end accounts for harassment, threats, impersonation, spam, sexual or hateful content, encouraging self-harm or dangerous diets, or sharing other people's private information.</li>
+          <li><strong>What friends can see</strong> — Friends see what you post or share with them. A status disappears after 24 hours, but someone may have saved a copy, so share only what you are comfortable sharing.</li>
+        </ul>
+        <p>
+          If someone is in immediate danger, contact your local emergency services first. To tell us about
+          anything else, report it in the app or email <strong>support@reprummble.com</strong>.
+        </p>
+      </>
+    ),
+  },
   {
     id: 'ip',
     title: 'Intellectual Property',
@@ -427,7 +448,7 @@ const termsSections: LegalSection[] = [
       <>
         <p>
           The Service integrates with third-party platforms including, but not limited
-          to, Apple Health, Google Fit, Oura Ring, Garmin Connect, Whoop, Fitbit,
+          to, Apple Health, Health Connect, Google (for Fitbit), WHOOP, Oura Ring,
           and payment processors.
         </p>
         <p>
@@ -654,7 +675,7 @@ export default function Terms() {
     <LegalDoc
       badge="Terms of Service"
       title="Clear, fair rules for using Reprummble."
-      updated="October 2026"
+      updated="November 2026"
       lead="A plain-English guide to what you can expect from us, and what we expect from you. Please read it before signing up."
       sections={termsSections}
     />

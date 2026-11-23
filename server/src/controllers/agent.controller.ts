@@ -1,3 +1,4 @@
+import { sortSupportQueue } from '../services/coaching.logic'
 import { Request, Response } from 'express'
 import { SupportConversation } from '../models/SupportConversation.model'
 import { SupportMessage } from '../models/SupportMessage.model'
@@ -84,11 +85,9 @@ export const getDashboard = async (req: AgentRequest, res: Response) => {
  */
 export const getQueue = async (_req: AgentRequest, res: Response) => {
   try {
-    const conversations = await SupportConversation.find({
-      status: 'waiting_agent'
-    })
-      .sort({ priority: -1, createdAt: 1 })
-      .limit(50)
+    // Sorted in code: the priority is a word, and sorting words puts "high" below "low". Premium members come first.
+    const waiting = await SupportConversation.find({ status: 'waiting_agent' }).sort({ createdAt: 1 }).limit(300)
+    const conversations = sortSupportQueue(waiting).slice(0, 50)
 
     // Get last message for each conversation
     const conversationsWithLastMessage = await Promise.all(

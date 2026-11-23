@@ -3,6 +3,7 @@ import { biz, useLoad } from '../business/api';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import '../../styles/dashboard.css';
 import { SkeletonPage } from '../../components/states/States';
+import AdminNav from './AdminNav';
 
 /** Review screen for business applications. Only emails listed in ADMIN_EMAILS on the server can use it. */
 export default function Applications() {
@@ -35,6 +36,7 @@ export default function Applications() {
     <div className="dash-page">
       <div className="rr-container dash-content" style={{ maxWidth: 960 }}>
         <div className="dash-head"><h1>Business applications</h1></div>
+        <AdminNav />
         <div className="dash-tabs" role="tablist">
           {(['pending', 'approved', 'rejected'] as const).map((s) => (
             <button key={s} role="tab" aria-selected={status === s} className={status === s ? 'active' : ''} onClick={() => { setStatus(s); setMessage(''); }}>{s[0].toUpperCase() + s.slice(1)}</button>

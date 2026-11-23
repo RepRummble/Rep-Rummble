@@ -267,3 +267,20 @@
 .rr-section-in { animation: rr-section-in .5s cubic-bezier(.2, .8, .2, 1) both; display: grid; gap: 20px; align-content: start; min-width: 0; }
 @keyframes rr-section-in { from { opacity: 0; transform: translateY(16px) scale(.99); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
 @media (prefers-reduced-motion: reduce) { .rr-section-in { animation: none; } }
+
+/* ── Staff area additions ───────────────────────────────────────────────────────── */
+.dash-pill { display: inline-block; margin-left: 8px; min-width: 20px; padding: 1px 7px; border-radius: 999px; font-size: 12px; font-weight: 800; background: #ff5a36; color: #fff; text-align: center; }
+.dash-tabs a { padding: 10px 16px; border-radius: 12px; text-decoration: none; color: inherit; font-weight: 700; opacity: .75; }
+.dash-tabs a.active { opacity: 1; background: rgba(255,122,26,.16); }
+.dash-bars { display: flex; align-items: flex-end; gap: 3px; height: 96px; margin: 14px 0; }
+.dash-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.dash-bar i { display: block; width: 100%; border-radius: 3px; background: linear-gradient(180deg, #ff9a4d, #d62839); }
+.dash-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dash-chip { border: 1px solid rgba(255,255,255,.18); background: transparent; color: inherit; padding: 6px 12px; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 700; font-size: 13px; }
+.dash-chip.active { background: #ff5a36; border-color: #ff5a36; color: #fff; }
+.dash-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.dash-table th, .dash-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 14.5px; }
+.dash-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: .65; }
+.dash-form { display: grid; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.1); }
+.dash-form label { display: grid; gap: 6px; font-weight: 700; font-size: 13.5px; flex: 1; }
+.dash-form-row { display: flex; gap: 12px; flex-wrap: wrap; }

@@ -23,6 +23,7 @@ export default function SiteFooter() {
               <li><Link to="/features">Features</Link></li>
               <li><Link to="/pricing">Pricing</Link></li>
               <li><Link to="/faq">FAQ</Link></li>
+              <li><Link to="/blog">Blog</Link></li>
             </ul>
           </div>
           <div>
@@ -37,6 +38,7 @@ export default function SiteFooter() {
           <div>
             <h4>Company</h4>
             <ul>
+              <li><Link to="/about">About</Link></li>
               <li><Link to="/contact">Support</Link></li>
               <li><Link to="/privacy">Privacy</Link></li>
               <li><Link to="/terms">Terms</Link></li>

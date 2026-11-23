@@ -1,3 +1,5 @@
+import Waitlist from '../components/site/Waitlist';
+import { findScreen } from '../lib/screens';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -21,6 +23,12 @@ const STEPS = [
   { title: 'Tell us about you', desc: 'Pick your goal, level, training days, and the equipment you have. Takes about two minutes.' },
   { title: 'Follow your plan', desc: 'Get a weekly plan with guided workouts. It gets harder as you get fitter, on every device.' },
 ];
+
+/** True once the app store links are set. Until then the page says the apps are coming and offers a waitlist. */
+const APPS_LIVE = !!(import.meta.env.VITE_IOS_APP_URL || import.meta.env.VITE_ANDROID_APP_URL);
+
+/** A real screenshot (web/src/assets/screens/hero.png) replaces the drawn phone and its sample-number badges. */
+const HERO_SHOT = findScreen('hero');
 
 export default function Home() {
   usePageMeta({
@@ -50,7 +58,7 @@ export default function Home() {
         <span className="h19-spot" aria-hidden="true" />
         <div className="rr-container fx-hero-grid">
           <div>
-            <span className="fx-eyebrow h19-tag"><span className="fx-dot" /> Now on web, iOS &amp; Android</span>
+            <span className="fx-eyebrow h19-tag"><span className="fx-dot" /> {APPS_LIVE ? 'Now on web, iOS & Android' : 'Live on the web · iPhone and Android apps coming soon'}</span>
             <h1>
               Fitness that fits <br />
               <FlipWords words={['every budget.', 'every body.', 'every goal.', 'every day.']} />
@@ -72,9 +80,13 @@ export default function Home() {
               <li><Check size={16} /> Pro from {fmtPrice(PRICING.proMonthly)}/mo</li>
               <li><Check size={16} /> Cancel anytime</li>
             </ul>
+            {!APPS_LIVE && <div className="fx-hero-waitlist"><Waitlist variant="dark" source="waitlist-hero" /></div>}
           </div>
           <div className="fx-stage">
-            <TiltCard><PhoneMockup /></TiltCard>
+            {HERO_SHOT ? (
+              <TiltCard><div className="rr-realphone"><img src={HERO_SHOT} alt="The Reprummble app" /></div></TiltCard>
+            ) : <TiltCard><PhoneMockup /></TiltCard>}
+            {!HERO_SHOT && <>
             <div className="fx-float fx-glass f1" aria-hidden="true">
               <span className="ic" style={{ background: 'var(--rr-brand-soft)', color: 'var(--rr-brand)' }}><HeartPulse size={18} /></span>
               <div><strong>Recovery tracked</strong><span className="sub">from your wearable</span></div>
@@ -87,6 +99,7 @@ export default function Home() {
               <span className="ic" style={{ background: 'var(--rr-violet-soft)', color: 'var(--rr-violet)' }}><Activity size={18} /></span>
               <div><strong>Plan adjusted</strong><span className="sub">based on today</span></div>
             </div>
+            </>}
           </div>
         </div>
       </section>
@@ -305,6 +318,7 @@ export default function Home() {
             <Magnetic>
               <Link className="rr-btn rr-btn-white rr-btn-lg" to="/?auth=signup">Start free <ArrowRight size={18} /></Link>
             </Magnetic>
+            {!APPS_LIVE && <div className="fx-cta-waitlist"><Waitlist variant="dark" source="waitlist-cta" compact /><small>Want the iPhone or Android app first? Leave your email.</small></div>}
           </div>
         </div>
       </section>

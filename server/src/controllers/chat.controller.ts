@@ -1,8 +1,10 @@
 import { Request, Response } from 'express'
+import mongoose from 'mongoose'
 import { v4 as uuidv4 } from 'uuid'
 import { SupportConversation } from '../models/SupportConversation.model'
 import { SupportMessage } from '../models/SupportMessage.model'
 import { generateSupportResponse } from '../services/support-ai.service'
+import { planOf } from '../middleware/plan.middleware'
 
 interface AuthRequest extends Request {
   user?: { id: string; email?: string; displayName?: string }
@@ -25,13 +27,15 @@ export const startConversation = async (req: AuthRequest, res: Response) => {
     }
 
     const sessionId = uuidv4()
+    const premium = req.user?.id ? (await planOf(req.user.id)) === 'premium' : false   // priority support is a Premium promise
 
     const conversation = await SupportConversation.create({
-      userId: req.user?.id,
+      userId: mongoose.isValidObjectId(req.user?.id) ? req.user?.id : undefined,
       userEmail: userEmail || req.user?.email,
       userName: userName || req.user?.displayName || 'Guest',
       sessionId,
       platform,
+      premium,
       status: 'active',
       aiContext: {
         messageCount: 0,
@@ -140,12 +144,14 @@ export const getChatHistory = async (req: AuthRequest, res: Response) => {
     const limit = Math.min(50, parseInt(req.query.limit as string) || 10)
     const skip = (page - 1) * limit
 
-    const conversations = await SupportConversation.find({ userId: req.user.id })
+    // Signed-in people have a Supabase id that is not an ObjectId, so their conversations are found by their email instead.
+    const owner = mongoose.isValidObjectId(req.user.id) ? { userId: req.user.id } : { userEmail: req.user.email ?? '__none__' }
+    const conversations = await SupportConversation.find(owner)
       .sort({ lastActivityAt: -1 })
       .skip(skip)
       .limit(limit)
 
-    const total = await SupportConversation.countDocuments({ userId: req.user.id })
+    const total = await SupportConversation.countDocuments(owner)
 
     return res.status(200).json({
       success: true,

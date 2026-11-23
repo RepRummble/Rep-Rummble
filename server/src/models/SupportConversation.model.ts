@@ -14,6 +14,8 @@ export interface ISupportConversation extends Document {
   sessionId: string
   status: 'active' | 'waiting_agent' | 'with_agent' | 'resolved' | 'closed'
   priority: 'low' | 'medium' | 'high' | 'urgent'
+  /** Premium members get priority support: their conversations are answered first. */
+  premium?: boolean
   category?: 'billing' | 'technical' | 'account' | 'general' | 'feedback'
   assignedAgentId?: mongoose.Types.ObjectId
   assignedAt?: Date
@@ -87,6 +89,7 @@ const SupportConversationSchema = new Schema<ISupportConversation>(
 
 // Index for finding conversations waiting for agents
 SupportConversationSchema.index({ status: 1, priority: -1, createdAt: 1 })
+SupportConversationSchema.add({ premium: { type: Boolean, default: false } })
 
 // Index for finding user's conversations
 SupportConversationSchema.index({ userId: 1, createdAt: -1 })

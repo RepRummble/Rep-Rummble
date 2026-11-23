@@ -1,17 +1,17 @@
 import type { IconType } from 'react-icons';
-import { SiApple, SiFitbit } from 'react-icons/si';
+import { SiApple, SiFitbit, SiSamsung } from 'react-icons/si';
 
 // Brands without an icon in react-icons render as a wordmark. To use an official
 // logo instead, put the SVG in web/public/brands/ and set `img: '/brands/oura.svg'`.
 type Brand = { name: string; icon?: IconType; img?: string; wordmark?: string; color: string };
 
+/** The devices Reprummble connects to directly. */
 const BRANDS: Brand[] = [
-  { name: 'Apple Health', icon: SiApple, color: '#0b1220' },
-  { name: 'Garmin', wordmark: 'GARMIN', color: '#007cc3' },
-  { name: 'Oura', wordmark: 'ŌURA', color: '#0b1220' },
-  { name: 'Whoop', wordmark: 'WHOOP', color: '#0b1220' },
+  { name: 'Apple Watch', icon: SiApple, color: '#0b1220' },
+  { name: 'Galaxy Watch', icon: SiSamsung, color: '#1428a0' },
   { name: 'Fitbit', icon: SiFitbit, color: '#00b0b9' },
-  { name: 'Polar', wordmark: 'POLAR', color: '#d10027' },
+  { name: 'WHOOP', wordmark: 'WHOOP', color: '#0b1220' },
+  { name: 'Oura Ring', wordmark: 'ŌURA', color: '#0b1220' },
 ];
 
 function BrandChip({ brand, index }: { brand: Brand; index: number }) {
@@ -38,7 +38,7 @@ export default function DeviceMarquee() {
         <div className="rr-devices-glass">
           <p className="rr-devices-label">
             <span className="rr-eyebrow-dot" /> Works with the wearables you already own
-            <small>Garmin, Oura, Whoop, Fitbit, and Polar sync through Apple Health</small>
+            <small>Connected directly. Garmin and Polar data also appears if their app writes to Apple Health.</small>
           </p>
           <div className="rr-marquee">
             {/* Two copies make the loop seamless; the second is hidden from screen readers. */}

@@ -117,6 +117,10 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
   app.use('/api/devices', require(SRC + '/routes/devices.routes').default);
   app.use('/api/day-challenges', require(SRC + '/routes/dayChallenge.routes').default);
   app.use('/api/coach', require(SRC + '/routes/coach.routes').default);
+  app.use('/api/coaching', require(SRC + '/routes/coaching.routes').default);
+  app.use('/api/admin', require(SRC + '/routes/admin.routes').default);
+  app.use('/api/leads', require(SRC + '/routes/lead.routes').default);
+  app.use('/api/chat', require(SRC + '/routes/chat.routes').default);
   // Unique indexes (e.g. one member per email per business) are built in the background on a fresh
   // database. Wait for them, or a fast test can slip a duplicate in before the index exists.
   await Promise.all(Object.values(require('mongoose').models).map((m) => m.init()));
@@ -128,6 +132,9 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     return { status: r.status, body: type.includes('json') ? await r.json() : await r.text() };
   };
   const { Workout } = require(SRC + '/models/Workout.model');
+  // Reports now need a plan: CSV and history need Pro, PDF needs Premium. These people are the ones the report tests use.
+  const { Subscription } = require(SRC + '/models/Subscription.model');
+  await Subscription.create([{ userId: users.maya.id, plan: 'pro' }, { userId: users.dash.id, plan: 'premium' }, { userId: users.newbie2.id, plan: 'premium' }, { userId: users.inviteReal.id, plan: 'premium' }]);
   const { Meal } = require(SRC + '/models/Meal.model');
 
   console.log('Reports (real data)');
@@ -729,7 +736,6 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
 
 
   console.log('Billing (simulated Stripe)');
-  const { Subscription } = require(SRC + '/models/Subscription.model');
   const { ReferralCredit } = require(SRC + '/models/Referral.model');
   const subOf = async (u) => Subscription.findOne({ userId: users[u].id });
   const view = async (u) => (await call(u, 'GET', '/api/billing')).body.data;
@@ -1772,6 +1778,167 @@ const t = async (name, fn) => { try { await fn(); pass++; console.log('  ok  ', 
     await Routine.insertMany(Array.from({ length: 20 }, (_, i) => ({ userId: users[P1].id, name: 'R' + i, exercises: [{ name: 'x', sets: 3, reps: 10, unit: 'reps', restSec: 60 }] })));
     assert.equal((await call(P1, 'POST', '/api/coach/routines', { name: 'One more', exercises: [{ name: 'x' }] })).status, 400);
     await Routine.deleteMany({ userId: users[P1].id });
+  });
+
+
+  console.log('Premium promises: plan gating, check-ins, nutrition plans, priority support, and the staff area');
+  const cl = require(SRC + '/services/coaching.logic');
+  const { CheckIn } = require(SRC + '/models/CheckIn.model');
+  const { NutritionRequest } = require(SRC + '/models/NutritionRequest.model');
+  const { Lead } = require(SRC + '/models/Lead.model');
+  const FREE = 'oldtimer', PRO = 'maya', PREM = 'dash', PREM2 = 'inviteReal', STAFF = 'admin';
+  const goodPlan = { calories: 2200, protein: 150, carbs: 240, fat: 70, water: 8, meals: [{ name: 'Breakfast', items: 'Oats, whey, berries' }, { name: 'Lunch', items: 'Chicken, rice, vegetables' }, { name: 'Dinner', items: 'Fish, potatoes, salad' }], notes: 'Drink water with each meal.' };
+
+  await t('coaching rules: months, links, plans, spreadsheets and the support queue', () => {
+    assert.equal(cl.monthKeyOf(new Date('2026-11-30T23:30:00Z'), 0), '2026-11'); assert.equal(cl.monthKeyOf(new Date('2026-11-30T23:30:00Z'), -120), '2026-12');   // 2 hours ahead of UTC: already December
+    assert.equal(cl.nextMonthStart('2026-11'), '2026-12-01'); assert.equal(cl.nextMonthStart('2026-12'), '2027-01-01');
+    assert.equal(cl.safeHttpsUrl('https://meet.example.com/abc'), 'https://meet.example.com/abc'); for (const bad of ['http://x.com/a', 'javascript:alert(1)', 'ftp://x.com', 'https://localhost', 'not a url', 42, '']) assert.equal(cl.safeHttpsUrl(bad), null, String(bad));
+    assert.equal(cl.parseNutritionPlan(goodPlan).ok, true);
+    for (const [bad, msg] of [[{ ...goodPlan, calories: 500 }, /Calories/], [{ ...goodPlan, protein: 5 }, /Protein/], [{ ...goodPlan, water: 0 }, /Water/], [{ ...goodPlan, meals: [{ name: 'Only', items: 'one' }] }, /two meals/], [{ ...goodPlan, calories: 3500 }, /add up/]]) { const r = cl.parseNutritionPlan(bad); assert.equal(r.ok, false); assert.match(r.message, msg); }
+    assert.equal(cl.csvCell('=cmd|calc'), `"'=cmd|calc"`); assert.equal(cl.csvCell('a "q", b'), '"a ""q"", b"'); assert.equal(cl.csvCell('+1\nx'), `"'+1 x"`);
+    const d = (s) => new Date(s); const q = cl.sortSupportQueue([{ id: 'low', priority: 'low', createdAt: d('2026-01-01') }, { id: 'high', priority: 'high', createdAt: d('2026-01-02') }, { id: 'urgent', priority: 'urgent', createdAt: d('2026-01-03') }, { id: 'medium', priority: 'medium', createdAt: d('2026-01-01') }, { id: 'prem-low', premium: true, priority: 'low', createdAt: d('2026-01-04') }]);
+    assert.deepEqual(q.map((x) => x.id), ['prem-low', 'urgent', 'high', 'medium', 'low']);     // Premium first, then by urgency (the word "high" used to sort below "low")
+  });
+
+  await t('plans gate the reports: CSV and history need Pro, the PDF needs Premium, and the answer says so', async () => {
+    for (const path of ['/api/reports/history?period=monthly', '/api/reports/export?period=monthly']) { const r = await call(FREE, 'GET', path); assert.equal(r.status, 402, path); assert.equal(r.body.code, 'upgrade_required'); assert.equal(r.body.requiredPlan, 'pro'); assert.match(r.body.message, /Pro plan/); }
+    const pdfFree = await call(FREE, 'GET', '/api/reports/export?period=monthly&format=pdf'); assert.equal(pdfFree.status, 402); assert.equal(pdfFree.body.requiredPlan, 'premium');
+    assert.equal((await call(PRO, 'GET', '/api/reports/history?period=monthly')).status, 200); assert.equal((await call(PRO, 'GET', '/api/reports/export?period=monthly')).status, 200);
+    const pdfPro = await call(PRO, 'GET', '/api/reports/export?period=monthly&format=pdf'); assert.equal(pdfPro.status, 402); assert.equal(pdfPro.body.requiredPlan, 'premium');
+    assert.equal((await realFetchDev(`${base}/api/reports/export?period=monthly&format=pdf`, { headers: { Authorization: `Bearer ${PREM}` } })).status, 200);
+    assert.equal((await call(null, 'GET', '/api/reports/history?period=monthly')).status, 401);
+  });
+
+  await t('check-ins are Premium only', async () => {
+    for (const as of [FREE, PRO]) { const r = await call(as, 'POST', '/api/coaching/checkins', { topic: 'I would like help with my plan' }); assert.equal(r.status, 402, as); assert.equal(r.body.requiredPlan, 'premium'); }
+    const mine = await call(FREE, 'GET', '/api/coaching/checkins'); assert.equal(mine.status, 200); assert.equal(mine.body.data.premium, false); assert.equal(mine.body.data.canRequest, false);
+    assert.equal((await call(null, 'GET', '/api/coaching/checkins')).status, 401);
+  });
+
+  let ci1;
+  await t('a Premium member can book a check-in: needs a real topic, and only one can be waiting at a time', async () => {
+    assert.equal((await call(PREM, 'POST', '/api/coaching/checkins', { topic: 'help' })).status, 400);
+    const r = await call(PREM, 'POST', '/api/coaching/checkins', { topic: 'My squat has stalled for a month <b>help</b>', preferredTimes: 'Weekday evenings' });
+    assert.equal(r.status, 201); ci1 = r.body.data; assert.equal(ci1.status, 'requested'); assert.ok(!/[<>]/.test(ci1.topic));
+    const again = await call(PREM, 'POST', '/api/coaching/checkins', { topic: 'A second question while the first waits' }); assert.equal(again.status, 409); assert.equal(again.body.code, 'open_checkin');
+    const mine = (await call(PREM, 'GET', '/api/coaching/checkins')).body.data; assert.deepEqual([mine.premium, mine.used, mine.remaining, mine.limit, mine.canRequest], [true, 1, 1, 2, false]);
+  });
+
+  await t('cancelling before it is scheduled gives the check-in back; nobody else can cancel it', async () => {
+    assert.equal((await call(PREM2, 'POST', `/api/coaching/checkins/${ci1._id}/cancel`)).status, 404);
+    assert.equal((await call(PREM, 'POST', `/api/coaching/checkins/${ci1._id}/cancel`)).body.data.status, 'cancelled');
+    assert.equal((await call(PREM, 'GET', '/api/coaching/checkins')).body.data.used, 0);
+    assert.equal((await call(PREM, 'POST', `/api/coaching/checkins/${ci1._id}/cancel`)).status, 400);
+    assert.equal((await call(PREM, 'POST', '/api/coaching/checkins/not-an-id/cancel')).status, 404);
+  });
+
+  let ci2;
+  await t('staff schedule a check-in: a future time and an https link are required, and the member sees them', async () => {
+    ci2 = (await call(PREM, 'POST', '/api/coaching/checkins', { topic: 'Please review my plan and my food' })).body.data;
+    const soon = new Date(Date.now() + 2 * DAY).toISOString();
+    assert.equal((await call(PREM, 'PATCH', `/api/admin/checkins/${ci2._id}`, { action: 'schedule', scheduledFor: soon, meetingLink: 'https://meet.example.com/x' })).status, 403);   // members are not staff
+    assert.equal((await call(STAFF, 'PATCH', `/api/admin/checkins/${ci2._id}`, { action: 'schedule', scheduledFor: new Date(Date.now() - DAY).toISOString(), meetingLink: 'https://meet.example.com/x' })).status, 400);
+    assert.equal((await call(STAFF, 'PATCH', `/api/admin/checkins/${ci2._id}`, { action: 'schedule', scheduledFor: soon, meetingLink: 'http://insecure.example.com' })).status, 400);
+    const ok = await call(STAFF, 'PATCH', `/api/admin/checkins/${ci2._id}`, { action: 'schedule', scheduledFor: soon, meetingLink: 'https://meet.example.com/x', coachName: 'Coach Sam' });
+    assert.equal(ok.status, 200); assert.equal(ok.body.data.status, 'scheduled');
+    const mine = (await call(PREM, 'GET', '/api/coaching/checkins')).body.data.items.find((c) => c._id === ci2._id);
+    assert.deepEqual([mine.status, mine.meetingLink, mine.coachName], ['scheduled', 'https://meet.example.com/x', 'Coach Sam']);
+    assert.ok(sent.some((m) => /booked/.test(m.subject)), 'the member is emailed');
+  });
+
+  await t('after it is scheduled, cancelling still uses one of the two; the second is allowed; then the month is full', async () => {
+    assert.equal((await call(PREM, 'POST', `/api/coaching/checkins/${ci2._id}/cancel`)).body.data.status, 'cancelled');
+    assert.equal((await call(PREM, 'GET', '/api/coaching/checkins')).body.data.used, 1);
+    const c3 = (await call(PREM, 'POST', '/api/coaching/checkins', { topic: 'Question about my deload week' })).body.data;
+    assert.equal((await call(STAFF, 'PATCH', `/api/admin/checkins/${c3._id}`, { action: 'complete', summary: 'short' })).status, 400);
+    const done = await call(STAFF, 'PATCH', `/api/admin/checkins/${c3._id}`, { action: 'complete', summary: 'We reviewed your deload and adjusted the volume.', actionItems: ['Lower the sets by a third', '', 'Sleep 8 hours'] });
+    assert.equal(done.status, 200); assert.deepEqual(done.body.data.actionItems, ['Lower the sets by a third', 'Sleep 8 hours']);
+    const full = await call(PREM, 'POST', '/api/coaching/checkins', { topic: 'A third one this month, please' });
+    assert.equal(full.status, 409); assert.equal(full.body.code, 'limit_reached'); assert.match(full.body.resetsOn, /^\d{4}-\d{2}-01$/);
+    assert.equal((await call(PREM, 'GET', '/api/coaching/checkins')).body.data.canRequest, false);
+  });
+
+  await t('a declined check-in is given back and the member is told why', async () => {
+    const c = (await call(PREM2, 'POST', '/api/coaching/checkins', { topic: 'Can you write my whole year of training?' })).body.data;
+    assert.equal((await call(STAFF, 'PATCH', `/api/admin/checkins/${c._id}`, { action: 'decline', reason: 'x' })).status, 400);
+    assert.equal((await call(STAFF, 'PATCH', `/api/admin/checkins/${c._id}`, { action: 'decline', reason: 'That is bigger than a check-in. Ask for a nutrition plan.' })).status, 200);
+    const mine = (await call(PREM2, 'GET', '/api/coaching/checkins')).body.data; assert.equal(mine.used, 0); assert.equal(mine.canRequest, true);
+    assert.match(mine.items[0].declineReason, /bigger than a check-in/);
+    assert.equal((await call(STAFF, 'PATCH', `/api/admin/checkins/${c._id}`, { action: 'nonsense' })).status, 400);
+  });
+
+  let nr;
+  await t('custom nutrition plan: Premium asks, a coach writes it, the numbers are checked, and the member gets it', async () => {
+    assert.equal((await call(PRO, 'POST', '/api/coaching/nutrition', { goal: 'Lose 5 kg' })).status, 402);
+    assert.equal((await call(PREM, 'POST', '/api/coaching/nutrition', { goal: '' })).status, 400);
+    const r = await call(PREM, 'POST', '/api/coaching/nutrition', { goal: 'Lose 5 kg by March', mealsPerDay: 99, allergies: 'Peanuts <b>!</b>', dietPrefs: 'Vegetarian' });
+    assert.equal(r.status, 201); nr = r.body.data; assert.equal(nr.mealsPerDay, 8); assert.ok(!/[<>]/.test(nr.allergies));
+    assert.equal((await call(PREM, 'POST', '/api/coaching/nutrition', { goal: 'Another goal' })).body.code, 'open_request');
+    assert.equal((await call(PREM, 'POST', `/api/admin/nutrition/${nr._id}/deliver`, { plan: goodPlan })).status, 403);
+    const bad = await call(STAFF, 'POST', `/api/admin/nutrition/${nr._id}/deliver`, { plan: { ...goodPlan, calories: 3500 } }); assert.equal(bad.status, 400); assert.match(bad.body.message, /add up/);
+    const ok = await call(STAFF, 'POST', `/api/admin/nutrition/${nr._id}/deliver`, { plan: goodPlan, coachName: 'Coach Mia' }); assert.equal(ok.status, 200); assert.equal(ok.body.data.status, 'delivered');
+    const mine = (await call(PREM, 'GET', '/api/coaching/nutrition')).body.data;
+    assert.deepEqual([mine.current.plan.calories, mine.current.plan.protein, mine.current.plan.meals.length, mine.current.coachName], [2200, 150, 3, 'Coach Mia']); assert.equal(mine.canRequest, false);   // one new plan a month
+    const again = await call(PREM, 'POST', '/api/coaching/nutrition', { goal: 'A different goal now' }); assert.equal(again.status, 409); assert.equal(again.body.code, 'limit_reached');
+    assert.equal((await call(STAFF, 'POST', `/api/admin/nutrition/${nr._id}/deliver`, { plan: goodPlan })).status, 400);       // already delivered
+    assert.equal((await call(PREM2, 'GET', '/api/coaching/nutrition')).body.data.current, null);                              // someone else sees nothing of it
+  });
+
+  await t('a declined nutrition request does not use the month, and says why', async () => {
+    const r = (await call(PREM2, 'POST', '/api/coaching/nutrition', { goal: 'Gain muscle' })).body.data;
+    assert.equal((await call(STAFF, 'POST', `/api/admin/nutrition/${r._id}/decline`, { reason: '' })).status, 400);
+    assert.equal((await call(STAFF, 'POST', `/api/admin/nutrition/${r._id}/decline`, { reason: 'Please tell us your allergies first.' })).status, 200);
+    const mine = (await call(PREM2, 'GET', '/api/coaching/nutrition')).body.data; assert.equal(mine.latest.status, 'declined'); assert.match(mine.latest.declineReason, /allergies/); assert.equal(mine.canRequest, true);
+  });
+
+  await t('the staff area: members, unverified look-alikes and signed-out visitors are all refused', async () => {
+    for (const path of ['/api/admin/status', '/api/admin/leads', '/api/admin/leads/stats', '/api/admin/leads/export', '/api/admin/checkins', '/api/admin/nutrition']) {
+      assert.equal((await call(PREM, 'GET', path)).status, 403, path); assert.equal((await call('adminFake', 'GET', path)).status, 403, path + ' (unverified email)'); assert.equal((await call(null, 'GET', path)).status, 401, path);
+    }
+    const s = (await call(STAFF, 'GET', '/api/admin/status')).body.data; assert.equal(s.isAdmin, true); assert.equal(typeof s.openCheckIns, 'number');
+  });
+
+  await t('the waitlist: visitors join, staff see the total, the last 30 days, where they came from, and can search, page and export', async () => {
+    await Lead.deleteMany({});
+    for (const [email, source] of [['a@x.test', 'waitlist-hero'], ['b@x.test', 'waitlist-hero'], ['c@y.test', 'waitlist-footer'], ['d@y.test', 'waitlist-about']]) assert.equal((await call(null, 'POST', '/api/leads', { email, source })).status, 201);
+    assert.equal((await call(null, 'POST', '/api/leads', { email: 'A@x.test', source: 'waitlist-hero' })).status, 200);   // the same person again is not a duplicate
+    await Lead.collection.insertOne({ email: '=HYPERLINK("http://evil.test")@z.test', source: 'web', createdAt: new Date(Date.now() - 40 * DAY), updatedAt: new Date() });
+    const st = (await call(STAFF, 'GET', '/api/admin/leads/stats')).body.data;
+    assert.deepEqual([st.total, st.last7, st.last30], [5, 4, 4]); assert.equal(st.days.length, 30); assert.equal(st.days.reduce((a, d) => a + d.count, 0), 4); assert.deepEqual(st.bySource.find((x) => x.source === 'waitlist-hero'), { source: 'waitlist-hero', count: 2 });
+    const list = (await call(STAFF, 'GET', '/api/admin/leads?limit=2&page=1')).body.data; assert.deepEqual([list.items.length, list.total, list.pages], [2, 5, 3]);
+    assert.deepEqual((await call(STAFF, 'GET', '/api/admin/leads?search=y.test')).body.data.items.map((l) => l.email).sort(), ['c@y.test', 'd@y.test']);
+    assert.equal((await call(STAFF, 'GET', '/api/admin/leads?source=waitlist-hero')).body.data.total, 2);
+    assert.equal((await call(STAFF, 'GET', '/api/admin/leads?search=.*')).body.data.total, 0);       // a search is text, never a pattern
+    const csv = (await call(STAFF, 'GET', '/api/admin/leads/export')).body; const lines = csv.split('\n');
+    assert.equal(lines[0], 'email,source,joined'); assert.equal(lines.length, 6); assert.ok(lines.some((l) => l.startsWith(`"'=HYPERLINK`)), 'formula-looking emails are made harmless'); assert.ok(lines.every((l, i) => i === 0 || !/^"[=+\-@]/.test(l)));
+  });
+
+  await t('staff can remove a waitlist entry', async () => {
+    const id = (await call(STAFF, 'GET', '/api/admin/leads?search=a@x.test')).body.data.items[0]._id;
+    assert.equal((await call(PREM, 'DELETE', `/api/admin/leads/${id}`)).status, 403);
+    assert.equal((await call(STAFF, 'DELETE', `/api/admin/leads/${id}`)).status, 200); assert.equal((await call(STAFF, 'DELETE', `/api/admin/leads/${id}`)).status, 404); assert.equal((await call(STAFF, 'DELETE', '/api/admin/leads/bad')).status, 404);
+  });
+
+  await t('priority support: a Premium member’s conversation is flagged, and everyone else’s is not', async () => {
+    const SC = require(SRC + '/models/SupportConversation.model').SupportConversation;
+    const start = (as) => call(as, 'POST', '/api/chat/start', { platform: 'web' });
+    const a = await start(PREM); const b = await start(FREE); const c = await start(null);
+    assert.equal(a.status, 201, JSON.stringify(a.body)); assert.equal(b.status, 201); assert.equal(c.status, 201);
+    const flags = async (r) => (await SC.findOne({ sessionId: r.body.data?.sessionId ?? r.body.sessionId ?? r.body.data?.conversation?.sessionId }))?.premium;
+    assert.deepEqual([await flags(a), await flags(b), await flags(c)], [true, false, false]);
+  });
+
+  await t('the support assistant no longer tells people about plan limits that do not exist', async () => {
+    const src = require('node:fs').readFileSync(path.resolve(__dirname, '../src/services/support-ai.service.ts'), 'utf8');
+    assert.ok(!/1 challenge a month/.test(src)); assert.match(src, /daily AI limits/); assert.match(src, /1-on-1 coach check-ins twice a month/);
+  });
+
+  // The member's own copy of these records goes with the account.
+  await t('deleting an account removes its check-ins and nutrition requests', async () => {
+    const before = await CheckIn.countDocuments({ userId: users.newbie2.id });
+    await CheckIn.create({ userId: users.newbie2.id, topic: 'Delete me please', monthKey: '2026-11' }); await NutritionRequest.create({ userId: users.newbie2.id, goal: 'Delete me', monthKey: '2026-11' });
+    assert.equal((await call('newbie2', 'DELETE', '/api/auth/account')).status, 200);
+    assert.equal(await CheckIn.countDocuments({ userId: users.newbie2.id }), 0); assert.equal(await NutritionRequest.countDocuments({ userId: users.newbie2.id }), 0); assert.ok(before === 0);
   });
 
   console.log(`\n${pass} checks passed${process.exitCode ? ' (some FAILED)' : ''}`);
